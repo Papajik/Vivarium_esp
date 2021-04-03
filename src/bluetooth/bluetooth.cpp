@@ -9,7 +9,12 @@
 
 #include "../debug/memory.h"
 #include "../wifi/wifiProvider.h"
+
+
+#define CREDENTIAL_HANDLES 3
+
 BLEController bleController;
+
 
 //****************
 
@@ -169,50 +174,12 @@ void BLEController::init()
     printMemory();
 }
 
-// TODO CLEAN UP
-void BLEController::start()
-{
-    if (!_running)
-    {
-        bool b = btStart();
-        if (b)
-        {
-            printlnD("Bluetooth started");
-            if (!_initialized)
-                init();
-            _running = true;
-        }
-        else
-        {
-            printlnD("bluetooth couldn't start");
-            _running = false;
-        }
-    }
-}
 
 void BLEController::setConnectionHandle(uint16_t h)
 {
     conn_handle = h;
 }
 
-void BLEController::pause()
-{
-    if (_running)
-    {
-        printlnV("Pausing bluetooth");
-        bool b = btStop();
-        if (b)
-        {
-            _running = false;
-            printlnV("Bluetooth paused");
-        }
-        else
-        {
-            _running = true;
-            printlnV("bluetooth couldn't be paused");
-        }
-    }
-}
 
 void BLEController::setupModuleServices()
 {

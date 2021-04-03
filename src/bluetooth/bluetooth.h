@@ -88,8 +88,7 @@ public:
   It is recomended to add PINHandler on active security.
   */
   void init();
-  void start();
-  void pause();
+
 
   /*
   @brief Add interface pointer which is used to handle displaying bluetooth PIN during connection
