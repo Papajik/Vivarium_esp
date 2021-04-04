@@ -3,7 +3,7 @@
 
 #include <HardwareSerial.h>
 #include "../bluetooth/i_bluetooth.h"
-#include "../vivarium/vivariumType.h"
+
 #include <string>
 
 class NimBLECharacteristic;
@@ -18,8 +18,8 @@ public:
     void setUserId(String id);
     String getUserId();
 
-    void setDeviceType(VivariumType);
-    VivariumType getDeviceType();
+
+
 
     bool isClaimed();
     void unclaim();
@@ -40,7 +40,6 @@ public:
 
 private:
     String _deviceId;
-    VivariumType _deviceType;
     bool _uidChanged;
     NimBLECharacteristic *deviceIdCharacteristic;
     NimBLECharacteristic *characteristicIsClaimed;

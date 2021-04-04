@@ -18,7 +18,6 @@
 #include <Arduino.h>
 
 #include "../state/state_values.h"
-#include "./vivariumType.h"
 
 /*!
 * \def DEVICE_ID

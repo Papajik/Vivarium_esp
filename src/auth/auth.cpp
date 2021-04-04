@@ -43,6 +43,7 @@ class IsClaimedCallbacks : public BLECharacteristicCallbacks
 private:
     void onRead(BLECharacteristic *pCharacteristic)
     {
+        printlnA("IsClaimedCallbacks -onRead1");
         if (auth.isClaimed())
         {
             pCharacteristic->setValue("true");
@@ -52,15 +53,12 @@ private:
             pCharacteristic->setValue("false");
         }
     }
-};
-
-class DeviceTypeCallbacks : public BLECharacteristicCallbacks
-{
-
-private:
-    void onRead(BLECharacteristic *pCharacteristic)
+    
+    void onSubscribe(NimBLECharacteristic *pCharacteristic, ble_gap_conn_desc *desc, uint16_t subValue)
     {
-        pCharacteristic->setValue((int)auth.getDeviceType());
+        printlnA("Is claimed - on subscribe");
+        std::string s = auth.isClaimed() ? "true" : "false";
+        pCharacteristic->setValue(s);
     }
 };
 
@@ -80,16 +78,6 @@ Auth::Auth()
 {
     _userId = "";
     _deviceId = "";
-}
-
-void Auth::setDeviceType(VivariumType type)
-{
-    _deviceType = type;
-}
-
-VivariumType Auth::getDeviceType()
-{
-    return _deviceType;
 }
 
 void Auth::setUserId(String id)
@@ -171,10 +159,6 @@ void Auth::setupBLECredentials(BLEService *credentials)
                                                                     NIMBLE_PROPERTY::NOTIFY |
                                                                     NIMBLE_PROPERTY::INDICATE);
     characteristicIsClaimed->setCallbacks(new IsClaimedCallbacks());
-
-    /// DEVICE TYPE
-    NimBLECharacteristic *characteristic = credentials->createCharacteristic(CHARACTERISTIC_DEVICE_TYPE, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::READ_ENC);
-    characteristic->setCallbacks(new DeviceTypeCallbacks());
 }
 
 void Auth::onBLEDisconnect()
@@ -184,10 +168,14 @@ void Auth::onBLEDisconnect()
 
 void Auth::onBLEConnect()
 {
-    printD("AUTH - device ID = ");
-    printlnD(_deviceId);
+    printA("AUTH - device ID = ");
+    printlnA(_deviceId);
     std::string s = _deviceId.c_str();
     deviceIdCharacteristic->setValue(s);
+    s = isClaimed() ? "true" : "false";
+    printA("Claimed = ");
+    printlnA(s.c_str());
+    characteristicIsClaimed->setValue(s);
 }
 
 void Auth::getHandlesCount(int *settings, int *state, int *credentials)
