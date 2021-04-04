@@ -115,7 +115,6 @@ public:
     bool hasCredentials();
 
 private:
-    bool _restart = false;
     String _pass;
     String _ssid;
     bool _settingsChanged;

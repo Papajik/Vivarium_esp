@@ -48,17 +48,7 @@ void WiFiProvider::setupBLECredentials(NimBLEService *credentials)
 
 void WiFiProvider::onBLEDisconnect()
 {
-    if (_restart)
-    {
         restart();
-    }
-    // else
-    // {
-    //     if (!firebaseService.isRunning() && auth.isClaimed())
-    //     {
-    //         firebaseService.setupFirebase();
-    //     }
-    // }
 }
 
 void WiFiProvider::onBLEConnect()
