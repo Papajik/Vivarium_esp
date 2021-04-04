@@ -122,7 +122,7 @@ void Humidifier::failSafeCheck()
         printlnA("Humidifier disconnected");
         printlnE("Humidifier failsafe");
         setConnected(false, true);
-        firebaseService.sendFCM(FCM_KEY, "Temperature was invalid for too long - turning off humidifier", FCM_TYPE::VALUE, FCM_KEY);
+        messagingService.sendFCM(FCM_KEY, "Temperature was invalid for too long - turning off humidifier", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }
 

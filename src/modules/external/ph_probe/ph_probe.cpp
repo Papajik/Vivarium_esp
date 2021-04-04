@@ -264,12 +264,12 @@ void PhModule::checkBoundaries()
 {
     if (_lastPhValue > _settings.max_ph)
     {
-        firebaseService.sendFCM(FCM_KEY, "pH is over maximum alowed value", FCM_TYPE::VALUE, FCM_KEY);
+        messagingService.sendFCM(FCM_KEY, "pH is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 
     if (_lastPhValue < _settings.min_ph)
     {
-        firebaseService.sendFCM(FCM_KEY, "pH is below maximum alowed value", FCM_TYPE::VALUE, FCM_KEY);
+        messagingService.sendFCM(FCM_KEY, "pH is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }
 

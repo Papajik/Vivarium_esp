@@ -141,11 +141,11 @@ void WaterLevel::checkBoundaries()
 {
     if (_waterLevel > _settings.maxLevel)
     {
-        firebaseService.sendFCM(FCM_KEY, "Water level is over maximum alowed value", FCM_TYPE::VALUE, FCM_KEY);
+        messagingService.sendFCM(FCM_KEY, "Water level is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 
     if (_waterLevel < _settings.minLevel)
     {
-        firebaseService.sendFCM(FCM_KEY, "Water level is below maximum alowed value", FCM_TYPE::VALUE, FCM_KEY);
+        messagingService.sendFCM(FCM_KEY, "Water level is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }

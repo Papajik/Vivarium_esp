@@ -127,7 +127,7 @@ void DhtModule::onConnectionChange()
 
     if (isBluetoothRunning())
     {
-        std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -174,11 +174,11 @@ void DhtModule::checkBounds()
         // upper
         if (_temp > _maxTemp)
         {
-            firebaseService.sendFCM(FCM_KEY, "Temperature is over maximum alowed value", FCM_TYPE::VALUE, SETTINGS_DHT_KEY);
+            messagingService.sendFCM(FCM_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
         if (_temp < _minTemp)
         {
-            firebaseService.sendFCM(FCM_KEY, "Temperature is below minimum alowed value", FCM_TYPE::VALUE, SETTINGS_DHT_KEY);
+            messagingService.sendFCM(FCM_KEY, "Temperature is below minimum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
     }
 
@@ -187,11 +187,11 @@ void DhtModule::checkBounds()
         // upper
         if (_humidity > _maxHum)
         {
-            firebaseService.sendFCM(FCM_KEY, "Humidity is  over maximum alowed value", FCM_TYPE::VALUE, SETTINGS_DHT_KEY);
+            messagingService.sendFCM(FCM_KEY, "Humidity is  over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
         if (_humidity < _minHum)
         {
-            firebaseService.sendFCM(FCM_KEY, "Humidity is below minimum alowed", FCM_TYPE::VALUE, SETTINGS_DHT_KEY);
+            messagingService.sendFCM(FCM_KEY, "Humidity is below minimum alowed", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
     }
 }

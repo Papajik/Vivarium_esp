@@ -10,6 +10,8 @@
 #include "../wifi/wifiProvider.h"
 #include "../debug/memory.h"
 #include <Esp.h>
+#include "../memory/memory_provider.h"
+#include "messagingService.h"
 
 // void printResult(FirebaseStream &data);
 void streamCallback(MultiPathStream data);
@@ -133,11 +135,11 @@ void FirebaseService::onLoop()
 
 void FirebaseService::addModule(IFirebaseModule *m)
 {
-    //  m->addFirebaseService(this);
     _modules.push_back(m);
 }
 
 bool FirebaseService::isRunning() { return _running; }
+
 void FirebaseService::setRunning(bool r)
 {
     printlnA("FB: set running = " + r ? "true" : "false");
@@ -147,7 +149,6 @@ void FirebaseService::setRunning(bool r)
 
 void FirebaseService::uploadSensorData()
 {
-    //   printMemory();
     if (_running)
     {
         time_t now;
@@ -181,26 +182,6 @@ void FirebaseService::uploadSensorData()
             printlnE(firebaseBdo->errorReason());
         }
         unlockSemaphore();
-
-        printMemory();
-    }
-    else
-    {
-        // FirebaseJson json;
-        // json.set("freeHeap", (int)ESP.getFreeHeap());
-        // json.set("maxAllocHeap", (int)ESP.getMaxAllocHeap());
-        // json.set("minFreeHeap", (int)ESP.getMinFreeHeap());
-        // time_t now;
-        // time(&now);
-        // char time[40];
-        // ultoa(now, time, 10);
-
-        // String path = "/memory/" + auth.getDeviceId() + "/" + String(time);
-
-        // if (Firebase.RTDB.set(firebaseBdo, path.c_str(), &json))
-        // {
-        //     printlnA("Test uploaded");
-        // }
     }
 }
 
@@ -282,7 +263,7 @@ void FirebaseService::valueCallback(MultiPathStream *data)
     String settingsKey = dataPath.substring(index + 1, secondIndex);
     printlnA("key = " + settingsKey);
     printA("Modules ");
-    printlnA(String(_modules.size()));
+    printlnA((int)_modules.size());
 
     for (IFirebaseModule *module : _modules)
     {
@@ -520,7 +501,7 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
 void streamCallback(MultiPathStream data)
 {
     printlnA("Stream callback");
-    for (int i = 0; i < NUMBER_OF_PATHS - 1; i++)
+    for (int i = 0; i < 2; i++)
     {
         data.get(firebaseService.childPaths[i]);
         if (data.type == "json")
@@ -542,6 +523,14 @@ void streamCallback(MultiPathStream data)
     if (data.type == "string" && (data.value != ""))
     {
         otaService.parseNewFirmwareVersion(data.value);
+    }
+
+    // Check active status
+    data.get(firebaseService.childPaths[ChildPath::ACTIVE_STATUS]);
+    if (data.type == "bool" && data.value == "false")
+    {
+        memoryProvider.factoryReset();
+        ESP.restart();
     }
 }
 
@@ -606,87 +595,50 @@ void FirebaseService::parseFCMTokens(FirebaseJson *json)
         printlnA(value);
         if (value == "true")
         { //If key is valid then add token
-            _firebaseMessagingTokens.push_back(key);
+            // _firebaseMessagingTokens.push_back(key);
+            messagingService.addToken(key);
         }
     }
     json->iteratorEnd();
 }
 
-void FirebaseService::sendFCM(String title, String body, FCM_TYPE type, String moduleTag)
+void FirebaseService::sendFCM(String title, String body, String token, bool timePrefix)
 {
-
-    printlnA("SendFCM");
-    printlnA(title);
-    printlnA(body);
-    printlnV(_firebaseMessagingTokens.size());
-    printlnA("Test");
-
-    if (type == FCM_TYPE::VALUE)
-    {
-        if (!_notificationCrossLimit)
-        {
-            printlnA("FCM value cross limit prohibited");
-            return;
-        }
-
-        if (millis() - _lastValueSendTimeMap[moduleTag] < _delayFCMNotification)
-        {
-            printlnA("FCM - not enough delay");
-            // Can not send value yet
-            return;
-        }
-        else
-        {
-            // FCM is possible
-            _lastValueSendTimeMap[moduleTag] = millis();
-        }
-    }
-    printlnA("Proceed to send");
-
     // Add time preffix
-
-    time_t now;
-    time(&now);
-    tm *time = localtime(&now);
-    String hour = time->tm_hour < 10 ? "0" + String(time->tm_hour) : String(time->tm_hour);
-    String minute = time->tm_min < 10 ? "0" + String(time->tm_min) : String(time->tm_min);
-
-    String timePreffix = hour + ":" + minute + " - ";
-    body = timePreffix + body;
-
-    printlnA("Body preffixed");
-
-    if (type == FCM_TYPE::CONNECTION && !_notificationCrossLimit)
+    if (timePrefix)
     {
-        printlnA("FCM connection change prohibited");
-        return;
+        time_t now;
+        time(&now);
+        tm *time = localtime(&now);
+        String hour = time->tm_hour < 10 ? "0" + String(time->tm_hour) : String(time->tm_hour);
+        String minute = time->tm_min < 10 ? "0" + String(time->tm_min) : String(time->tm_min);
+
+        String timePreffix = hour + ":" + minute + " - ";
+        body = timePreffix + body;
     }
 
-    for (String token : _firebaseMessagingTokens)
+    printlnA("Proceed to send a token");
+    FCM_HTTPv1_JSON_Message msg;
+    msg.notification.title = title.c_str();
+    msg.notification.body = body.c_str();
+    msg.token = token.c_str();
+    lockSemaphore("sendFCM");
+    if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
     {
-        printlnA("Proceed to send a token");
-        FCM_HTTPv1_JSON_Message msg;
-        msg.notification.title = title.c_str();
-        msg.notification.body = body.c_str();
-        msg.token = token.c_str();
-        lockSemaphore("sendFCM");
-        if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
-        {
-            printlnA("PASSED");
-            printlnA(Firebase.FCM.payload(firebaseBdo));
-            printlnA("------------------------------------");
-            printlnA();
-        }
-        else
-        {
-            printlnA("FAILED");
-            printlnA("REASON: " + firebaseBdo->errorReason());
-            printlnA("------------------------------------");
-            // TODO check if removed
-            printlnA();
-        }
-        unlockSemaphore();
+        printlnA("PASSED");
+        printlnA(Firebase.FCM.payload(firebaseBdo));
+        printlnA("------------------------------------");
+        printlnA();
     }
+    else
+    {
+        printlnA("FAILED");
+        printlnA("REASON: " + firebaseBdo->errorReason());
+        printlnA("------------------------------------");
+        // TODO check if removed
+        printlnA();
+    }
+    unlockSemaphore();
 }
 
 void FirebaseService::lockSemaphore(String owner)
@@ -718,19 +670,27 @@ void FirebaseService::getFCMSettings()
         FirebaseJson &json = firebaseBdo->jsonObject();
         FirebaseJsonData data;
 
-        if (json.get(data, "/notificationDelay", false))
+        if (json.get(data, "/nDelay", false))
         {
-            _delayFCMNotification = data.intValue;
+            // _delayFCMNotification = data.intValue;
+            messagingService.setDelayFCM(data.intValue);
         }
 
         if (json.get(data, "/nLimit", false))
         {
-            _notificationCrossLimit = data.boolValue;
+            // _notificationCrossLimit = data.boolValue;
+            messagingService.setNotifyOnCrossLimit(data.boolValue);
         }
 
         if (json.get(data, "/nConn", false))
         {
-            _notificationConnectionOn = data.boolValue;
+            // _notificationConnectionOn = data.boolValue;
+            messagingService.setNotifyOnConnectionChange(data.boolValue);
+        }
+
+        if (json.get(data, "/nDist", false))
+        {
+            messagingService.setDistinctNotification(data.boolValue);
         }
 
         /// Refresh tokens

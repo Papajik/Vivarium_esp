@@ -15,7 +15,7 @@
 
 #define FBDO_CLEAR_DELAY 170 * 1000
 
-#define NUMBER_OF_PATHS 3
+#define NUMBER_OF_PATHS 4
 
 #include <vector>
 #include <map>
@@ -28,17 +28,18 @@ struct fb_esp_cfg_t;
 class IFirebaseModule;
 class MultiPathStream;
 
-enum FCM_TYPE
-{
-    CONNECTION,
-    VALUE
-};
+// enum FCM_TYPE
+// {
+//     CONNECTION,
+//     VALUE
+// };
 
 enum ChildPath
 {
     SETTINGS = 0,
     STATE = 1,
-    FIRMWARE = 2
+    FIRMWARE = 2,
+    ACTIVE_STATUS = 3
 };
 
 class FirebaseService : public IBluetooth
@@ -62,12 +63,12 @@ public:
 
     void onLoop();
 
+    // Messaging
     void refreshFCMTokens();
     void getFCMSettings();
-
     void parseFCMTokens(FirebaseJson *);
 
-    void sendFCM(String, String, FCM_TYPE, String);
+    void sendFCM(String title, String body, String token, bool timePrefix);
 
     void uploadState(String, bool);
     void uploadState(String, float);
@@ -76,7 +77,7 @@ public:
     void uploadCustomData(String, String, String);
     void uploadCustomData(String, String, float);
 
-    String childPaths[NUMBER_OF_PATHS] = {"/settings", "/state", "/info/firmware"};
+    String childPaths[NUMBER_OF_PATHS] = {"/settings", "/state", "/info/firmware", "/info/active"};
 
     String getFirmwareName(String);
 

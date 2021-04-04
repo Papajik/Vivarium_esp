@@ -58,7 +58,7 @@ void WaterTempModule::onConnectionChange()
 
     if (isBluetoothRunning())
     {
-          std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -166,12 +166,12 @@ void WaterTempModule::checkBoundaries()
     {
         if (_currentTemp > _settings.max_temp)
         {
-            firebaseService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is over maximum alowed value", FCM_TYPE::VALUE, SETTINGS_WATER_TEMP_KEY);
+            messagingService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
         }
 
         if (_currentTemp < _settings.min_temp)
         {
-            firebaseService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::VALUE, SETTINGS_WATER_TEMP_KEY);
+            messagingService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
         }
     }
 }

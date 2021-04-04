@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "firebase.h"
+#include "messagingService.h"
 #include <Firebase_ESP_Client.h>
 
 #include <HardwareSerial.h>
@@ -30,7 +31,7 @@ protected:
     {
         String title = "Module " + module;
 
-        firebaseService.sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
+        messagingService.sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
     }
 
     void printJson(FirebaseJson *json)

@@ -16,17 +16,17 @@ void printMemory()
 {
 
     printlnA("\n*** *** *** *** *** ***");
-    int freestack = uxTaskGetStackHighWaterMark(NULL);
-    uint32_t h = xPortGetFreeHeapSize();
+    // int freestack = uxTaskGetStackHighWaterMark(NULL);
+    // uint32_t h = xPortGetFreeHeapSize();
     // printlnA("xPortGetFreeHeapSize = " + String(h));
     // printA("Free stack = ");
     // printlnA(freestack);
 
     printlnA("ESP heapSize: " + String(ESP.getHeapSize()));
     printlnA("ESP freeHeap: " + String(ESP.getFreeHeap()));
-    printlnA("ESP minFreeHeap:" + String(ESP.getMinFreeHeap()));    
+    printlnA("ESP minFreeHeap:" + String(ESP.getMinFreeHeap()));
     printlnA("ESP maxAllocHeap:" + String(ESP.getMaxAllocHeap()));
-     heap_caps_check_integrity_all(true);
+    heap_caps_check_integrity_all(true);
     // debugA("Total PSRAM: %d", ESP.getPsramSize());
     // debugA("Free PSRAM: %d", ESP.getFreePsram());
     printlnA("*** *** *** *** *** ***\n\n");
