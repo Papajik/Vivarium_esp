@@ -10,11 +10,9 @@
 #include "../debug/memory.h"
 #include "../wifi/wifiProvider.h"
 
-
 #define CREDENTIAL_HANDLES 3
 
 BLEController bleController;
-
 
 //****************
 
@@ -159,10 +157,10 @@ void BLEController::init()
 
     // if (secure)
     // {
-    //     BLESecurity *pSecurity = new NimBLESecurity();
-    //     pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_ONLY);
-    //     pSecurity->setCapability(ESP_IO_CAP_OUT);
-    //     pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+    // BLESecurity *pSecurity = new NimBLESecurity();
+    // pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_ONLY);
+    // pSecurity->setCapability(ESP_IO_CAP_OUT);
+    // pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
     // }
 
     setupModuleServices();
@@ -174,12 +172,10 @@ void BLEController::init()
     printMemory();
 }
 
-
 void BLEController::setConnectionHandle(uint16_t h)
 {
     conn_handle = h;
 }
-
 
 void BLEController::setupModuleServices()
 {
@@ -265,7 +261,7 @@ void BLEController::onDeviceDisconnecting()
     if (_nameChanged)
     {
         printlnD("Name changed");
-        memoryProvider.saveString(BLE_NAME_KEY, _bluetoothName);
+
         printlnA("Bluetooth disconnect - deinitilazing ESP");
         _nameChanged = false;
         stop();
@@ -361,6 +357,7 @@ void BLEController::setBleName(String s)
 
     if (_bluetoothName != s)
     {
+        memoryProvider.saveString(BLE_NAME_KEY, _bluetoothName);
         _nameChanged = true;
         _bluetoothName = s;
     }
