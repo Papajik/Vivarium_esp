@@ -55,6 +55,7 @@ public:
     void setRunning(bool);
     void uploadSensorData();
     void logNewStart();
+    void checkActiveStatus();
     void jsonCallback(FirebaseJson *, String);
     void valueCallback(MultiPathStream *);
     void addModule(IFirebaseModule *m);

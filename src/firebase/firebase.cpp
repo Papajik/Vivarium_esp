@@ -58,13 +58,41 @@ void FirebaseService::setupFirebase()
         Firebase.setDoubleDigits(2);
 
         printlnA("paths: ");
-        printlnA(childPaths[0].c_str());
-        printlnA(childPaths[1].c_str());
-        printlnA(childPaths[2].c_str());
+        for (int i = 0; i < NUMBER_OF_PATHS; i++)
+        {
+            printlnA(childPaths[i].c_str());
+        }
+
         _initialized = true;
     }
+    checkActiveStatus();
     getFCMSettings();
     startFirebase();
+}
+
+void FirebaseService::checkActiveStatus()
+{
+    printlnA("checkActiveStatus");
+    String path = "/devices/" + auth.getDeviceId() + "/info/active";
+    lockSemaphore("checkActiveStatus");
+    if (Firebase.RTDB.getBool(firebaseBdo, path.c_str()))
+    {
+        printlnA("Active status recieved");
+        printA("Active = ");
+        printlnA(firebaseBdo->boolData()? "true":"false");
+        printlnA(firebaseBdo->dataPath());
+        if (!firebaseBdo->boolData())
+        {
+            memoryProvider.factoryReset();
+            ESP.restart();
+        }
+    }
+    else
+    {
+
+        printlnA("Couldnt receive active status");
+    }
+    unlockSemaphore();
 }
 
 void FirebaseService::stopStream()
@@ -104,10 +132,11 @@ void FirebaseService::onLoop()
         // Clear bdo object to clear heap memory for SSL hanshake
         if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
         {
+            _lastCleanTime = millis();
             lockSemaphore("onLoop");
             if (firebaseBdo->httpConnected())
             {
-                _lastCleanTime = millis();
+
                 printlnA("Clearing object");
                 firebaseBdo->clear();
             }
@@ -503,6 +532,22 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
 void streamCallback(MultiPathStream data)
 {
     printlnA("Stream callback");
+
+    // Check active status
+    data.get(firebaseService.childPaths[ChildPath::ACTIVE_STATUS]);
+    if (data.type == "boolean" && data.value == "false")
+    {
+        memoryProvider.factoryReset();
+        ESP.restart();
+    }
+
+    //Check firmware
+    data.get(firebaseService.childPaths[ChildPath::FIRMWARE]);
+    if (data.type == "string" && (data.value != ""))
+    {
+        otaService.parseNewFirmwareVersion(data.value);
+    }
+
     for (int i = 0; i < 2; i++)
     {
         data.get(firebaseService.childPaths[i]);
@@ -518,21 +563,6 @@ void streamCallback(MultiPathStream data)
             printlnA("DataType != json");
             firebaseService.valueCallback(&data);
         }
-    }
-
-    //Check firmware
-    data.get(firebaseService.childPaths[ChildPath::FIRMWARE]);
-    if (data.type == "string" && (data.value != ""))
-    {
-        otaService.parseNewFirmwareVersion(data.value);
-    }
-
-    // Check active status
-    data.get(firebaseService.childPaths[ChildPath::ACTIVE_STATUS]);
-    if (data.type == "bool" && data.value == "false")
-    {
-        memoryProvider.factoryReset();
-        ESP.restart();
     }
 }
 
