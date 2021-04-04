@@ -99,37 +99,39 @@ void FirebaseService::startStream()
 
 void FirebaseService::onLoop()
 {
-
-    // Clear bdo object to clear heap memory for SSL hanshake
-    if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
+    if (_running)
     {
-        lockSemaphore("onLoop");
-        if (firebaseBdo->httpConnected())
+        // Clear bdo object to clear heap memory for SSL hanshake
+        if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
         {
-            _lastCleanTime = millis();
-            printlnA("Clearing object");
-            firebaseBdo->clear();
-        }
-        unlockSemaphore();
-    }
-
-    if (millis() - _lastUploadTime > DEFAULT_UPLOAD_DELAY)
-    {
-        if (wifiProvider.isConnected())
-        {
-            uploadSensorData();
+            lockSemaphore("onLoop");
+            if (firebaseBdo->httpConnected())
+            {
+                _lastCleanTime = millis();
+                printlnA("Clearing object");
+                firebaseBdo->clear();
+            }
+            unlockSemaphore();
         }
 
-        _lastUploadTime = millis();
-    }
-
-    if (millis() - _lastTokenRefresh > REFRESH_FCM_TOKENS_INTERVAL)
-    {
-        if (wifiProvider.isConnected())
+        if (millis() - _lastUploadTime > DEFAULT_UPLOAD_DELAY)
         {
-            refreshFCMTokens();
+            if (wifiProvider.isConnected())
+            {
+                uploadSensorData();
+            }
+
+            _lastUploadTime = millis();
         }
-        _lastTokenRefresh = millis();
+
+        if (millis() - _lastTokenRefresh > REFRESH_FCM_TOKENS_INTERVAL)
+        {
+            if (wifiProvider.isConnected())
+            {
+                refreshFCMTokens();
+            }
+            _lastTokenRefresh = millis();
+        }
     }
 }
 
