@@ -20,6 +20,12 @@
 #define MODULES_CLOCK_PIN 5
 #define MODULES_DATA_PIN 15
 
+enum Mode
+{
+    M_OUT,
+    M_IN
+};
+
 class IModule;
 
 class ModuleControl
@@ -41,7 +47,7 @@ public:
 
     void onLoop();
     // void setBrightness(int brightness);
-    void updateLedStatus();
+    void updateLedStatus(Mode = M_IN);
 
     void beforeShutdown();
 

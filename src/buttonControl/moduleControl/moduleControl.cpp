@@ -60,7 +60,7 @@ void ModuleControl::onLoop()
     }
 }
 
-void ModuleControl::updateLedStatus()
+void ModuleControl::updateLedStatus(Mode mode)
 {
     _ledByte = 0;
     for (int i = 0; i < _modules.size(); i++)
@@ -74,6 +74,12 @@ void ModuleControl::updateLedStatus()
     for (int i = _modules.size(); i < 8; i++)
     {
         bitSet(_ledByte, i);
+    }
+
+    // Invert bits if shift register mode is INPUT
+    if (mode == M_IN)
+    {
+        _ledByte = ~_ledByte;
     }
 
     printlnA("Updating LED status");
