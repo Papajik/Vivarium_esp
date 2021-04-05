@@ -12,6 +12,7 @@
 #include <Esp.h>
 #include "../memory/memory_provider.h"
 #include "messagingService.h"
+#include "../bluetooth/bluetooth.h"
 
 // void printResult(FirebaseStream &data);
 void streamCallback(MultiPathStream data);
@@ -546,6 +547,13 @@ void streamCallback(MultiPathStream data)
     if (data.type == "string" && (data.value != ""))
     {
         otaService.parseNewFirmwareVersion(data.value);
+    }
+
+    // Check Bluetooth name
+     data.get(firebaseService.childPaths[ChildPath::BLE_NAME]);
+    if (data.type == "string" && (data.value != ""))
+    {
+        bleController.setBleName(data.value);
     }
 
     for (int i = 0; i < 2; i++)

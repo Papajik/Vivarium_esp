@@ -15,7 +15,7 @@
 
 #define FBDO_CLEAR_DELAY 170 * 1000
 
-#define NUMBER_OF_PATHS 4
+#define NUMBER_OF_PATHS 5
 
 #include <vector>
 #include <map>
@@ -39,7 +39,8 @@ enum ChildPath
     SETTINGS = 0,
     STATE = 1,
     FIRMWARE = 2,
-    ACTIVE_STATUS = 3
+    ACTIVE_STATUS = 3,
+    BLE_NAME = 4
 };
 
 class FirebaseService : public IBluetooth
@@ -78,7 +79,7 @@ public:
     void uploadCustomData(String, String, String);
     void uploadCustomData(String, String, float);
 
-    String childPaths[NUMBER_OF_PATHS] = {"/settings", "/state", "/info/firmware", "/info/active"};
+    String childPaths[NUMBER_OF_PATHS] = {"/settings", "/state", "/info/firmware", "/info/active", "/info/name"};
 
     String getFirmwareName(String);
 
