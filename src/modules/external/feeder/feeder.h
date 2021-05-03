@@ -12,9 +12,9 @@
 #define FEEDER_MODE_1_RPM 15
 #define FEEDER_MODE_2_RPM 15
 #define FEEDER_STEPS_PER_REVOLUTION 2048
-#define FEEDER_IN_1 17
-#define FEEDER_IN_2 16
-#define FEEDER_IN_3 4
+#define FEEDER_IN_1 14
+#define FEEDER_IN_2 12
+#define FEEDER_IN_3 13
 #define FEEDER_IN_4 0
 #define FEEDER_MAX_TRIGERS 10
 

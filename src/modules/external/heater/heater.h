@@ -8,8 +8,8 @@
 #define SETTINGS_HEATER_KEY "heater"
 #define FIREBASE_HEATER_CONNECTED_KEY "/heater/connected"
 
-#define HEATER_PIN 12
-#define HEATER_SYNC_PIN 13
+#define HEATER_PIN 17
+#define HEATER_SYNC_PIN 16
 #define HEATER_OUTPUT_MIN 0
 #define HEATER_OUTPUT_MAX 100
 #define HEATER_KP 13

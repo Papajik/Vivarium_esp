@@ -5,15 +5,17 @@
 #define SETTINGS_PUMP_GOAL_KEY "pumpG"
 #define FIREBASE_IS_ON_STATE "/pump/isOn"
 
-WaterPump::WaterPump(int pin) : IModule(CONNECTED_KEY)
+#define WATER_PUMP_PIN (int)26
+
+
+WaterPump::WaterPump() : IModule(CONNECTED_KEY)
 {
-    _pin = pin;
 }
 
 void WaterPump::startPump()
 {
     _running = true;
-    digitalWrite(_pin, HIGH);
+    digitalWrite(WATER_PUMP_PIN, HIGH);
 
     firebaseService.uploadState(FIREBASE_IS_ON_STATE, true);
 
@@ -26,7 +28,7 @@ void WaterPump::startPump()
 void WaterPump::stopPump()
 {
     _running = false;
-    digitalWrite(_pin, LOW);
+    digitalWrite(WATER_PUMP_PIN, LOW);
     firebaseService.uploadState(FIREBASE_IS_ON_STATE, false);
     if (isBluetoothRunning())
     {

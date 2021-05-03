@@ -12,7 +12,7 @@
 class WaterPump : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    WaterPump(int);
+    WaterPump();
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
@@ -39,7 +39,6 @@ public:
     virtual bool isBModule() { return true; }
 
 private:
-    int _pin;
     int _levelGoal = 0;
     bool _running = false;
     bool _settingsChanged = false;

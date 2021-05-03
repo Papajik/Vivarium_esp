@@ -9,8 +9,8 @@
 #define MIN_INTERVAL_CONSTRAINT 1000
 #define MAX_INTERVAL_CONSTRAINT 60000
 
-#define CLK_PIN 32  
-#define DIO_PIN 33
+#define CLK_PIN 2  
+#define DIO_PIN 15
 
 class millisDelay;
 class RobotDyn4DigitDisplay;

@@ -1,7 +1,7 @@
 #ifndef _WATER_TEMP_H
 #define _WATER_TEMP_H
 
-#define WATER_TEMP_PIN 23
+#define WATER_TEMP_PIN 4
 #define WATER_TEMP_READ_DELAY 500
 #define WATER_TEMP_INVALID_VALUE -127
 

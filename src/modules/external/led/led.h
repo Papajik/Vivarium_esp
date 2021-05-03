@@ -10,7 +10,7 @@
 
 #define FIREBASE_LED_CONNECTED_KEY "/led/connected"
 
-#define LED_PIN 26
+#define LED_PIN 25
 #define LED_COUNT 20
 #define LED_CHANNEL 1
 #define SETTINGS_LED_KEY "led"
@@ -52,6 +52,7 @@ class LedModule : public IModule,
 {
 public:
     LedModule();
+    ~LedModule();
     void setColor(uint32_t color);
     uint32_t getColor();
 
@@ -75,10 +76,14 @@ public:
     void parseTriggerFromCharacteristics();
     void removeTriggerFromCharacteristic();
 
+    bool isStripConnected();
+
     virtual bool isFModule() { return true; }
     virtual bool isBModule() { return true; }
 
 private:
+    bool _stripConnected = false;
+
     NimBLECharacteristic *_currentColorCharacteristic;
 
     NimBLECharacteristic *_timeCharacteristic;

@@ -1,7 +1,7 @@
 #ifndef _FAN_H_
 #define _FAN_H_
 
-#define FAN_PIN 25
+#define FAN_PIN 27
 #define FAN_RESOLUTION 8
 #define FAN_FREQUENCY 40
 #define FAN_CHANNEL 0

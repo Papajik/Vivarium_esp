@@ -8,8 +8,8 @@
 #define SETTINGS_WL_KEY "wl"
 #define FIREBASE_WL_CONNECTED_KEY "/wl/connected"
 
-#define W_LEVEL_ECHO_PIN 27
-#define W_LEVEL_TRIG_PIN 14
+#define W_LEVEL_ECHO_PIN 33
+#define  W_LEVEL_TRIG_PIN 32
 
 #define WATER_LEVEL_LIMIT_CM 60
 
