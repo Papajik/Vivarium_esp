@@ -127,7 +127,7 @@ void Vivarium::onLoop()
         bleController.checkStop();
 
         bleController.checkBluetooth();
-        lcdDisplay.tryToRefreshScreen();
+        lcdDisplay.onLoop();
         clockDisplay.refreshDisplay();
         moduleControl.onLoop();
         wifiProvider.onLoop();

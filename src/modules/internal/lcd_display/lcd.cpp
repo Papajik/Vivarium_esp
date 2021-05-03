@@ -30,8 +30,22 @@ void LcdDisplay::showDefaultScreen()
     _lcd->print(lcdSettings.display_name);
 }
 
-void LcdDisplay::tryToRefreshScreen()
+void LcdDisplay::onLoop()
 {
+    if (!_pin_displayed && _to_display)
+    {
+        showPIN();
+    }
+
+    if (_pin_displayed && !_to_display)
+    {
+        _pin_displayed = false;
+        // to prevent multiple refresh screen.
+        // _delay->repeat() in refreshScreen() would be called multiple times to catch up with current time otherwise
+        _delay->restart();
+        refreshScreen();
+    }
+
     if (_delay->justFinished() && !_pin_displayed)
     {
         refreshScreen();
@@ -87,28 +101,29 @@ int LcdDisplay::addScreen(ScreenCallback callback, int position)
     return _screen_count;
 }
 
-void LcdDisplay::showPIN(int pin)
+void LcdDisplay::showPIN()
 {
-    printD("Showing PIN on display = ");
-    printlnD(pin);
+    printA("Showing PIN on display = ");
+    printlnA(_pin);
     _pin_displayed = true;
     _lcd->clear();
     _lcd->setCursor(0, 0);
     _lcd->print("PIN");
     _lcd->setCursor(0, 1);
-    _lcd->print(pin);
+    _lcd->print(_pin);
 }
 
 void LcdDisplay::hidePIN()
 {
-    printlnD("Hiding pin, interval = ");
-    _pin_displayed = false;
-    printlnD(lcdSettings.switch_screen_interval);
+    printlnD("Hiding pin");
 
-    // to prevent multiple refresh screen.
-    //_delay->repeat() in refreshScreen() would be called multiple times to catch up with current time otherwise
-    _delay->restart();
-    refreshScreen();
+    _to_display = false;
+}
+
+void LcdDisplay::setPINToShow(int pin)
+{
+    _pin = pin;
+    _to_display = true;
 }
 
 LcdDisplay lcdDisplay;

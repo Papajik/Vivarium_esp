@@ -27,20 +27,22 @@ public:
     LcdDisplay();
     void begin();
     void setRefreshInterval(int interval);
-    void tryToRefreshScreen();
+    void onLoop();
     int addScreen(ScreenCallback callback);
     int addScreen(ScreenCallback callback, int position);
-    void showPIN(int);
+    void showPIN();
     void hidePIN();
+    void setPINToShow(int);
 
 private:
     void refreshScreen();
     void nextScreen();
     void showDefaultScreen();
+
     std::vector<ScreenCallback> _screens;
     int _screen_count = 0;
     int _current_screen = 0;
-    bool _pin_displayed = false;
+    
 
     LiquidCrystal_I2C *_lcd;
     millisDelay *_delay;

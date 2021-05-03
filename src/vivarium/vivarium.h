@@ -25,7 +25,6 @@
 */
 #define DEVICE_ID "esp_test"
 
-//TODO enable RTTI to use dynamic_cast instead of three duplicit calls of addBleModule, addWifiModule, addModule
 
 class IModule;
 class IBluetooth;
