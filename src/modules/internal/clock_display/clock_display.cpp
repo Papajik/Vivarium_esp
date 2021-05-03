@@ -17,6 +17,7 @@ void ClockDisplay::begin()
     _clock->begin();
     _clock->setBrightness(clockSettings.brigthness);
     _delay->start(clockSettings.refresh_interval);
+    _clock->doubleDots(true);
 }
 
 void ClockDisplay::refreshDisplay()
@@ -29,17 +30,16 @@ void ClockDisplay::refreshDisplay()
 
             for (int i = 0; i < 4; i++)
             {
-                _clock->rawDigit(i, 0x01000000);
-                _clock->rawDigit(i, 0x01000000);
-                _clock->rawDigit(i, 0x01000000);
-                _clock->rawDigit(i, 0x01000000);
+               _clock->digit(i, 0);
             }
+            _clock->doubleDots(false);
 
             printlnE("ClockDisplay - Failed to obtain time");
             return;
         }
         printlnV(&timeinfo, "%A, %B %d %Y %H:%M:%S");
         _clock->time(timeinfo.tm_hour, timeinfo.tm_min);
+        _clock->doubleDots(true);
         if (clockSettings.refresh_interval != _delay->delay())
         {
             _delay->stop();
