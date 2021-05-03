@@ -2,6 +2,7 @@
 
 #include "../../modules/module.h"
 #include "../../analog/analog.h"
+#include "../../led/ledControl.h"
 
 ModuleControl moduleControl;
 
@@ -9,9 +10,6 @@ ModuleControl::ModuleControl()
 {
 
     _modules.reserve(8);
-    pinMode(MODULES_LATCH_PIN, OUTPUT);
-    pinMode(MODULES_CLOCK_PIN, OUTPUT);
-    pinMode(MODULES_DATA_PIN, OUTPUT);
 }
 
 int ModuleControl::addModule(IModule *module)
@@ -43,14 +41,10 @@ void ModuleControl::buttonPressed(int pressed)
         {
             m->setConnected(!m->isConnected(), true);
         }
-        updateLedStatus();
+        ledControl.updateLedStatus();
     }
 }
 
-void ModuleControl::start()
-{
-    updateLedStatus();
-}
 
 void ModuleControl::onLoop()
 {
@@ -60,34 +54,14 @@ void ModuleControl::onLoop()
     }
 }
 
-void ModuleControl::updateLedStatus(Mode mode)
+int ModuleControl::moduleCount()
 {
-    _ledByte = 0;
-    for (int i = 0; i < _modules.size(); i++)
-    {
-        if (!_modules[i]->isConnected())
-        {
-            bitSet(_ledByte, i);
-        }
-    }
+    return _modules.size();
+}
 
-    for (int i = _modules.size(); i < 8; i++)
-    {
-        bitSet(_ledByte, i);
-    }
-
-    // Invert bits if shift register mode is INPUT
-    if (mode == M_IN)
-    {
-        _ledByte = ~_ledByte;
-    }
-
-    printlnA("Updating LED status");
-    printlnA(_ledByte, 2);
-    digitalWrite(MODULES_LATCH_PIN, LOW);
-    shiftOut(MODULES_DATA_PIN, MODULES_CLOCK_PIN, MSBFIRST, _ledByte);
-    digitalWrite(MODULES_LATCH_PIN, HIGH);
-    printlnA("Updated");
+bool ModuleControl::isModuleConnected(int i)
+{
+    return _modules[i]->isConnected();
 }
 
 void ModuleControl::beforeShutdown()
@@ -97,12 +71,3 @@ void ModuleControl::beforeShutdown()
         m->beforeShutdown();
     }
 }
-
-// void ModuleControl::setBrightness(int brightness)
-// {
-//     if (brightness > MAX_BRIGHTNESS)
-//         brightness = MAX_BRIGHTNESS;
-//     if (brightness < MIN_BRIGHTNESS)
-//         brightness = MIN_BRIGHTNESS;
-//     ledcWrite(BRIGHTNESS_CHANNEL, brightness);
-// }

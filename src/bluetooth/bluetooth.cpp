@@ -84,7 +84,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         printlnA(passkey);
         if (bleController.bluetoothPINHandler != nullptr)
         {
-            bleController.bluetoothPINHandler->showPIN(passkey);
+            bleController.bluetoothPINHandler->setPINToShow(passkey);
         }
         return passkey;
     }
@@ -95,7 +95,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         printlnI(pass_key);
         if (bleController.bluetoothPINHandler != nullptr)
         {
-            bleController.bluetoothPINHandler->showPIN(pass_key);
+            bleController.bluetoothPINHandler->setPINToShow(pass_key);
         }
     }
 
@@ -308,6 +308,24 @@ void BLEController::stop()
     }
 }
 
+void BLEController::setStartInFuture()
+{
+    _toStart = true;
+}
+void BLEController::setStopInFuture()
+{
+    _toStop = true;
+}
+
+void BLEController::checkStop()
+{
+    if (_toStop)
+    {
+        stop();
+        _toStop = false;
+    }
+}
+
 void BLEController::restartAdvertising()
 {
     pServer->startAdvertising();
@@ -338,6 +356,14 @@ void BLEController::checkBluetooth()
         if (isDeviceConnecting())
         {
             onDeviceConnecting();
+        }
+    }
+    else
+    {
+        if (_toStart)
+        {
+            init();
+            _toStart = false;
         }
     }
 }

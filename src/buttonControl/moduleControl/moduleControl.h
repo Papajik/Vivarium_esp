@@ -15,16 +15,6 @@
 #define DEBOUNCE_INTERVAL 200
 #define M_BUTTONS_PIN 36
 
-//Led diodes
-#define MODULES_LATCH_PIN 18
-#define MODULES_CLOCK_PIN 5
-#define MODULES_DATA_PIN 15
-
-enum Mode
-{
-    M_OUT,
-    M_IN
-};
 
 class IModule;
 
@@ -46,14 +36,15 @@ public:
     void buttonPressed(int);
 
     void onLoop();
-    // void setBrightness(int brightness);
-    void updateLedStatus(Mode = M_IN);
+
+
+    int moduleCount();
+    bool isModuleConnected(int);
 
     void beforeShutdown();
 
 private:
     std::vector<IModule *> _modules;
-    byte _ledByte = 0b00000000;
 
     int last_pressed_button = MODULE_BUTTON_RELEASED;
     unsigned long last_pressed_time = 0;

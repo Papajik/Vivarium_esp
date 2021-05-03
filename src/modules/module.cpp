@@ -3,6 +3,7 @@
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include <HardwareSerial.h>
 #include "../buttonControl/moduleControl/moduleControl.h"
+#include "../led/ledControl.h"
 
 IModule::IModule(String connectionKey)
 {
@@ -22,7 +23,6 @@ bool IModule::isConnected()
 
 void IModule::setConnected(bool connected, bool fromButton)
 {
-    printlnA("Module - setConnected");
     printA("Module " + _connectionKey);
     printA(" - set connected: ");
     printlnA(connected ? "true" : "false");
@@ -39,7 +39,7 @@ void IModule::checkConnectionChange()
     {
 
         _lastConnected = _connected;
-        moduleControl.updateLedStatus();
+        ledControl.updateLedStatus();
         onConnectionChange();
     }
 }

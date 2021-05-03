@@ -8,4 +8,6 @@ public:
     void start();
 };
 
+extern ButtonControl buttonControl;
+
 #endif

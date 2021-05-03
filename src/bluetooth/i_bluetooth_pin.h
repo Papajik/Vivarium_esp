@@ -5,7 +5,13 @@ class IBluetoothPIN
 {
 public:
     virtual void hidePIN() = 0;
-    virtual void showPIN(int pin) = 0;
+    virtual void showPIN() = 0;
+    virtual void setPINToShow(int pin) = 0;
+
+protected:
+    int _pin = 0;
+    bool _to_display = false;
+    bool _pin_displayed = false;
 };
 
 #endif

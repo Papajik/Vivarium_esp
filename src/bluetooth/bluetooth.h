@@ -10,7 +10,6 @@
 * 
 */
 
-
 #ifndef _BLUETOOTH_H
 #define _BLUETOOTH_H
 
@@ -53,7 +52,6 @@
 */
 #define CHARACTERISTIC_BLE_NAME "56600001-BE5D-4370-877B-C4A2ACE639E8"
 
-
 /*!
 * \def CREDENTIALS_ID
 * Description
@@ -73,7 +71,6 @@
 class IBluetooth;
 class NimBLEServer;
 
-
 /**
  * @brief Bluetooth Controller
  * 
@@ -88,7 +85,6 @@ public:
   It is recomended to add PINHandler on active security.
   */
   void init();
-
 
   /*
   @brief Add interface pointer which is used to handle displaying bluetooth PIN during connection
@@ -120,7 +116,14 @@ public:
 
   void stop();
 
+  void setStartInFuture();
+  void setStopInFuture();
+  void checkStop();
+
 private:
+  bool _toStart = false;
+  bool _toStop = false;
+
   bool _running = false;
   bool _initialized = false;
   /*
@@ -139,7 +142,6 @@ private:
   std::vector<IBluetooth *> _modules;
 
   NimBLEServer *pServer = nullptr;
-
 
   uint16_t conn_handle = 0;
 

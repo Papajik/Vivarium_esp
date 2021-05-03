@@ -16,6 +16,8 @@
 #include "../modules/internal/lcd_display/aqua_screens.h"
 #include "../modules/internal/clock_display/clock_display.h"
 #include "../buttonControl/moduleControl/moduleControl.h"
+#include "../buttonControl/buttonControl.h"
+#include "../led/ledControl.h"
 #include "../modules/module.h"
 #include "../firebase/firebase.h"
 #include "../modules/external/water_temperature/water_temp.h"
@@ -48,6 +50,9 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
     bleController.addModule(&wifiProvider);
     bleController.addModule(&auth);
     bleController.addModule(&firebaseService);
+
+    firebaseService.addModule(&outletController);
+
     outletController.begin();
     wifiProvider.setupWiFi();
     lcdDisplay.begin();
@@ -71,12 +76,15 @@ void Vivarium::finalize()
         }
         else
         {
-            printlnA("Init bluetooth")
-                bleController.init();
+            printlnA("Init bluetooth");
+            bleController.init();
         }
 
         printHeapInfo();
-        moduleControl.start();
+        ledControl.updateLedStatus();
+        // moduleControl.start();
+        buttonControl.start();
+
         expander.begin();
     }
     printMemory();
@@ -90,15 +98,6 @@ LcdDisplay *Vivarium::getDisplay()
 void Vivarium::addModule(IModule *m)
 {
     moduleControl.addModule(m);
-    // if (m->isBModule())
-    // {
-    //     addBLEModule((IBluetooth*)m);
-    // }
-
-    // if (m->isFModule())
-    // {
-    //     addFirebaseModule((IFirebaseModule*)m);
-    // }
 }
 
 void Vivarium::addBLEModule(IBluetooth *m)
@@ -115,29 +114,17 @@ void Vivarium::onLoop()
 {
     if (!otaService.isFirmwareUpdating())
     {
-        if (millis() - last > 5000)
-        {
-            last = millis();
-            // Serial.print("CurrentTime: ");
-            // time_t t = time(nullptr);
-            // tm *tmTime = localtime(&t);
-            // Serial.print(tmTime->tm_hour);
-            // Serial.print(":");
-            // Serial.print(tmTime->tm_min);
-            // Serial.print(":");
-            // Serial.print(tmTime->tm_sec);
-            // Serial.print(" ( ");
-            // Serial.print(t);
-            // Serial.println(" )");
-            // printMemory();
-            // printlnA("uploading test data");
-            // firebaseService.uploadCustomData("testOfSSL/", "/", (float)millis());
-        }
         if (firebaseService.checkFirebase() != 0)
         {
             moduleControl.beforeShutdown();
             ESP.restart();
         }
+        //Check if Firebase should stop
+        firebaseService.checkStop();
+        outletController.onLoop();
+
+        // CHeck if Bluetooth should stop
+        bleController.checkStop();
 
         bleController.checkBluetooth();
         lcdDisplay.tryToRefreshScreen();

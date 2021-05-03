@@ -11,11 +11,14 @@ class BluetoothControl
 {
 public:
     void buttonPressed(int);
+    bool isBluetoothOn();
 
 private:
     unsigned long _lastPressedTime;
     unsigned long _lastPressedBLETime;
     int _lastPressedButton;
+
+    bool bluetoothOn;
 
 };
 extern BluetoothControl bluetoothControl;
