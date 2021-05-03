@@ -10,9 +10,9 @@ class millisDelay;
 
 // Firmware & calibration settings
 #define PH_READING_COUNT 10
-#define PH_CALIBRATION 23.57
+#define PH_CALIBRATION 21.808
 #define PH_VALUES_CUT 2
-#define PH_VOLTAGE_CHANGE -5.70
+#define PH_VOLTAGE_CHANGE -5.81633
 #define PH_PIN 39
 #define PH_TIMER_ONCE_DELAY 15
 #define PH_TIMER_CONTINUOUS_DELAY 20
