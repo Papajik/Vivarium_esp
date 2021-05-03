@@ -32,10 +32,10 @@ void MessagingService::addToken(String s)
 
 void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String moduleTag)
 {
-    printlnA("SendFCM");
-    printlnA(title);
-    printlnA(body);
-    printlnV((int)_tokens.size());
+    printlnI("SendFCM");
+    printlnI(title);
+    printlnI(body);
+    printlnD((int)_tokens.size());
 
     // Check rules for value notification
 
@@ -84,15 +84,16 @@ void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String 
 
     if (type == FCM_TYPE::CONNECTION && !_notifyOnConnectionChange)
     {
-        printlnA("FCM connection change prohibited");
+        printlnI("FCM connection change prohibited");
         return;
     }
 
-    printlnA("Proceed to send");
+    printlnI("Proceed to send");
 
     for (String token : _tokens)
     {
         printlnA("Proceed to send a token");
         firebaseService.sendFCM(title, body, token, true);
     }
+    printlnI("All sent");
 }

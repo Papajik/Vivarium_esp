@@ -1,4 +1,5 @@
 #include "firebase.h"
+
 #include "service_account.h"
 #include "cert.h"
 #include <HardwareSerial.h>
@@ -30,6 +31,25 @@ FirebaseService::FirebaseService()
     _firebaseMessagingTokens.reserve(5);
     bdoMutex = xSemaphoreCreateMutex();
     xSemaphoreGive(bdoMutex);
+}
+
+void FirebaseService::checkStop()
+{
+    if (_toStop)
+    {
+        _toStop = false;
+        stopFirebase();
+    }
+}
+
+void FirebaseService::setStartInFuture()
+{
+    _toStart = true;
+}
+
+void FirebaseService::setStopInFuture()
+{
+    _toStop = true;
 }
 
 void FirebaseService::setupFirebase()
@@ -80,7 +100,7 @@ void FirebaseService::checkActiveStatus()
     {
         printlnA("Active status recieved");
         printA("Active = ");
-        printlnA(firebaseBdo->boolData()? "true":"false");
+        printlnA(firebaseBdo->boolData() ? "true" : "false");
         printlnA(firebaseBdo->dataPath());
         if (!firebaseBdo->boolData())
         {
@@ -100,8 +120,8 @@ void FirebaseService::stopStream()
 {
     printlnA("STOPPING STREAM");
     printMemory();
-    Firebase.RTDB.endStream(firebaseStreamBdo);
     firebaseStreamBdo->clear();
+    Firebase.RTDB.endStream(firebaseStreamBdo);
 
     printMemory();
     printlnV("STREAM STOPPED");
@@ -128,8 +148,15 @@ void FirebaseService::startStream()
 
 void FirebaseService::onLoop()
 {
+    if (_toStart && wifiProvider.isConnected())
+    {
+        _toStart = false;
+        startFirebase();
+    }
+
     if (_running)
     {
+
         // Clear bdo object to clear heap memory for SSL hanshake
         if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
         {
@@ -281,11 +308,11 @@ void FirebaseService::jsonCallback(FirebaseJson *json, String path)
 }
 void FirebaseService::valueCallback(MultiPathStream *data)
 {
-    printlnA("Firebase valueCallback");
+    printlnI("Firebase valueCallback");
     printMemory();
-    printlnA("FB Parse value");
-    printlnA("Data path = " + data->dataPath);
-    printlnA("Data type = " + data->type);
+    printlnI("FB Parse value");
+    printlnI("Data path = " + data->dataPath);
+    printlnI("Data type = " + data->type);
 
     String dataPath = data->dataPath.substring(1);
 
@@ -293,26 +320,26 @@ void FirebaseService::valueCallback(MultiPathStream *data)
     int secondIndex = dataPath.indexOf("/", index + 1);
 
     String settingsKey = dataPath.substring(index + 1, secondIndex);
-    printlnA("key = " + settingsKey);
-    printA("Modules ");
-    printlnA((int)_modules.size());
+    printlnI("key = " + settingsKey);
+    printI("Modules ");
+    printlnI((int)_modules.size());
 
     for (IFirebaseModule *module : _modules)
     {
         String s = module->getSettingKey();
 
-        printA("Trying module");
-        printlnA(s);
+        printI("Trying module");
+        printlnI(s);
 
         if (s == settingsKey)
         {
-            printlnA("Settings key equals");
+            printlnI("Settings key equals");
             module->parseValue(data->dataPath, data->value);
             printMemory();
         }
         else
         {
-            printlnA("settings key is not equal");
+            printlnI("settings key is not equal");
         }
     }
 }
@@ -322,14 +349,14 @@ void FirebaseService::uploadState(String key, bool value)
     if (_running)
     {
 
-        printlnA("uploading state");
+        printlnI("uploading state");
 
         String path = String("devices/") + auth.getDeviceId() + String("/state") + key;
         checkSSLConnected();
         lockSemaphore("upload state");
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
         {
-            printlnA("State uploaded");
+            printlnD("State uploaded");
             _lastValidUpdate = millis();
         }
         else
@@ -389,8 +416,9 @@ void FirebaseService::stopFirebase()
 
     printlnA("Stopping firebase");
     setRunning(false);
-    stopStream();
     lockSemaphore("stopFirebase");
+    stopStream();
+
     firebaseBdo->clear();
     unlockSemaphore();
 
@@ -550,7 +578,7 @@ void streamCallback(MultiPathStream data)
     }
 
     // Check Bluetooth name
-     data.get(firebaseService.childPaths[ChildPath::BLE_NAME]);
+    data.get(firebaseService.childPaths[ChildPath::BLE_NAME]);
     if (data.type == "string" && (data.value != ""))
     {
         bleController.setBleName(data.value);
@@ -559,16 +587,15 @@ void streamCallback(MultiPathStream data)
     for (int i = 0; i < 2; i++)
     {
         data.get(firebaseService.childPaths[i]);
+        printlnA(data.dataPath);
         if (data.type == "json")
         {
-            printlnA("dataType = json");
             FirebaseJson json;
             json.setJsonData(data.value);
             firebaseService.jsonCallback(&json, data.dataPath);
         }
         else if (data.type != "")
         {
-            printlnA("DataType != json");
             firebaseService.valueCallback(&data);
         }
     }
@@ -683,16 +710,16 @@ void FirebaseService::sendFCM(String title, String body, String token, bool time
 
 void FirebaseService::lockSemaphore(String owner)
 {
-    printA("Lock semaphore by ");
+    printI("Lock semaphore by ");
     lockOwner = owner;
-    printlnA(owner);
+    printlnI(owner);
     xSemaphoreTake(bdoMutex, portMAX_DELAY);
 }
 void FirebaseService::unlockSemaphore()
 {
     xSemaphoreGive(bdoMutex);
-    printA("Unlock semaphore from ");
-    printlnA(lockOwner);
+    printI("Unlock semaphore from ");
+    printlnI(lockOwner);
 }
 
 void FirebaseService::getFCMSettings()

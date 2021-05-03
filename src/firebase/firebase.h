@@ -52,6 +52,11 @@ public:
     void stopFirebase();
     void startFirebase();
 
+    void checkStop();
+
+    void setStartInFuture();
+    void setStopInFuture();
+
     bool isRunning();
     void setRunning(bool);
     void uploadSensorData();
@@ -64,6 +69,8 @@ public:
     void checkSSLConnected();
 
     void onLoop();
+
+
 
     // Messaging
     void refreshFCMTokens();
@@ -92,6 +99,9 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
+    bool _toStart = false;
+    bool _toStop = false;
+
     unsigned long _lastValidUpdate = 0;
 
     unsigned long _lastTokenRefresh = 0;
