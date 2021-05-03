@@ -1,9 +1,12 @@
 #include "outletController.h"
 #include "../../../expander/expander.h"
+#include "../../../memory/memory_provider.h"
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
 OutletController outletController;
+
+#define OUTLET_KEY "o"
 
 OutletController::OutletController()
 {
@@ -11,8 +14,10 @@ OutletController::OutletController()
 
 void OutletController::begin()
 {
-    expander.pinMode(P0, OUTPUT);
-    expander.pinMode(P1, OUTPUT);
+    expander.pinMode(P7, OUTPUT);
+    expander.pinMode(P6, OUTPUT);
+    expander.pinMode(P5, OUTPUT);
+    expander.pinMode(P4, OUTPUT);
 
     if (expander.begin())
     {
@@ -22,21 +27,48 @@ void OutletController::begin()
     {
         printlnA("Expander not OK");
     }
+
+    for (int i = 0; i < OUTLET_COUNT; i++)
+    {
+        setOutlet(i, memoryProvider.loadBool(OUTLET_KEY + String(i), false));
+    }
+    onLoop();
 }
 
 void OutletController::setOutlet(int socket, bool on)
 {
-    printlnV("Outlet controll");
-    printV("Socket ");
-    printV(socket);
-    printV(" is ");
-    printlnV(on ? "ON" : "OFF");
+    printlnI("Outlet controll");
+    printI("Socket ");
+    printI(socket);
+    printI(" is ");
+    printlnI(on ? "ON" : "OFF");
+    printI("Outlet pin: ");
+    printlnI(5 - socket);
+    printI("LED pin: ");
+    printlnI(7 - socket);
 
-    _sockets[socket] = on;
-    expander.digitalWrite(socket, on ? 1 : 0);
+    _outlets[socket] = on;
+    _outletChanged[socket] = true;
+    memoryProvider.saveBool(OUTLET_KEY + String(socket), on);
 }
 
-bool OutletController::isSocketOn(int socket)
+bool OutletController::isOutletOn(int socket)
 {
-    return _sockets[socket];
+    return _outlets[socket];
+}
+
+void OutletController::onLoop()
+{
+    for (int i = 0; i < OUTLET_COUNT; i++)
+    {
+        if (_outletChanged[i])
+        {
+            _outletChanged[i] = false;
+            // Outlet
+            expander.digitalWrite(5 - i, _outlets[i] ? 1 : 0);
+
+            // LED
+            expander.digitalWrite(7 - i, _outlets[i] ? 0 : 1);
+        }
+    }
 }

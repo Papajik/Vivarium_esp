@@ -1,19 +1,33 @@
 #ifndef _OUTLET_CONTROLER_H_
 #define _OUTLET_CONTROLER_H_
 
-#define O1 0
-#define O2 1
-class OutletController
+#include "../../../firebase/i_FirebaseModule.h"
+
+#define OUTLET_COUNT 2
+
+class OutletController : public IFirebaseModule
 {
 public:
     OutletController();
     void begin();
 
     void setOutlet(int, bool);
-    bool isSocketOn(int);
+    bool isOutletOn(int);
+
+    void onLoop();
+
+
+    /// Firebase
+    virtual void parseJson(FirebaseJson *, String);
+    virtual String getSettingKey();
+    virtual void parseValue(String key, String value);
+    virtual void updateSensorData(FirebaseJson *);
+
+
 
 private:
-    bool _sockets[2];
+    bool _outlets[OUTLET_COUNT];
+    bool _outletChanged[OUTLET_COUNT];
 };
 
 extern OutletController outletController;
