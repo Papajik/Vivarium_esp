@@ -22,6 +22,7 @@ class MemoryProvider
 public:
     MemoryProvider();
     void begin();
+    void end();
 
     // Extern modules settings
     void saveStruct(String key, const void *, size_t);

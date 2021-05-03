@@ -16,17 +16,17 @@ MemoryProvider::MemoryProvider(){
 
 void MemoryProvider::begin()
 {
-    printlnA("Initializing memory");
+    // printlnA("Initializing memory");
     _preferences = new Preferences();
     _preferences->begin("vivarium", false);
     nvs_stats_t nvs_stats;
     nvs_get_stats(NULL, &nvs_stats);
-    printA("Count: UsedEntries = ");
-    printlnA(nvs_stats.used_entries);
-    printA("FreeEntries = ");
-    printlnA(nvs_stats.free_entries);
-    printA("AllEntries = ");
-    printlnA(nvs_stats.total_entries);
+    // printA("Count: UsedEntries = ");
+    // printlnA(nvs_stats.used_entries);
+    // printA("FreeEntries = ");
+    // printlnA(nvs_stats.free_entries);
+    // printA("AllEntries = ");
+    // printlnA(nvs_stats.total_entries);
     if (_preferences->isKey(NUMBER_OF_WRITES_KEY))
     {
         writeCount = _preferences->getUInt(NUMBER_OF_WRITES_KEY, 0);
@@ -35,6 +35,10 @@ void MemoryProvider::begin()
     {
         writeCount = 0;
     }
+}
+
+void MemoryProvider::end(){
+    _preferences->end();
 }
 
 bool MemoryProvider::loadStruct(String key, void *value, size_t len)
