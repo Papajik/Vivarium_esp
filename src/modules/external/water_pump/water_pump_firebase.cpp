@@ -6,7 +6,7 @@
 
 void WaterPump::parseJson(FirebaseJson *data, String path)
 {
-    printlnA("Humidifier - parseJson");
+    printlnA("water temp - parseJson");
 
     printlnV("Path: " + path);
     FirebaseJsonData jsonData;
@@ -22,7 +22,7 @@ void WaterPump::parseJson(FirebaseJson *data, String path)
     }
 }
 
-String WaterPump::getSettingKey() {printlnA("PUMP - settings key"); return SETTINGS_PUMP_KEY; }
+String WaterPump::getSettingKey() {return SETTINGS_PUMP_KEY; }
 
 void WaterPump::parseValue(String key, String value)
 {

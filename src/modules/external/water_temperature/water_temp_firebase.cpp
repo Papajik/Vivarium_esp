@@ -35,7 +35,6 @@ void WaterTempModule::parseJson(FirebaseJson *data, String path)
 }
 String WaterTempModule::getSettingKey()
 {
-    printlnA("WT - settings key");
     return SETTINGS_WATER_TEMP_KEY;
 }
 void WaterTempModule::parseValue(String key, String value)

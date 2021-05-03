@@ -43,7 +43,6 @@ void DhtModule::parseJson(FirebaseJson *data, String path)
 
 String DhtModule::getSettingKey()
 {
-    printlnA("DHT - settings key");
     return SETTINGS_DHT_KEY;
 }
 void DhtModule::parseValue(String key, String value)

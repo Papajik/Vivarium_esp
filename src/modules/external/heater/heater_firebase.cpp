@@ -41,7 +41,7 @@ void Heater::parseJson(FirebaseJson *json, String path)
     }
 }
 
-String Heater::getSettingKey() {printlnA("HEATER - settings key"); return SETTINGS_HEATER_KEY; }
+String Heater::getSettingKey() {return SETTINGS_HEATER_KEY; }
 void Heater::parseValue(String key, String value)
 {
     printlnA("Heater parse value");

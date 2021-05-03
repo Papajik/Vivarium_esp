@@ -36,10 +36,8 @@ WaterTempModule::~WaterTempModule()
 
 void WaterTempModule::onConnectionChange()
 {
-    printlnA("Temp Module switch");
     if (isConnected())
     {
-        printlnA("TEMP CONNECTED");
         startReadings();
         readTemperature();
         stateStorage.setValue(STATE_WATER_TEMP_CONNECTED, true);
@@ -47,7 +45,6 @@ void WaterTempModule::onConnectionChange()
     else
     {
         stateStorage.setValue(STATE_WATER_TEMP_CONNECTED, false);
-        printlnA("TEMP DISCONNECTED");
         stopReading();
     }
     if (_sourceIsButton)

@@ -59,7 +59,6 @@ void PhModule::parseJson(FirebaseJson *data, String path)
 
 String PhModule::getSettingKey()
 {
-    printlnA("PH - settings key");
     return SETTINGS_PH_KEY;
 }
 

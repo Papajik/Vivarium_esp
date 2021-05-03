@@ -101,8 +101,18 @@ void testBluetooth(int v)
    
 }
 
+
+
+void restart()
+{
+   ESP.restart();
+   
+}
+
+
 void setupDebug()
 {
+    #ifndef  DEBUG_DISABLED
     printlnA("Setup debug");
 
     if (debugAddFunctionVoid("printCurrentMemory", &printCurrentMemory) >= 0)
@@ -154,4 +164,11 @@ void setupDebug()
     {
         debugSetLastFunctionDescription("testBluetooth");
     }
+
+    if (debugAddFunctionVoid("Restart", &restart) >= 0)
+    {
+        debugSetLastFunctionDescription("Restart ESP");
+    }
+
+    #endif
 }

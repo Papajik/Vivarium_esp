@@ -23,7 +23,7 @@ void Humidifier::parseJson(FirebaseJson *data, String path)
     }
 }
 
-String Humidifier::getSettingKey() {printlnA("HUMIDIFIER - settings key"); return SETTINGS_HUMIDIFIER_KEY; }
+String Humidifier::getSettingKey() { return SETTINGS_HUMIDIFIER_KEY; }
 
 void Humidifier::parseValue(String key, String value)
 {

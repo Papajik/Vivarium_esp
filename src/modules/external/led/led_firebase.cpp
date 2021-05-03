@@ -54,7 +54,7 @@ void LedModule::parseJson(FirebaseJson *data, String path)
     //   printTriggers();
 }
 
-String LedModule::getSettingKey() {printlnA("LED - settings key"); return SETTINGS_LED_KEY; }
+String LedModule::getSettingKey() {return SETTINGS_LED_KEY; }
 
 void LedModule::parseValue(String key, String value)
 {

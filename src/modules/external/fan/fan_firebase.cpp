@@ -36,11 +36,6 @@ void FanController::parseJson(FirebaseJson *data, String path)
 
 void FanController::parseValue(String key, String value)
 {
-    printlnA("Fan parse value");
-    printD("key = ");
-    printlnD(key);
-    printD("value = ");
-    printlnD(value);
 
     if (key == String(PREFIX_SETTINGS) + KEY_START_AT)
     {
@@ -65,7 +60,6 @@ void FanController::parseValue(String key, String value)
 
 void FanController::updateSensorData(FirebaseJson *json)
 {
-   // printlnD("update fan data");
     if (isConnected())
     {
         printlnD("Current speed = ");

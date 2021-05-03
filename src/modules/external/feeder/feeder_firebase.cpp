@@ -4,7 +4,7 @@
 #define KEY_TRIGGERS "/feeder/triggers"
 #define KEY_MODE "/feeder/mode"
 
-String Feeder::getSettingKey() {printlnA("FEEDER - settings key"); return SETTINGS_FEEDER_KEY; }
+String Feeder::getSettingKey() {return SETTINGS_FEEDER_KEY; }
 
 void Feeder::updateSensorData(FirebaseJson *)
 {
