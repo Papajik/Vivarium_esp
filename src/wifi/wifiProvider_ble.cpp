@@ -7,7 +7,6 @@
 
 #include <NimBLEDevice.h>
 #include "../memory/memory_provider.h"
-#include "../auth/auth.h"
 #include "../firebase/firebase.h"
 
 #include <WString.h>
@@ -20,7 +19,7 @@ private:
     {
         printI("New passphrase: ");
         printlnI(pCharacteristic->getValue().c_str());
-        wifiProvider.setPassphrase(pCharacteristic->getValue().c_str());
+        wifiProvider->setPassphrase(pCharacteristic->getValue().c_str());
     }
 };
 
@@ -33,7 +32,7 @@ private:
     {
         printI("New ssid: ");
         printlnI(pCharacteristic->getValue().c_str());
-        wifiProvider.setSsid(pCharacteristic->getValue().c_str());
+        wifiProvider->setSsid(pCharacteristic->getValue().c_str());
     }
 };
 

@@ -8,17 +8,23 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
+class MemoryProvider;
+
 class OtaService
 {
 public:
-    OtaService();
+    OtaService(MemoryProvider *);
     void begin();
-    void parseNewFirmwareVersion(String);
-    void startUpdate();
+    bool isNewVersion(String);
+    bool prepareAndStartUpdate(String, String);
     int onLoop();
     bool isFirmwareUpdating();
 
 private:
+    void startUpdate();
+
+    MemoryProvider *_memoryProvider;
+
     unsigned long _lastWrite;
     String _firmwareVersion;
     String _newFirmwareVersion;
@@ -26,6 +32,6 @@ private:
     bool _firmwareUpdateRunning = false;
 };
 
-extern OtaService otaService;
+extern OtaService *otaService;
 
 #endif

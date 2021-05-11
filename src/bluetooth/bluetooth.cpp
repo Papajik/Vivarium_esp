@@ -8,11 +8,15 @@
 #include "esp32-hal-bt.h"
 
 #include "../debug/memory.h"
+
+#include "../memory/memory_provider.h"
 #include "../wifi/wifiProvider.h"
+
+#include "../led/ledControl.h"
 
 #define CREDENTIAL_HANDLES 3
 
-BLEController bleController;
+BLEController *bleController;
 
 //****************
 
@@ -30,11 +34,11 @@ private:
         printlnI(name);
         if (strcmp(name, "") == 0)
         {
-            bleController.setBleName(name);
+            bleController->setBleName(name);
         }
         else
         {
-            bleController.setBleName(DEFAULT_BLE_NAME);
+            bleController->setBleName(DEFAULT_BLE_NAME);
         }
     }
 };
@@ -51,15 +55,15 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
     void onConnect(BLEServer *pServer, ble_gap_conn_desc *desc)
     {
 
-        bleController.setConnectionHandle(desc->conn_handle);
+        bleController->setConnectionHandle(desc->conn_handle);
         printlnD("OnConnect");
-        bleController.setDeviceConnected(true);
+        bleController->setDeviceConnected(true);
     };
 
     void onDisconnect(BLEServer *pServer)
     {
         printlnD("onDisconnect");
-        bleController.setDeviceConnected(false);
+        bleController->setDeviceConnected(false);
     }
 
     //*****************
@@ -82,9 +86,9 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         int passkey = random(100000, 999999);
         printA("passkey = ");
         printlnA(passkey);
-        if (bleController.bluetoothPINHandler != nullptr)
+        if (bleController->bluetoothPINHandler != nullptr)
         {
-            bleController.bluetoothPINHandler->setPINToShow(passkey);
+            bleController->bluetoothPINHandler->setPINToShow(passkey);
         }
         return passkey;
     }
@@ -93,9 +97,9 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
     {
         printI("onPassKeyNotify: ");
         printlnI(pass_key);
-        if (bleController.bluetoothPINHandler != nullptr)
+        if (bleController->bluetoothPINHandler != nullptr)
         {
-            bleController.bluetoothPINHandler->setPINToShow(pass_key);
+            bleController->bluetoothPINHandler->setPINToShow(pass_key);
         }
     }
 
@@ -117,9 +121,9 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         else
         {
             printlnI("Starting BLE work!");
-            if (bleController.bluetoothPINHandler != nullptr)
+            if (bleController->bluetoothPINHandler != nullptr)
             {
-                bleController.bluetoothPINHandler->hidePIN();
+                bleController->bluetoothPINHandler->hidePIN();
             }
         }
     }
@@ -138,13 +142,14 @@ BLEController::BLEController()
 
 void BLEController::init()
 {
+
     // Create the BLE Device
     printlnA("");
     printlnA("Setup Bluetooth device");
     printlnA("");
     printlnA("\tSetting up BLE server");
 
-    _bluetoothName = memoryProvider.loadString(BLE_NAME_KEY, DEFAULT_BLE_NAME);
+    _bluetoothName = _memoryProvider->loadString(BLE_NAME_KEY, DEFAULT_BLE_NAME);
 
     NimBLEDevice::init(_bluetoothName.c_str());
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -182,7 +187,6 @@ void BLEController::setupModuleServices()
     int settings_handles = 0;
     int state_handles = 0;
     int credential_handles = CREDENTIAL_HANDLES;
-
     for (IBluetooth *module : _modules)
     {
         int tmp_settings = 0, tmp_credentials = 0, tmp_state = 0;
@@ -246,12 +250,14 @@ void BLEController::onDeviceConnecting()
     _oldDeviceConnected = _deviceConnected;
 }
 
+//TODO remove wifiProvider dependency
+
 void BLEController::onDeviceDisconnecting()
 {
     _oldDeviceConnected = _deviceConnected;
 
     /// Turn off bluetooth is wifi has credentials
-    if (wifiProvider.hasCredentials())
+    if (wifiProvider->hasCredentials())
     {
         printlnA("Wifi provider has credentials");
         stop();
@@ -275,9 +281,9 @@ void BLEController::onDeviceDisconnecting()
     }
 
     // Check if wifi is running. If not and bluetooth is turned off, we can turn it on again
-    if (!wifiProvider.isConnected() && !_running)
+    if (!wifiProvider->isConnected() && !_running)
     {
-        bleController.init();
+        init();
     }
 }
 
@@ -323,6 +329,7 @@ void BLEController::checkStop()
     {
         stop();
         _toStop = false;
+        _ledControl->updateLedStatus(BLUETOOTH_BUTTON, false);
     }
 }
 
@@ -364,6 +371,7 @@ void BLEController::checkBluetooth()
         {
             init();
             _toStart = false;
+            _ledControl->updateLedStatus(BLUETOOTH_BUTTON, true);
         }
     }
 }
@@ -383,7 +391,7 @@ void BLEController::setBleName(String s)
 
     if (_bluetoothName != s)
     {
-        memoryProvider.saveString(BLE_NAME_KEY, _bluetoothName);
+        _memoryProvider->saveString(BLE_NAME_KEY, _bluetoothName);
         _nameChanged = true;
         _bluetoothName = s;
     }

@@ -7,16 +7,15 @@
 #define FIREBASE_CD_LEVEL "/sensorData/wl/level"
 #define FCM_KEY "Water Level"
 
-WaterLevel::WaterLevel() : IModule(CONNECTED_KEY)
+#define W_LEVEL_REPEAT_AFTER 2000
+
+WaterLevel::WaterLevel(int position, int echo, int trig) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Water level created");
     _delay = new millisDelay();
-    _sonar = new NewPing(W_LEVEL_TRIG_PIN, W_LEVEL_ECHO_PIN);
+    _sonar = new NewPing(trig, echo);
     _delay->start(W_LEVEL_REPEAT_AFTER);
-    if (!loadSettings())
-    {
-        _settings = {0, 0, 0};
-    }
+    _settings = {0, 0, 0};
 }
 void WaterLevel::setMaxLevel(int l)
 {
@@ -103,26 +102,26 @@ void WaterLevel::setLevel(int level)
             _waterLevelCharacteristic->setValue(_waterLevel);
             _waterLevelCharacteristic->notify();
         }
-        firebaseService.uploadCustomData("devices/", FIREBASE_CD_LEVEL, _waterLevel);
+        firebaseService->uploadCustomData("devices/", FIREBASE_CD_LEVEL, _waterLevel);
     }
 }
 
 void WaterLevel::saveSettings()
 {
-    memoryProvider.saveStruct(SETTINGS_WL_KEY, &_settings, sizeof(WaterLevelSettings));
+    _memoryProvider->saveStruct(SETTINGS_WL_KEY, &_settings, sizeof(WaterLevelSettings));
     _settingsChanged = false;
 }
 
 bool WaterLevel::loadSettings()
 {
-    return memoryProvider.loadStruct(SETTINGS_WL_KEY, &_settings, sizeof(WaterLevelSettings));
+    return _memoryProvider->loadStruct(SETTINGS_WL_KEY, &_settings, sizeof(WaterLevelSettings));
 }
 
 void WaterLevel::onConnectionChange()
 {
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_WL_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_WL_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
     stateStorage.setValue(STATE_WATER_LEVEL_CONNECTED, isConnected());
@@ -131,7 +130,7 @@ void WaterLevel::onConnectionChange()
 
     if (isBluetoothRunning())
     {
-          std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -141,11 +140,11 @@ void WaterLevel::checkBoundaries()
 {
     if (_waterLevel > _settings.maxLevel)
     {
-        messagingService.sendFCM(FCM_KEY, "Water level is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        messagingService->sendFCM(FCM_KEY, "Water level is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 
     if (_waterLevel < _settings.minLevel)
     {
-        messagingService.sendFCM(FCM_KEY, "Water level is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        messagingService->sendFCM(FCM_KEY, "Water level is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }

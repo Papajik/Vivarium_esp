@@ -19,12 +19,14 @@
 
 #define DHT_FCM_DELAY 30 * 60 * 1000 //30 minutes
 
+#define DHT_PIN 18
+
 class DHT;
 
 class DhtModule : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    DhtModule(int);
+    DhtModule(int, int pin = DHT_PIN);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
@@ -60,9 +62,7 @@ public:
     float getMinTemp();
     NimBLECharacteristic *_humidityCharacteristic;
 
-    virtual bool isFModule(){return true;}
-    virtual bool isBModule(){return true;}
-private:    
+private:
     float _maxTemp;
     float _minTemp;
     float _minHum;
@@ -77,7 +77,6 @@ private:
     float _temp = DHT_INVALID_VALUE;
     float _humidity = DHT_INVALID_VALUE;
     NimBLECharacteristic *_tempCharacteristic;
-
 
     void checkBounds();
 

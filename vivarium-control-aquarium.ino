@@ -7,13 +7,7 @@
 * \remarks None
 */
 
-// 5.  wifi - jádro zůstává beze změny, mělo by fungovat bez změny pro aqua/terra
-// 6. upload data - vlastní h soubor pro obě varianty, v nich jen metoda, která bude vracet json.
-// 7. wifiProvider jen zavolá getDataCallback, který v hlavním .ino souboru dostane
-// IModule musí implementovat nějakou formu ukládání dat do nvs - nebude se měnit tak často
-
-// TODO - udělat interface pro auth/bluetooth/memory uzel. Udělat volnou vazbu mezi těmito třídami.
-// Možná dokonce odstranit auth úplně
+// #define DEBUG_DISABLED true
 
 //#define DEBUG_DISABLED true
 //#define DEBUG_INITIAL_LEVEL DEBUG_LEVEL_VERBOSE
@@ -35,9 +29,12 @@
 #include "src/modules/external/feeder/feeder.h"
 #include "src/modules/external/water_level/water_level.h"
 #include "src/modules/external/heater/heater.h"
+#include "src/modules/external/water_pump/water_pump.h"
+
 
 #include "src/modules/external/dht/dht.h"
 #include "src/modules/external/humidifer/humidifier.h"
+
 // ESP DEBUG
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
@@ -50,48 +47,55 @@ void setupExternalModules()
 {
   printlnA("SETUP EXTERNAL MODULES");
 
-  PhModule *ph = new PhModule();
-  WaterTempModule *wt = new WaterTempModule();
-  FanController *fan = new FanController();
-  LedModule *led = new LedModule();
-  Feeder *feeder = new Feeder();
-  WaterLevel *waterLevel = new WaterLevel();
-  Heater *heater = new Heater();
-  vivarium.addModule(ph);
-  vivarium.addBLEModule(ph);
-  vivarium.addFirebaseModule(ph);
+  PhModule *ph = new PhModule(1);
+  WaterTempModule *wt = new WaterTempModule(0);
+  FanController *fan = new FanController(2);
+  LedModule *led = new LedModule(4);
+  Feeder *feeder = new Feeder(3);
+  WaterLevel *waterLevel = new WaterLevel(6);
+  WaterPump *waterPump = new WaterPump(5);
+  Heater *heater = new Heater(-1);
 
+  // Water temp
   vivarium.addModule(wt);
   vivarium.addBLEModule(wt);
   vivarium.addFirebaseModule(wt);
+
+  // Ph
+  vivarium.addModule(ph);
+  vivarium.addBLEModule(ph);
+  vivarium.addFirebaseModule(ph);
 
   vivarium.addModule(fan);
   vivarium.addBLEModule(fan);
   vivarium.addFirebaseModule(fan);
 
-  vivarium.addModule(led);
-  vivarium.addBLEModule(led);
-  vivarium.addFirebaseModule(led);
-
   vivarium.addModule(feeder);
   vivarium.addBLEModule(feeder);
   vivarium.addFirebaseModule(feeder);
 
-  vivarium.addModule(waterLevel);
-  vivarium.addBLEModule(waterLevel);
-  vivarium.addFirebaseModule(waterLevel);
+  vivarium.addModule(waterPump);
+  vivarium.addBLEModule(waterPump);
+  vivarium.addFirebaseModule(waterPump);
 
   vivarium.addModule(heater);
   vivarium.addBLEModule(heater);
   vivarium.addFirebaseModule(heater);
 
-  // DhtModule *dht = new DhtModule(18);
-  // dhtDebugPointer = dht;
+  vivarium.addModule(led);
+  vivarium.addBLEModule(led);
+  vivarium.addFirebaseModule(led);
+
+  vivarium.addModule(waterLevel);
+  vivarium.addBLEModule(waterLevel);
+  vivarium.addFirebaseModule(waterLevel);
+
+  // DhtModule *dht = new DhtModule(0);
   // vivarium.addModule(dht);
   // vivarium.addFirebaseModule(dht);
   // vivarium.addBLEModule(dht);
 
-  // Humidifier *hum = new Humidifier(0);
+  // Humidifier *hum = new Humidifier(0, 2);
   // vivarium.addModule(hum);
   // vivarium.addFirebaseModule(hum);
   // vivarium.addBLEModule(hum);
@@ -104,8 +108,8 @@ void setupExternalModules()
 void setup()
 {
   esp_log_level_set("*", ESP_LOG_VERBOSE);
-  vivarium.setup("aquarium_1");
-  printlnA("aquarium_1");
+  vivarium.setup("aquarium_4");
+  printlnA("aquarium_4");
   setupExternalModules();
   vivarium.finalize();
 }

@@ -5,7 +5,6 @@
 
 #include "../../../state/state.h"
 #include "../../../state/state_values.h"
-#include "../../../settings/settings.h"
 
 #include "../../external/heater/heater.h"
 

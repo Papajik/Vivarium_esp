@@ -2,13 +2,13 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include <HardwareSerial.h>
-#include "../buttonControl/moduleControl/moduleControl.h"
+
 #include "../led/ledControl.h"
 
-IModule::IModule(String connectionKey)
+IModule::IModule(String connectionKey, int position)
 {
     _connectionKey = connectionKey;
-    loadConnectionState();
+    _position = position;
 }
 
 IModule::~IModule()
@@ -26,11 +26,11 @@ void IModule::setConnected(bool connected, bool fromButton)
     printA("Module " + _connectionKey);
     printA(" - set connected: ");
     printlnA(connected ? "true" : "false");
-    
-    
+
     _connected = connected;
     _sourceIsButton = fromButton;
-    memoryProvider.saveBool(_connectionKey, connected);
+    _memoryProvider->saveBool(_connectionKey, connected);
+    _ledControl->updateLedStatus(_position, connected);
 }
 
 void IModule::checkConnectionChange()
@@ -39,7 +39,7 @@ void IModule::checkConnectionChange()
     {
 
         _lastConnected = _connected;
-        ledControl.updateLedStatus();
+        _ledControl->updateLedStatus(_position, _connected);
         onConnectionChange();
     }
 }
@@ -47,7 +47,7 @@ void IModule::checkConnectionChange()
 void IModule::loadConnectionState()
 {
 
-    _connected = memoryProvider.loadBool(_connectionKey, false);
+    _connected = _memoryProvider->loadBool(_connectionKey, false);
     if (_connected)
     {
         printlnV(_connectionKey + " connected");
@@ -56,6 +56,19 @@ void IModule::loadConnectionState()
     {
         printlnV(_connectionKey + " disconnected");
     }
+}
+
+void IModule::setMemoryProvider(MemoryProvider *provider)
+{
+    _memoryProvider = provider;
+    loadConnectionState();
+    loadSettings();
+    
+}
+
+void IModule::setLedControl(LedControl *ledControl)
+{
+    _ledControl = ledControl;
 }
 
 void IModule::beforeShutdown() {}

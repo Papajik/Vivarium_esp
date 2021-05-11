@@ -2,7 +2,7 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include <NimBLEDevice.h>
-#include "../memory/memory_provider.h"
+#include "../memory/memory_provider_internal.h"
 
 //*****************
 
@@ -18,33 +18,44 @@
 #define USER_KEY "user"
 #define AUTH_CREDENTIAL_HANDLES 12
 
-Auth auth;
-
 class UserIdCallbacks : public BLECharacteristicCallbacks
 {
+public:
+    UserIdCallbacks(Auth *a)
+    {
+        auth = a;
+    }
+
 private:
+    Auth *auth;
     void onWrite(BLECharacteristic *pCharacteristic)
     {
         std::string s = pCharacteristic->getValue();
         if (s.at(s.size() - 1) == '*')
         {
-            auth.addToUserIdBuffer(s.substr(0, s.size() - 1), true);
+            auth->addToUserIdBuffer(s.substr(0, s.size() - 1), true);
         }
         else
         {
-            auth.addToUserIdBuffer(s, false);
+            auth->addToUserIdBuffer(s, false);
         }
     }
 };
 
 class IsClaimedCallbacks : public BLECharacteristicCallbacks
 {
+public:
+    IsClaimedCallbacks(Auth *a)
+    {
+        auth = a;
+    }
 
 private:
+    Auth *auth;
     void onRead(BLECharacteristic *pCharacteristic)
     {
         printlnA("IsClaimedCallbacks -onRead1");
-        if (auth.isClaimed())
+        if (auth->isClaimed())
         {
             pCharacteristic->setValue("true");
         }
@@ -53,31 +64,40 @@ private:
             pCharacteristic->setValue("false");
         }
     }
-    
+
     void onSubscribe(NimBLECharacteristic *pCharacteristic, ble_gap_conn_desc *desc, uint16_t subValue)
     {
         printlnA("Is claimed - on subscribe");
-        std::string s = auth.isClaimed() ? "true" : "false";
+        std::string s = auth->isClaimed() ? "true" : "false";
         pCharacteristic->setValue(s);
     }
 };
 
 class DeviceIdCallbacks : public BLECharacteristicCallbacks
 {
+public:
+    DeviceIdCallbacks(Auth *a)
+    {
+        auth = a;
+    }
 
 private:
+    Auth *auth;
     void onRead(BLECharacteristic *pCharacteristic)
     {
         printA("AUTH - getDeviceID");
-        std::string s = auth.getDeviceId().c_str();
+        std::string s = auth->getDeviceId().c_str();
         pCharacteristic->setValue(s);
     }
 };
 
-Auth::Auth()
+Auth::Auth(MemoryProvider *memoryProvider)
 {
+    _memoryProvider = memoryProvider;
     _userId = "";
     _deviceId = "";
+
+    loadFromNVS();
 }
 
 void Auth::setUserId(String id)
@@ -145,11 +165,11 @@ void Auth::setupBLECredentials(BLEService *credentials)
     /// USER ID
     BLECharacteristic *characteristicUserId = credentials->createCharacteristic(CHARACTERISTIC_USER_ID,
                                                                                 NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_AUTHEN | NIMBLE_PROPERTY::WRITE_ENC);
-    characteristicUserId->setCallbacks(new UserIdCallbacks());
+    characteristicUserId->setCallbacks(new UserIdCallbacks(this));
 
     /// DEVICE ID
     deviceIdCharacteristic = credentials->createCharacteristic(CHARACTERISTIC_DEVICE_ID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_AUTHEN | NIMBLE_PROPERTY::READ_ENC);
-    deviceIdCharacteristic->setCallbacks(new DeviceIdCallbacks());
+    deviceIdCharacteristic->setCallbacks(new DeviceIdCallbacks(this));
 
     /// IS CLAIMED
     characteristicIsClaimed = credentials->createCharacteristic(CHARACTERISTIC_IS_CLAIMED,
@@ -158,7 +178,7 @@ void Auth::setupBLECredentials(BLEService *credentials)
                                                                     NIMBLE_PROPERTY::READ_ENC |
                                                                     NIMBLE_PROPERTY::NOTIFY |
                                                                     NIMBLE_PROPERTY::INDICATE);
-    characteristicIsClaimed->setCallbacks(new IsClaimedCallbacks());
+    characteristicIsClaimed->setCallbacks(new IsClaimedCallbacks(this));
 }
 
 void Auth::onBLEDisconnect()
@@ -187,7 +207,7 @@ void Auth::getHandlesCount(int *settings, int *state, int *credentials)
 
 void Auth::loadFromNVS()
 {
-    _userId = memoryProvider.loadString(USER_KEY, "");
+    _userId = _memoryProvider->loadString(USER_KEY, "");
     printlnA("Load from NVS");
     printA("USER ID = ");
     printlnA(_userId);
@@ -201,7 +221,7 @@ void Auth::_saveToNVS()
         printD("Saving user id = ");
         printlnD(_userId);
         _uidChanged = false;
-        memoryProvider.saveString(USER_KEY, _userId);
+        _memoryProvider->saveString(USER_KEY, _userId);
     }
 }
 

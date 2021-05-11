@@ -1,13 +1,27 @@
 #ifndef _BUTTON_CONTROL_H_
 #define _BUTTON_CONTROL_H_
 
+class FirebaseService;
+class BLEController;
+class ModuleControl;
+
+#define BUTTON_RELEASED -1
+
 class ButtonControl
 {
 public:
-    ButtonControl();
+    ButtonControl(FirebaseService *, ModuleControl *);
+    void buttonPressed(int);
     void start();
+
+private:
+    unsigned long _lastPressedTime = 0;
+    int _lastPressedButton = BUTTON_RELEASED;
+
+    FirebaseService *_firebaseService;
+    ModuleControl *_moduleControl;
 };
 
-extern ButtonControl buttonControl;
+extern ButtonControl *buttonControl;
 
 #endif

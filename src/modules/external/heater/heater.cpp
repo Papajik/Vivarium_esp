@@ -10,36 +10,35 @@
 #define FIREBASE_CD_TEMP_GOAL "/sensorData/heater/tempGoal"
 #define INTEGRAL_KEY "heat_t"
 
-Heater::Heater() : IModule(CONNECTED_KEY)
+#define HEATER_OUTPUT_MIN 0
+#define HEATER_OUTPUT_MAX 100
+#define HEATER_KP 13
+#define HEATER_KI 0.2
+#define HEATER_KD 4
+#define HEATER_STEP_TIME 4000
+
+#define HEATER_FAILSAFE_DELAY 10000
+
+#define HEATER_TEMP_INVALID -127
+
+Heater::Heater(int position, int pwm, int sync) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Heater created");
 
-    if (!loadSettings())
-    {
-        _settings = {AUTO, GOAL_INVALID};
-    }
+    _settings = {AUTO, GOAL_INVALID};
 
-    _dimmer = new dimmerLamp(HEATER_PIN, HEATER_SYNC_PIN);
+    _dimmer = new dimmerLamp(pwm, sync);
     _dimmer->begin(NORMAL_MODE, OFF);
     _pid = new AutoPID(&_currentTemperature, &_settings.tempGoal, &_currentPower, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, HEATER_KP, HEATER_KI, HEATER_KD);
     _pid->setBangBang(3);
     _pid->setTimeStep(5000);
-
-    double integral = memoryProvider.loadDouble(INTEGRAL_KEY, -1);
-
-    if (integral != -1)
-    {
-        _pid->setIntegral(integral);
-        memoryProvider.removeKey(INTEGRAL_KEY);
-    }
-
     setGoal(_settings.tempGoal);
 }
 
 void Heater::beforeShutdown()
 {
     printlnA("Heater - shutting down saving integral");
-    memoryProvider.saveDouble(INTEGRAL_KEY, _pid->getIntegral());
+    _memoryProvider->saveDouble(INTEGRAL_KEY, _pid->getIntegral());
 }
 
 void Heater::onLoop()
@@ -117,18 +116,36 @@ void Heater::setPower()
     {
         _oldPower = _currentPower;
         printlnD("Uploading new temperature");
-        firebaseService.uploadCustomData("devices/", FIREBASE_CD_POWER, _currentPower);
+        firebaseService->uploadCustomData("devices/", FIREBASE_CD_POWER, _currentPower);
     }
 }
 
 void Heater::saveSettings()
 {
-    memoryProvider.saveStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
+    _memoryProvider->saveStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
     _settingsChanged = false;
 }
+
 bool Heater::loadSettings()
 {
-    return memoryProvider.loadStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
+
+    /// Check if integral is saved and set it to pid regulator if so
+    double integral = _memoryProvider->loadDouble(INTEGRAL_KEY, -1);
+
+    if (integral != -1)
+    {
+        _pid->setIntegral(integral);
+        _memoryProvider->removeKey(INTEGRAL_KEY);
+    }
+
+    /// Load settings struct
+    bool loaded = _memoryProvider->loadStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
+
+    if (loaded)
+    {
+        setGoal(_settings.tempGoal);
+    }
+    return loaded;
 }
 
 void Heater::onConnectionChange()
@@ -149,7 +166,7 @@ void Heater::onConnectionChange()
 
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_HEATER_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_HEATER_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
@@ -183,7 +200,7 @@ void Heater::setGoal(double g)
         _settingsChanged = true;
         stateStorage.setValue(TEMP_GOAL, (float)g);
         _pid->reset();
-        firebaseService.uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
+        firebaseService->uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
     }
 
     // if (g != _tempGoal)

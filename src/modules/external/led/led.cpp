@@ -5,7 +5,6 @@
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
-#include <Adafruit_NeoPixel.h>
 #define MEMORY_TRIGGER_PREFIX "ledT."
 #include "../../../wifi/wifiProvider.h"
 #include <Freenove_WS2812_Lib_for_ESP32.h>
@@ -14,19 +13,17 @@
 
 LedModule *ledModulePtr;
 
-LedModule::LedModule() : IModule(CONNECTED_KEY)
+LedModule::LedModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
-    printlnA("LedModule created");
 
-    _strip = new Freenove_ESP32_WS2812(LED_COUNT, LED_PIN, LED_CHANNEL, TYPE_GRB);
-    _strip->begin();
-    loadSettings();
-    showColor();
-    if (wifiProvider.isConnected())
-    {
-        loadTriggersFromNVS();
-        printTriggers();
-    }
+    _strip = new Freenove_ESP32_WS2812(LED_COUNT, pin, LED_CHANNEL, TYPE_GRB);
+    _stripConnected = _strip->begin();
+}
+
+LedModule::~LedModule()
+{
+    delete _strip;
+    rmt_driver_uninstall((rmt_channel_t)LED_CHANNEL);
 }
 
 void LedModule::setColor(uint32_t color)
@@ -65,10 +62,9 @@ void LedModule::showColor()
 {
     if (_currentColor != _lastColor)
     {
-        printlnA("Show color");
         _lastColor = _currentColor;
-        printA("LED - new color : ");
-        printlnA(String(_currentColor));
+        printI("LED - new color : ");
+        printlnI(String(_currentColor));
         _strip->setAllLedsColor(_currentColor);
 
         uploadColorChange();
@@ -78,7 +74,7 @@ void LedModule::showColor()
             _currentColorCharacteristic->setValue(_currentColor);
             _currentColorCharacteristic->notify();
         }
-        firebaseService.uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
+        firebaseService->uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
     }
 }
 
@@ -89,18 +85,28 @@ void LedModule::uploadColorChange()
     time(&now);
     char time[40];
     ultoa(now, time, 10);
-    firebaseService.uploadCustomData("led/", "/" + String(time), String(_currentColor));
+    firebaseService->uploadCustomData("led/", "/" + String(time), String(_currentColor));
 }
 
 void LedModule::saveSettings()
 {
-    memoryProvider.saveInt(SETTINGS_LED_KEY, _currentColor);
+    _memoryProvider->saveInt(SETTINGS_LED_KEY, _currentColor);
     _settingsChanged = false;
 }
 
 bool LedModule::loadSettings()
 {
-    _currentColor = memoryProvider.loadInt(SETTINGS_LED_KEY, ((((uint32_t)40 << 0) | ((uint32_t)20 << 8) | ((uint32_t)15 << 16))));
+    _currentColor = _memoryProvider->loadInt(SETTINGS_LED_KEY, ((((uint32_t)255 << 0) | ((uint32_t)255 << 8) | ((uint32_t)255 << 16))));
+
+    showColor();
+
+    //TODO check if time is available instead of checking wifi connection
+
+    if (wifiProvider->isConnected())
+    {
+        loadTriggersFromNVS();
+        printTriggers();
+    }
     return true;
 }
 
@@ -156,14 +162,14 @@ void LedModule::saveTriggerToNVS(std::shared_ptr<LedTrigger> trigger)
     m.hour = trigger->hour;
     m.minute = trigger->minute;
     printA("Size of trigger = ");
-    printlnA(sizeof(LedTriggerMem));
-    memoryProvider.saveStruct(String(MEMORY_TRIGGER_PREFIX) + String(trigger->storageId), &m, sizeof(LedTriggerMem));
+    printlnA((int)sizeof(LedTriggerMem));
+    _memoryProvider->saveStruct(String(MEMORY_TRIGGER_PREFIX) + String(trigger->storageId), &m, sizeof(LedTriggerMem));
 }
 
 void LedModule::loadTriggerFromNVS(int index)
 {
     LedTriggerMem enc;
-    if (memoryProvider.loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(LedTriggerMem)))
+    if (_memoryProvider->loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(LedTriggerMem)))
     {
         printlnA("Loading LED trigger from memory");
         auto t = std::make_shared<LedTrigger>();
@@ -233,7 +239,7 @@ void LedModule::removeTrigger(String key)
     if (it != _triggers.end())
     {
         printlnA("Removing trigger");
-        memoryProvider.removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
+        _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
         Alarm.free(it->second->id);                 // clear alarm
         availableIds[it->second->storageId] = true; // id is available again
         _triggers.erase(_triggers.find(key));       // remove record from map
@@ -253,13 +259,13 @@ void LedModule::onConnectionChange()
 
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_LED_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_LED_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
     if (isBluetoothRunning())
     {
-          std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -293,4 +299,9 @@ std::shared_ptr<LedTrigger> LedModule::findTrigger(String key)
 int LedModule::getTime(int hour, int minute)
 {
     return hour * 256 + minute;
+}
+
+bool LedModule::isStripConnected()
+{
+    return _stripConnected;
 }

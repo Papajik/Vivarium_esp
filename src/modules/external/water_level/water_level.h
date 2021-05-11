@@ -9,11 +9,7 @@
 #define FIREBASE_WL_CONNECTED_KEY "/wl/connected"
 
 #define W_LEVEL_ECHO_PIN 33
-#define  W_LEVEL_TRIG_PIN 32
-
-#define WATER_LEVEL_LIMIT_CM 60
-
-#define W_LEVEL_REPEAT_AFTER 2000
+#define W_LEVEL_TRIG_PIN 32
 
 class millisDelay;
 
@@ -29,7 +25,7 @@ struct WaterLevelSettings
 class WaterLevel : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    WaterLevel();
+    WaterLevel(int, int echo = W_LEVEL_ECHO_PIN, int trig = W_LEVEL_TRIG_PIN);
     void setMaxLevel(int);
     void setMinLevel(int);
     void setSensorHeight(int);
@@ -56,9 +52,6 @@ public:
     virtual void onBLEDisconnect();
     virtual void onBLEConnect();
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
-
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
 
 private:
     NimBLECharacteristic *_waterLevelCharacteristic;

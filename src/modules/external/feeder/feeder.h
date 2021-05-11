@@ -66,7 +66,8 @@ class Feeder : public IModule,
                public IBluetooth
 {
 public:
-    Feeder();
+    Feeder(int, int in_1 = FEEDER_IN_1, int in_2 = FEEDER_IN_2, int in_3 = FEEDER_IN_3, int in_4 = FEEDER_IN_4);
+    ~Feeder();
 
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
@@ -89,9 +90,6 @@ public:
     void uploadTriggerToCharacteristics();
     void parseTriggerFromCharacteristics();
     void removeTriggerFromCharacteristic();
-
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
 
 private:
     NimBLECharacteristic *_timeCharacteristic;

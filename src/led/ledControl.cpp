@@ -6,52 +6,27 @@
 #define MODULES_DATA_PIN 5
 #define MODULES_BRIGHTNESS_PIN 18
 
+#define CHANNEL 2
+#define FREQUENCY 50
+#define RESOLUTION 8
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-
-#include "../buttonControl/moduleControl/moduleControl.h"
-#include "../buttonControl/bluetooth/bluetoothControl.h"
-
-LedControl ledControl;
+#include <ShiftRegister74HC595.h>
 
 
 LedControl::LedControl()
 {
-    pinMode(MODULES_LATCH_PIN, OUTPUT);
-    pinMode(MODULES_CLOCK_PIN, OUTPUT);
-    pinMode(MODULES_DATA_PIN, OUTPUT);
+    _sr = new ShiftRegister74HC595<1>(MODULES_DATA_PIN, MODULES_CLOCK_PIN, MODULES_LATCH_PIN);
+
+    ledcSetup(CHANNEL, FREQUENCY, RESOLUTION);
+    ledcAttachPin(MODULES_BRIGHTNESS_PIN, CHANNEL);
+
+    ledcWrite(CHANNEL, 0);
 }
 
-void LedControl::updateLedStatus(Mode mode)
+void LedControl::updateLedStatus(uint8_t position, uint8_t value)
 {
-    _ledByte = 0;
-    printA("Module count = ");
-    printlnA(moduleControl.moduleCount());
-
-    for (int i = 0; i < moduleControl.moduleCount(); i++)
-    {
-        if (!moduleControl.isModuleConnected(i))
-        {
-            bitSet(_ledByte, i);
-        }
-    }
-
-    if (!bluetoothControl.isBluetoothOn())
-    {
-        bitSet(_ledByte, 7);
-    }
-
-    // Invert bits if shift register mode is INPUT
-    if (mode == M_IN)
-    {
-        _ledByte = ~_ledByte;
-    }
-
-    printA("Updating LED status: ");
-    printlnA(_ledByte);
-    digitalWrite(MODULES_LATCH_PIN, LOW);
-    shiftOut(MODULES_DATA_PIN, MODULES_CLOCK_PIN, MSBFIRST, _ledByte);
-    digitalWrite(MODULES_LATCH_PIN, HIGH);
+    _sr->set(position, value);
 }

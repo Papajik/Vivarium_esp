@@ -8,19 +8,14 @@
 class millisDelay;
 #include <NimBLEDevice.h>
 
-// Firmware & calibration settings
-#define PH_READING_COUNT 10
-#define PH_CALIBRATION 21.808
-#define PH_VALUES_CUT 2
-#define PH_VOLTAGE_CHANGE -5.81633
-#define PH_PIN 39
-#define PH_TIMER_ONCE_DELAY 15
-#define PH_TIMER_CONTINUOUS_DELAY 20
 
+
+#define PH_PIN 39
 #define PH_INVALID_VALUE -1
+#define PH_READING_COUNT 10
 
 // Default values for settings
-#define PH_DEFAULT_CONTINUOUS_DELAY 60000 // 1 minute
+
 
 // Key to store settings
 #define SETTINGS_PH_KEY "ph"
@@ -39,7 +34,7 @@ class PhModule : public IModule, public IBluetooth, public IFirebaseModule
 {
 
 public:
-    PhModule();
+    PhModule(int, int pin = PH_PIN);
 
     /*
     @brief Checks if continuous mode is on and if delay already passed. Reads water pH if both assumptions are met. Should be called from main loop.
@@ -86,7 +81,6 @@ public:
 
     virtual void onLoop();
 
-
     //Bluetooth
     BLECharacteristic *characteristicWaterPh;
 
@@ -99,10 +93,9 @@ public:
     virtual void parseValue(String key, String value);
     virtual void updateSensorData(FirebaseJson *);
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
-
 private:
+    int _pin;
+
     void checkBoundaries();
     float _phReadBuffer[PH_READING_COUNT];
     float _readPh();

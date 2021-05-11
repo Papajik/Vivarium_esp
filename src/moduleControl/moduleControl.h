@@ -2,7 +2,6 @@
 #define _MODULE_CONTROL_H_
 
 #include <HardwareSerial.h>
-#include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
 //http://www.ignorantofthings.com/2018/07/the-perfect-multi-button-input-resistor.html
 //http://www.openrtos.net/taskresumefromisr.html
@@ -10,11 +9,10 @@
 #include <vector>
 #define MODULE_COUNT 7
 
-#define MODULE_BUTTON_RELEASED -1
+// #define MODULE_BUTTON_RELEASED -1
 
-#define DEBOUNCE_INTERVAL 200
+// #define DEBOUNCE_INTERVAL 200
 #define M_BUTTONS_PIN 36
-
 
 class IModule;
 
@@ -37,7 +35,6 @@ public:
 
     void onLoop();
 
-
     int moduleCount();
     bool isModuleConnected(int);
 
@@ -46,10 +43,8 @@ public:
 private:
     std::vector<IModule *> _modules;
 
-    int last_pressed_button = MODULE_BUTTON_RELEASED;
-    unsigned long last_pressed_time = 0;
+    // int last_pressed_button = MODULE_BUTTON_RELEASED;
+    // unsigned long last_pressed_time = 0;
 };
-
-extern ModuleControl moduleControl;
 
 #endif

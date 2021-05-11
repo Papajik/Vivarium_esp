@@ -8,16 +8,19 @@
 
 #define CONNECTED_KEY "fan/c"
 
-FanController::FanController() : IModule(CONNECTED_KEY)
+#define FAN_RESOLUTION 8
+#define FAN_FREQUENCY 40
+#define FAN_CHANNEL 0
+
+FanController::FanController(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Fan controller created");
-    if (!loadSettings())
-    {
-        _settings = {20, 30};
-    }
+
+    
+    _settings = {20, 30};
 
     ledcSetup(FAN_CHANNEL, FAN_FREQUENCY, FAN_RESOLUTION);
-    ledcAttachPin(FAN_PIN, FAN_CHANNEL);
+    ledcAttachPin(pin, FAN_CHANNEL);
 }
 
 void FanController::setStartAt(float f)
@@ -115,20 +118,20 @@ void FanController::saveSettings()
 {
     printlnA("Fan - save settings");
 
-    memoryProvider.saveStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
+    _memoryProvider->saveStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
     _settingsChanged = false;
 }
 bool FanController::loadSettings()
 {
     printlnA("Fan - save settings");
-    return memoryProvider.loadStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
+    return _memoryProvider->loadStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
 }
 
 void FanController::onConnectionChange()
 {
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_FAN_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_FAN_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 

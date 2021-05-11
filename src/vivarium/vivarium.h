@@ -10,7 +10,6 @@
 * 
 */
 
-
 #ifndef _VIVARIUM_H_
 #define _VIVARIUM_H_
 
@@ -25,11 +24,15 @@
 */
 #define DEVICE_ID "esp_test"
 
-
 class IModule;
 class IBluetooth;
 class LcdDisplay;
 class IFirebaseModule;
+class MemoryProvider;
+class Auth;
+class LedControl;
+class ModuleControl;
+class MessagingService;
 
 class Vivarium
 {
@@ -41,11 +44,19 @@ public:
 
     void onLoop();
     LcdDisplay *getDisplay();
-    
+
     void addBLEModule(IBluetooth *m);
     void addFirebaseModule(IFirebaseModule *m);
 
 private:
+    void mainLoop();
+    void otaLoop();
+
+    MemoryProvider *memoryProvider;
+    MessagingService *messagingService;
+    ModuleControl *moduleControl;
+    Auth *auth;
+    LedControl *ledControl;
     int otaResponse;
     unsigned long last = 0;
 };

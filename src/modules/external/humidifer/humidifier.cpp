@@ -8,7 +8,7 @@
 
 #define FCM_KEY "Humidifier"
 
-Humidifier::Humidifier(int outlet) : IModule(CONNECTED_KEY)
+Humidifier::Humidifier(int outlet, int position) : IModule(CONNECTED_KEY, position)
 {
     _outlet = outlet;
     loadSettings();
@@ -73,12 +73,12 @@ void Humidifier::checkHumidity()
 
 void Humidifier::saveSettings()
 {
-    memoryProvider.saveFloat(SETTINGS_HUMIDIFIER_GOAL, _humGoal);
+    _memoryProvider->saveFloat(SETTINGS_HUMIDIFIER_GOAL, _humGoal);
     _settingsChanged = false;
 }
 bool Humidifier::loadSettings()
 {
-    _humGoal = memoryProvider.loadFloat(SETTINGS_HUMIDIFIER_GOAL, HUMIDIFIER_INVALID_GOAL);
+    _humGoal = _memoryProvider->loadFloat(SETTINGS_HUMIDIFIER_GOAL, HUMIDIFIER_INVALID_GOAL);
 
     return false;
 }
@@ -88,13 +88,13 @@ void Humidifier::onConnectionChange()
     sendConnectionChangeNotification("Humidifier", isConnected());
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_HUM_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_HUM_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
     if (isBluetoothRunning())
     {
-         std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -122,23 +122,25 @@ void Humidifier::failSafeCheck()
         printlnA("Humidifier disconnected");
         printlnE("Humidifier failsafe");
         setConnected(false, true);
-        messagingService.sendFCM(FCM_KEY, "Temperature was invalid for too long - turning off humidifier", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        messagingService->sendFCM(FCM_KEY, "Temperature was invalid for too long - turning off humidifier", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }
 
 void Humidifier::setOn(bool b)
 {
     _isOn = b;
-    outletController.setOutlet(_outlet, b);
-    firebaseService.uploadState(FIREBASE_IS_ON_STATE, b);
+    outletController->setOutlet(_outlet, b);
+    firebaseService->uploadState(FIREBASE_IS_ON_STATE, b);
 
-    if (isBluetoothRunning()){
-          std::string s = isConnected()?"true":"false";
+    if (isBluetoothRunning())
+    {
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _humidifierOnCharacteristic->notify();
     }
 };
 
-  bool Humidifier::isHumidifierOn(){
-      return _isOn;
-  }
+bool Humidifier::isHumidifierOn()
+{
+    return _isOn;
+}

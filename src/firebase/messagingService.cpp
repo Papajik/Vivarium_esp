@@ -4,7 +4,15 @@
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-MessagingService messagingService;
+#include <Firebase_ESP_Client.h>
+
+
+#include "semaphore/firebaseSemaphore.h"
+#include "firebaseBdo.h"
+
+MessagingService::MessagingService()
+{
+}
 
 void MessagingService::setDistinctNotification(bool b)
 {
@@ -93,7 +101,46 @@ void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String 
     for (String token : _tokens)
     {
         printlnA("Proceed to send a token");
-        firebaseService.sendFCM(title, body, token, true);
+        sendMessage(title, body, token, true);
     }
     printlnI("All sent");
+}
+
+void MessagingService::sendMessage(String title, String body, String token, bool timePrefix)
+{
+    // Add time preffix
+    if (timePrefix)
+    {
+        time_t now;
+        time(&now);
+        tm *time = localtime(&now);
+        String hour = time->tm_hour < 10 ? "0" + String(time->tm_hour) : String(time->tm_hour);
+        String minute = time->tm_min < 10 ? "0" + String(time->tm_min) : String(time->tm_min);
+
+        String timePreffix = hour + ":" + minute + " - ";
+        body = timePreffix + body;
+    }
+
+    printlnA("Proceed to send a token");
+    FCM_HTTPv1_JSON_Message msg;
+    msg.notification.title = title.c_str();
+    msg.notification.body = body.c_str();
+    msg.token = token.c_str();
+    firebaseSemaphore.lockSemaphore("sendFCM");
+    if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
+    {
+        printlnA("PASSED");
+        printlnA(Firebase.FCM.payload(firebaseBdo));
+        printlnA("------------------------------------");
+        printlnA();
+    }
+    else
+    {
+        printlnA("FAILED");
+        printlnA("REASON: " + firebaseBdo->errorReason());
+        printlnA("------------------------------------");
+        // TODO check if removed
+        printlnA();
+    }
+    firebaseSemaphore.unlockSemaphore();
 }

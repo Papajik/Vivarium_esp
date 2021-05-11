@@ -7,7 +7,7 @@
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-WiFiProvider wifiProvider;
+WiFiProvider *wifiProvider;
 
 void WiFiStationGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
 {
@@ -26,9 +26,10 @@ void WiFiStationGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
     printlnA(IPAddress(info.got_ip.ip_info.ip.addr));
 }
 
-WiFiProvider::WiFiProvider()
+WiFiProvider::WiFiProvider(MemoryProvider *provider)
 {
     WiFi.onEvent(WiFiStationGotIP, SYSTEM_EVENT_STA_GOT_IP);
+    memoryProvider = provider;
 }
 
 void WiFiProvider::setupWiFi()
@@ -131,8 +132,8 @@ void WiFiProvider::setSsid(String ssid)
 void WiFiProvider::loadFromNVS()
 {
 
-    _pass = memoryProvider.loadString(WIFI_PASSWORD_KEY, "");
-    _ssid = memoryProvider.loadString(WIFI_SSID_KEY, "");
+    _pass = memoryProvider->loadString(WIFI_PASSWORD_KEY, "");
+    _ssid = memoryProvider->loadString(WIFI_SSID_KEY, "");
 
     printA("SSID = ");
     printlnA(_ssid.c_str());
@@ -151,8 +152,8 @@ void WiFiProvider::onLoop()
 
 void WiFiProvider::saveToNVS()
 {
-    memoryProvider.saveString(WIFI_PASSWORD_KEY, _pass);
-    memoryProvider.saveString(WIFI_SSID_KEY, _ssid);
+    memoryProvider->saveString(WIFI_PASSWORD_KEY, _pass);
+    memoryProvider->saveString(WIFI_SSID_KEY, _ssid);
 
     _settingsChanged = false;
 }

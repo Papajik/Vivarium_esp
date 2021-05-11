@@ -1,10 +1,11 @@
 #include "moduleControl.h"
 
-#include "../../modules/module.h"
-#include "../../analog/analog.h"
-#include "../../led/ledControl.h"
+#include "../modules/module.h"
+#include "../analog/analog.h"
 
-ModuleControl moduleControl;
+#include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+
+
 
 ModuleControl::ModuleControl()
 {
@@ -21,30 +22,15 @@ int ModuleControl::addModule(IModule *module)
 void ModuleControl::buttonPressed(int pressed)
 {
 
-    //Check bluetooth button
-
-    //debounce and same button check
-    if (millis() < DEBOUNCE_INTERVAL + last_pressed_time || last_pressed_button == pressed)
-    {
-        return;
-    }
-
-    printA("Pressed button: ");
-    printlnA(pressed);
-
-    last_pressed_button = pressed;
-    last_pressed_time = millis();
-    if (pressed != MODULE_BUTTON_RELEASED && pressed < _modules.size())
+    if (pressed >= 0 && pressed < _modules.size())
     {
         IModule *m = _modules[pressed];
         if (m != nullptr)
         {
             m->setConnected(!m->isConnected(), true);
         }
-        ledControl.updateLedStatus();
     }
 }
-
 
 void ModuleControl::onLoop()
 {

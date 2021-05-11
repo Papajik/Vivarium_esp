@@ -81,11 +81,13 @@
 */
 #define PASS_LENGTH 20
 
+class MemoryProvider;
+
 
 class WiFiProvider : public IBluetooth
 {
 public:
-    WiFiProvider();
+    WiFiProvider(MemoryProvider*);
     void setupWiFi();
     bool isConnected();
     int connect();
@@ -115,6 +117,8 @@ public:
     bool hasCredentials();
 
 private:
+    MemoryProvider *memoryProvider;
+
     String _pass;
     String _ssid;
     bool _settingsChanged;
@@ -125,6 +129,6 @@ private:
 
 };
 
-extern WiFiProvider wifiProvider;
+extern WiFiProvider *wifiProvider;
 
 #endif

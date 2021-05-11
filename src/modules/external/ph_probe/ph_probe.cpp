@@ -12,7 +12,6 @@
 
 #include "../../../state/state.h"
 
-#include "../../../wifi/wifiProvider.h"
 #include "state_values.h"
 #define KEYWORD_WATER_PH "waterPh"
 #define KEYWORD_WATER_PH_MAX "waterMaxPh"
@@ -21,6 +20,18 @@
 #define CONNECTED_KEY "ph/c"
 #define FIREBASE_CD_PH "/sensorData/ph/ph"
 #define FCM_KEY "pH Probe"
+
+// Firmware & calibration settings
+
+#define PH_CALIBRATION 20.24
+#define PH_VALUES_CUT 2
+#define PH_VOLTAGE_CHANGE -8.536
+#define PH_VOLTAGE 3.3
+#define PH_PRECISION 4096
+
+#define PH_TIMER_ONCE_DELAY 15
+#define PH_TIMER_CONTINUOUS_DELAY 20
+#define PH_DEFAULT_CONTINUOUS_DELAY 60000 // 1 minute
 
 int _comparePh(const void *arg1, const void *arg2)
 {
@@ -33,25 +44,27 @@ int _comparePh(const void *arg1, const void *arg2)
     return 0;
 }
 
-PhModule::PhModule() : IModule(CONNECTED_KEY)
+PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
-    printlnA("PhModule created");
-    if (!loadSettings())
-    {
-        _settings = {false, PH_DEFAULT_CONTINUOUS_DELAY, 3, 4};
-    }
 
-    pinMode(PH_PIN, INPUT);
+    _pin = pin;
+    printlnA("PhModule created");
+
+    // settings is changed when memoryProvider is set
+    _settings = {false, PH_DEFAULT_CONTINUOUS_DELAY, 3, 4};
+
+    pinMode(pin, INPUT);
     _delay = new millisDelay();
     //stateStorage.setCallback(STATE_WATER_PH, new ChangePhCallback(this), type_float);
 }
 
+//TODO test with mock analogRead
 float PhModule::_readPh()
 {
     printlnD("READING PH");
     for (int i = 0; i < PH_READING_COUNT; i++)
     {
-        _phReadBuffer[i] = analogRead(PH_PIN);
+        _phReadBuffer[i] = analogRead(_pin);
         delay(30);
     }
 
@@ -63,9 +76,15 @@ float PhModule::_readPh()
         phAvgValue += _phReadBuffer[i];
     }
 
-    float Po = (float)phAvgValue * 5.0 / 1024 / (PH_READING_COUNT - 2 * PH_VALUES_CUT);
-    float phValue = 7 - (2.5 - Po) * PH_VOLTAGE_CHANGE;
-    if (phValue < 0 || phValue > 7)
+    phAvgValue /= PH_READING_COUNT + 2 * PH_VALUES_CUT;
+
+    printA("pH Value = ");
+    printlnA(phAvgValue);
+
+    float Po = (float)phAvgValue * PH_VOLTAGE / PH_PRECISION;
+
+    float phValue = PH_VOLTAGE_CHANGE * Po * PH_CALIBRATION;
+    if (phValue < 0 || phValue > 14)
     {
         phValue = PH_INVALID_VALUE;
     }
@@ -84,7 +103,7 @@ void PhModule::_setPhValue(float value)
             characteristicWaterPh->setValue(value);
             characteristicWaterPh->notify();
         }
-        firebaseService.uploadCustomData("devices/", FIREBASE_CD_PH, value);
+        firebaseService->uploadCustomData("devices/", FIREBASE_CD_PH, value);
 
         checkBoundaries();
     }
@@ -157,7 +176,7 @@ void PhModule::onConnectionChange()
 
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_PH_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_PH_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
@@ -175,14 +194,14 @@ void PhModule::saveSettings()
 {
     printlnA("PH - save settings");
 
-    memoryProvider.saveStruct(SETTINGS_PH_KEY, &_settings, sizeof(PhModuleSettings));
+    _memoryProvider->saveStruct(SETTINGS_PH_KEY, &_settings, sizeof(PhModuleSettings));
     setSettingsChanged(false);
 }
 
 bool PhModule::loadSettings()
 {
     printlnA("Loading settings");
-    return memoryProvider.loadStruct(SETTINGS_PH_KEY, &_settings, sizeof(PhModuleSettings));
+    return _memoryProvider->loadStruct(SETTINGS_PH_KEY, &_settings, sizeof(PhModuleSettings));
 }
 
 void PhModule::onBLEConnect()
@@ -264,12 +283,12 @@ void PhModule::checkBoundaries()
 {
     if (_lastPhValue > _settings.max_ph)
     {
-        messagingService.sendFCM(FCM_KEY, "pH is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        messagingService->sendFCM(FCM_KEY, "pH is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 
     if (_lastPhValue < _settings.min_ph)
     {
-        messagingService.sendFCM(FCM_KEY, "pH is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        messagingService->sendFCM(FCM_KEY, "pH is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }
 

@@ -17,7 +17,8 @@
 #include <vector>
 #include <WString.h>
 #include "i_bluetooth_pin.h"
-#include "../memory/memory_provider.h"
+
+#define BLUETOOTH_BUTTON 7
 
 /*!
 * \def DEFAULT_BLE_NAME
@@ -70,6 +71,8 @@
 
 class IBluetooth;
 class NimBLEServer;
+class MemoryProvider;
+class LedControl;
 
 /**
  * @brief Bluetooth Controller
@@ -121,6 +124,9 @@ public:
   void checkStop();
 
 private:
+  MemoryProvider *_memoryProvider;
+  LedControl *_ledControl;
+
   bool _toStart = false;
   bool _toStop = false;
 
@@ -153,6 +159,6 @@ private:
   bool _secured;
 };
 
-extern BLEController bleController;
+extern BLEController *bleController;
 
 #endif

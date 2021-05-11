@@ -15,22 +15,40 @@
 #include "messagingService.h"
 #include "../bluetooth/bluetooth.h"
 
+#include "firebaseBdo.h"
+
+#include "semaphore/firebaseSemaphore.h"
+
+// #define FIREBASE_TOKEN "bd2c2a9af5f31269ce8868e8b0051839"
+// #define FIREBASE_SERVICE_ACCOUNT "/service_account_file.json"
+
+#define STORAGE_BUCKET_ID "vivarium-control-unit.appspot.com"
+#define FIREBASE_HOST "vivarium-control-unit.firebaseio.com"
+#define FIREBASE_CERT_FILE "/cert.cer"
+
+#define DEFAULT_UPLOAD_DELAY 60000                 //1 min
+#define REFRESH_FCM_TOKENS_INTERVAL 60 * 60 * 1000 // every 1 hour refresh FCM tokens
+#define FBDO_CLEAR_DELAY 170 * 1000
+
+FirebaseService *firebaseService;
+
 // void printResult(FirebaseStream &data);
 void streamCallback(MultiPathStream data);
 void streamTimeoutCallback(bool timeout);
 
-FirebaseService firebaseService;
-
-FirebaseService::FirebaseService()
+FirebaseService::FirebaseService(Auth *auth, MemoryProvider *provider, MessagingService *service)
 {
-    firebaseBdo = new FirebaseData();
     firebaseAuth = new FirebaseAuth();
     firebaseConfig = new FirebaseConfig();
     firebaseStreamBdo = new FirebaseData();
     _modules.reserve(8);
     _firebaseMessagingTokens.reserve(5);
-    bdoMutex = xSemaphoreCreateMutex();
-    xSemaphoreGive(bdoMutex);
+
+    _auth = auth;
+    _memoryProvider = provider;
+
+    _running = false;
+    _initialized = false;
 }
 
 void FirebaseService::checkStop()
@@ -94,8 +112,8 @@ void FirebaseService::setupFirebase()
 void FirebaseService::checkActiveStatus()
 {
     printlnA("checkActiveStatus");
-    String path = "/devices/" + auth.getDeviceId() + "/info/active";
-    lockSemaphore("checkActiveStatus");
+    String path = "/devices/" + _auth->getDeviceId() + "/info/active";
+    firebaseSemaphore.lockSemaphore("checkActiveStatus");
     if (Firebase.RTDB.getBool(firebaseBdo, path.c_str()))
     {
         printlnA("Active status recieved");
@@ -104,8 +122,7 @@ void FirebaseService::checkActiveStatus()
         printlnA(firebaseBdo->dataPath());
         if (!firebaseBdo->boolData())
         {
-            memoryProvider.factoryReset();
-            ESP.restart();
+            factoryReset();
         }
     }
     else
@@ -113,7 +130,7 @@ void FirebaseService::checkActiveStatus()
 
         printlnA("Couldnt receive active status");
     }
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
 }
 
 void FirebaseService::stopStream()
@@ -132,7 +149,7 @@ void FirebaseService::startStream()
     printlnA("STARTING STREAM");
     printMemory();
     std::string s = "/devices/";
-    s.append(auth.getDeviceId().c_str());
+    s.append(_auth->getDeviceId().c_str());
     if (!Firebase.RTDB.beginMultiPathStream(firebaseStreamBdo, s.c_str(), childPaths, NUMBER_OF_PATHS))
     {
         printlnA("------------------------------------");
@@ -148,7 +165,7 @@ void FirebaseService::startStream()
 
 void FirebaseService::onLoop()
 {
-    if (_toStart && wifiProvider.isConnected())
+    if (_toStart && wifiProvider->isConnected())
     {
         _toStart = false;
         startFirebase();
@@ -161,19 +178,19 @@ void FirebaseService::onLoop()
         if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
         {
             _lastCleanTime = millis();
-            lockSemaphore("onLoop");
+            firebaseSemaphore.lockSemaphore("onLoop");
             if (firebaseBdo->httpConnected())
             {
 
                 printlnA("Clearing object");
                 firebaseBdo->clear();
             }
-            unlockSemaphore();
+            firebaseSemaphore.unlockSemaphore();
         }
 
         if (millis() - _lastUploadTime > DEFAULT_UPLOAD_DELAY)
         {
-            if (wifiProvider.isConnected())
+            if (wifiProvider->isConnected())
             {
                 uploadSensorData();
             }
@@ -183,7 +200,7 @@ void FirebaseService::onLoop()
 
         if (millis() - _lastTokenRefresh > REFRESH_FCM_TOKENS_INTERVAL)
         {
-            if (wifiProvider.isConnected())
+            if (wifiProvider->isConnected())
             {
                 refreshFCMTokens();
             }
@@ -216,7 +233,7 @@ void FirebaseService::uploadSensorData()
         char time[40];
         ultoa(now, time, 10);
 
-        String Path = String("/sensorData/") + auth.getDeviceId() + String("/") + String(time);
+        String Path = String("/sensorData/") + _auth->getDeviceId() + String("/") + String(time);
 
         FirebaseJson json;
 
@@ -229,7 +246,7 @@ void FirebaseService::uploadSensorData()
         printlnV("Uploading sensor data");
         printlnV(buffer);
 
-        lockSemaphore("uploadSensorData");
+        firebaseSemaphore.lockSemaphore("uploadSensorData");
         if (Firebase.RTDB.set(firebaseBdo, Path.c_str(), &json))
         {
             _lastValidUpdate = millis();
@@ -240,13 +257,13 @@ void FirebaseService::uploadSensorData()
             printlnE("Sensor data upload FAILED");
             printlnE(firebaseBdo->errorReason());
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 
 void FirebaseService::onBLEDisconnect()
 {
-    if (wifiProvider.isConnected())
+    if (wifiProvider->isConnected())
     {
         setupFirebase();
     }
@@ -271,9 +288,9 @@ void FirebaseService::logNewStart()
     char time[40];
     ultoa(now, time, 10);
 
-    String Path = "/start/" + auth.getDeviceId() + "/" + String(time);
+    String Path = "/start/" + _auth->getDeviceId() + "/" + String(time);
 
-    lockSemaphore("logNewStart");
+    firebaseSemaphore.lockSemaphore("logNewStart");
     if (Firebase.RTDB.set(firebaseBdo, Path.c_str(), true))
     {
 
@@ -292,7 +309,13 @@ void FirebaseService::logNewStart()
         printlnA("------------------------------------");
         printlnA();
     }
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
+}
+
+void FirebaseService::factoryReset()
+{
+    _memoryProvider->factoryReset();
+    ESP.restart();
 }
 
 void FirebaseService::jsonCallback(FirebaseJson *json, String path)
@@ -351,9 +374,9 @@ void FirebaseService::uploadState(String key, bool value)
 
         printlnI("uploading state");
 
-        String path = String("devices/") + auth.getDeviceId() + String("/state") + key;
+        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
         checkSSLConnected();
-        lockSemaphore("upload state");
+        firebaseSemaphore.lockSemaphore("upload state");
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
         {
             printlnD("State uploaded");
@@ -365,7 +388,7 @@ void FirebaseService::uploadState(String key, bool value)
             printlnE("State upload FAILED");
             printlnE(firebaseBdo->errorReason());
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 
@@ -374,8 +397,8 @@ void FirebaseService::uploadState(String key, float value)
     if (_running)
     {
         printlnA("FB: Uploading state: " + key);
-        String path = String("devices/") + auth.getDeviceId() + String("/state") + key;
-        lockSemaphore("uploadState");
+        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
+        firebaseSemaphore.lockSemaphore("uploadState");
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
         {
             printlnV("State uploaded");
@@ -387,16 +410,16 @@ void FirebaseService::uploadState(String key, float value)
             printlnE("State upload FAILED");
             printlnE(firebaseBdo->errorReason());
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 void FirebaseService::uploadState(String key, int value)
 {
     if (_running)
     {
-        lockSemaphore("uploadState");
+        firebaseSemaphore.lockSemaphore("uploadState");
         printlnA("FB: Uploading state: " + key);
-        String path = String("devices/") + auth.getDeviceId() + String("/state") + key;
+        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
         {
             printlnV("State uploaded");
@@ -407,7 +430,7 @@ void FirebaseService::uploadState(String key, int value)
             printlnE(firebaseBdo->errorReason());
             printlnE("State upload FAILED");
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 
@@ -416,11 +439,11 @@ void FirebaseService::stopFirebase()
 
     printlnA("Stopping firebase");
     setRunning(false);
-    lockSemaphore("stopFirebase");
+    firebaseSemaphore.lockSemaphore("stopFirebase");
     stopStream();
 
     firebaseBdo->clear();
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
 
     printlnV("Firebase stopped");
 }
@@ -446,18 +469,18 @@ String FirebaseService::getFirmwareName(String version)
     if (!_running)
         return "";
     String path = String("firmware/" + version + "/filename");
-    lockSemaphore("getFirmwareName");
+    firebaseSemaphore.lockSemaphore("getFirmwareName");
     if (Firebase.RTDB.getString(firebaseBdo, path.c_str()))
     {
         printlnA("Version = " + version);
         printlnA("Firmware name = " + firebaseBdo->stringData());
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
         return firebaseBdo->stringData();
     }
     else
     {
         printlnA("Version not found");
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
         return "";
     }
 }
@@ -476,7 +499,7 @@ String FirebaseService::getFirmwareDownloadUrl(String version)
         return "";
     String filePath = "firmware/" + fileName;
     String url;
-    lockSemaphore("getFirmwareDownloadUrl");
+    firebaseSemaphore.lockSemaphore("getFirmwareDownloadUrl");
 
     if (Firebase.Storage.getMetadata(firebaseBdo, STORAGE_BUCKET_ID, filePath.c_str()))
     {
@@ -487,7 +510,7 @@ String FirebaseService::getFirmwareDownloadUrl(String version)
         url = "";
     }
 
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
     return url;
 }
 
@@ -497,10 +520,10 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, String data
     {
 
         printlnV("uploadCustomData");
-        String path = prefix + auth.getDeviceId() + suffix;
+        String path = prefix + _auth->getDeviceId() + suffix;
 
         checkSSLConnected();
-        lockSemaphore("uploadCustomData");
+        firebaseSemaphore.lockSemaphore("uploadCustomData");
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), data))
         {
             printlnV("custom data uploaded");
@@ -511,7 +534,7 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, String data
             printlnE("custom data upload FAILED");
             printlnE(firebaseBdo->errorReason());
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 
@@ -525,9 +548,9 @@ int FirebaseService::checkFirebase()
             printlnE("FIREABSE ERROR");
             printlnA("Firebase ERROR - RESTARTING");
 
-            lockSemaphore("checkFirebase");
+            firebaseSemaphore.lockSemaphore("checkFirebase");
             firebaseBdo->pauseFirebase(true);
-            unlockSemaphore();
+            firebaseSemaphore.unlockSemaphore();
             return -1;
         }
     }
@@ -539,11 +562,11 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
     if (_running)
     {
         printlnV("uploadCustomData");
-        String path = prefix + auth.getDeviceId() + suffix;
+        String path = prefix + _auth->getDeviceId() + suffix;
 
         checkSSLConnected();
 
-        lockSemaphore("uploadCustomData");
+        firebaseSemaphore.lockSemaphore("uploadCustomData");
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), data))
         {
             printlnV("custom data uploaded");
@@ -554,7 +577,7 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
             printlnE(firebaseBdo->errorReason());
             printlnE("custom data upload FAILED");
         }
-        unlockSemaphore();
+        firebaseSemaphore.unlockSemaphore();
     }
 }
 
@@ -563,40 +586,55 @@ void streamCallback(MultiPathStream data)
     printlnA("Stream callback");
 
     // Check active status
-    data.get(firebaseService.childPaths[ChildPath::ACTIVE_STATUS]);
+    data.get(firebaseService->childPaths[ChildPath::ACTIVE_STATUS]);
     if (data.type == "boolean" && data.value == "false")
     {
-        memoryProvider.factoryReset();
-        ESP.restart();
+        firebaseService->factoryReset();
     }
 
     //Check firmware
-    data.get(firebaseService.childPaths[ChildPath::FIRMWARE]);
+    data.get(firebaseService->childPaths[ChildPath::FIRMWARE]);
     if (data.type == "string" && (data.value != ""))
     {
-        otaService.parseNewFirmwareVersion(data.value);
+        if (otaService != nullptr)
+        {
+            if (otaService->isNewVersion(data.value))
+            {
+                String url = firebaseService->getFirmwareDownloadUrl(data.value);
+                if (!url.isEmpty())
+                {
+                    firebaseService->stopFirebase();
+                    bleController->stop();
+                    if (!otaService->prepareAndStartUpdate(url, data.value))
+                    {
+                        //If preparation failed, start firebase again
+                        firebaseService->startFirebase();
+                    }
+                }
+            }
+        }
     }
 
     // Check Bluetooth name
-    data.get(firebaseService.childPaths[ChildPath::BLE_NAME]);
+    data.get(firebaseService->childPaths[ChildPath::BLE_NAME]);
     if (data.type == "string" && (data.value != ""))
     {
-        bleController.setBleName(data.value);
+        bleController->setBleName(data.value);
     }
 
     for (int i = 0; i < 2; i++)
     {
-        data.get(firebaseService.childPaths[i]);
+        data.get(firebaseService->childPaths[i]);
         printlnA(data.dataPath);
         if (data.type == "json")
         {
             FirebaseJson json;
             json.setJsonData(data.value);
-            firebaseService.jsonCallback(&json, data.dataPath);
+            firebaseService->jsonCallback(&json, data.dataPath);
         }
         else if (data.type != "")
         {
-            firebaseService.valueCallback(&data);
+            firebaseService->valueCallback(&data);
         }
     }
 }
@@ -611,21 +649,21 @@ void streamTimeoutCallback(bool timeout)
 
 void FirebaseService::checkSSLConnected()
 {
-    lockSemaphore("checkSSLConnected");
+    firebaseSemaphore.lockSemaphore("checkSSLConnected");
     if (!firebaseBdo->httpConnected())
     {
         printlnA("Clearing firebase connection");
         firebaseBdo->clear();
     }
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
 }
 
 void FirebaseService::refreshFCMTokens()
 {
 
-    String path = "/users/" + auth.getUserId() + "/ tokens";
+    String path = "/users/" + _auth->getUserId() + "/ tokens";
     printlnA(path);
-    lockSemaphore("refreshFCMTokens");
+    firebaseSemaphore.lockSemaphore("refreshFCMTokens");
     if (Firebase.RTDB.getJSON(firebaseBdo, path.c_str()))
     {
         printlnA("FCM tokens recieved");
@@ -639,7 +677,7 @@ void FirebaseService::refreshFCMTokens()
     {
         printlnA("Couldnt receive tokens");
     }
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
 }
 
 void FirebaseService::parseFCMTokens(FirebaseJson *json)
@@ -663,70 +701,17 @@ void FirebaseService::parseFCMTokens(FirebaseJson *json)
         if (value == "true")
         { //If key is valid then add token
             // _firebaseMessagingTokens.push_back(key);
-            messagingService.addToken(key);
+            _messagingService->addToken(key);
         }
     }
     json->iteratorEnd();
 }
 
-void FirebaseService::sendFCM(String title, String body, String token, bool timePrefix)
-{
-    // Add time preffix
-    if (timePrefix)
-    {
-        time_t now;
-        time(&now);
-        tm *time = localtime(&now);
-        String hour = time->tm_hour < 10 ? "0" + String(time->tm_hour) : String(time->tm_hour);
-        String minute = time->tm_min < 10 ? "0" + String(time->tm_min) : String(time->tm_min);
-
-        String timePreffix = hour + ":" + minute + " - ";
-        body = timePreffix + body;
-    }
-
-    printlnA("Proceed to send a token");
-    FCM_HTTPv1_JSON_Message msg;
-    msg.notification.title = title.c_str();
-    msg.notification.body = body.c_str();
-    msg.token = token.c_str();
-    lockSemaphore("sendFCM");
-    if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
-    {
-        printlnA("PASSED");
-        printlnA(Firebase.FCM.payload(firebaseBdo));
-        printlnA("------------------------------------");
-        printlnA();
-    }
-    else
-    {
-        printlnA("FAILED");
-        printlnA("REASON: " + firebaseBdo->errorReason());
-        printlnA("------------------------------------");
-        // TODO check if removed
-        printlnA();
-    }
-    unlockSemaphore();
-}
-
-void FirebaseService::lockSemaphore(String owner)
-{
-    printI("Lock semaphore by ");
-    lockOwner = owner;
-    printlnI(owner);
-    xSemaphoreTake(bdoMutex, portMAX_DELAY);
-}
-void FirebaseService::unlockSemaphore()
-{
-    xSemaphoreGive(bdoMutex);
-    printI("Unlock semaphore from ");
-    printlnI(lockOwner);
-}
-
 void FirebaseService::getFCMSettings()
 {
     printlnA("Get FCM Settings");
-    String path = "/users/" + auth.getUserId() + "/settings";
-    lockSemaphore("getFCMSettings");
+    String path = "/users/" + _auth->getUserId() + "/settings";
+    firebaseSemaphore.lockSemaphore("getFCMSettings");
     if (Firebase.RTDB.getJSON(firebaseBdo, path.c_str()))
     {
         printlnA("FCM Settings recieved");
@@ -740,24 +725,24 @@ void FirebaseService::getFCMSettings()
         if (json.get(data, "/nDelay", false))
         {
             // _delayFCMNotification = data.intValue;
-            messagingService.setDelayFCM(data.intValue);
+            _messagingService->setDelayFCM(data.intValue);
         }
 
         if (json.get(data, "/nLimit", false))
         {
             // _notificationCrossLimit = data.boolValue;
-            messagingService.setNotifyOnCrossLimit(data.boolValue);
+            _messagingService->setNotifyOnCrossLimit(data.boolValue);
         }
 
         if (json.get(data, "/nConn", false))
         {
             // _notificationConnectionOn = data.boolValue;
-            messagingService.setNotifyOnConnectionChange(data.boolValue);
+            _messagingService->setNotifyOnConnectionChange(data.boolValue);
         }
 
         if (json.get(data, "/nDist", false))
         {
-            messagingService.setDistinctNotification(data.boolValue);
+            _messagingService->setDistinctNotification(data.boolValue);
         }
 
         /// Refresh tokens
@@ -782,5 +767,5 @@ void FirebaseService::getFCMSettings()
 
         printlnA("Couldnt receive settings");
     }
-    unlockSemaphore();
+    firebaseSemaphore.unlockSemaphore();
 }

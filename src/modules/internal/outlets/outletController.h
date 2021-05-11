@@ -5,17 +5,17 @@
 
 #define OUTLET_COUNT 2
 
+class MemoryProvider;
+
 class OutletController : public IFirebaseModule
 {
 public:
-    OutletController();
-    void begin();
+    OutletController(MemoryProvider *);
 
     void setOutlet(int, bool);
     bool isOutletOn(int);
 
     void onLoop();
-
 
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
@@ -23,13 +23,12 @@ public:
     virtual void parseValue(String key, String value);
     virtual void updateSensorData(FirebaseJson *);
 
-
-
 private:
+    MemoryProvider *_memoryProvider;
     bool _outlets[OUTLET_COUNT];
     bool _outletChanged[OUTLET_COUNT];
 };
 
-extern OutletController outletController;
+extern OutletController *outletController;
 
 #endif

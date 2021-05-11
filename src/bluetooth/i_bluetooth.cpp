@@ -10,7 +10,7 @@
 
 bool IBluetooth::isBluetoothRunning()
 {
-    return bleController.isRunning();
+    return bleController->isRunning();
 }
 
 IsModuleConnectedCallbacks::IsModuleConnectedCallbacks(IModule *m)

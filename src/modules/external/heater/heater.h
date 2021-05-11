@@ -10,21 +10,9 @@
 
 #define HEATER_PIN 17
 #define HEATER_SYNC_PIN 16
-#define HEATER_OUTPUT_MIN 0
-#define HEATER_OUTPUT_MAX 100
-#define HEATER_KP 13
-#define HEATER_KI 0.2
-#define HEATER_KD 4
-#define HEATER_STEP_TIME 4000
-
-#define HEATER_FAILSAFE_DELAY 10000
-
-#define HEATER_TEMP_INVALID -127
 #define GOAL_INVALID -1
-
 class AutoPID;
 class dimmerLamp;
-class millisDelay;
 
 enum Mode
 {
@@ -42,7 +30,7 @@ struct HeaterSettings
 class Heater : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    Heater();
+    Heater(int, int pwm = HEATER_PIN, int sync = HEATER_SYNC_PIN);
 
     virtual void beforeShutdown();
 
@@ -71,12 +59,7 @@ public:
 
     double getCurrentPower();
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
-
 private:
-    millisDelay *_delay; //TODO REMOVE
-
     double _oldPower = 0;
 
     NimBLECharacteristic *_currentPowerCharacteristic;

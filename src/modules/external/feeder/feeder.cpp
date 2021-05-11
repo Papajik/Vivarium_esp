@@ -10,16 +10,15 @@
 #define MEMORY_TRIGGER_PREFIX "feedT."
 
 Feeder *feederPtr;
-Feeder::Feeder() : IModule(CONNECTED_KEY)
+Feeder::Feeder(int position, int in_1, int in_2, int in_3, int in_4) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Feeder created");
-    _stepper = new Stepper(FEEDER_STEPS_PER_REVOLUTION, FEEDER_IN_1, FEEDER_IN_3, FEEDER_IN_2, FEEDER_IN_4);
-    loadSettings();
-    if (wifiProvider.isConnected())
-    {
-        loadTriggersFromNVS();
-        printTriggers();
-    }
+    _stepper = new Stepper(FEEDER_STEPS_PER_REVOLUTION, in_1, in_3, in_2, in_4);
+}
+
+Feeder::~Feeder()
+{
+    delete _stepper;
 }
 
 int Feeder::asignAvailableMemoryId()
@@ -50,23 +49,32 @@ void Feeder::onLoop()
         char time[40];
         ultoa(now, time, 10);
 
-        firebaseService.uploadCustomData("feed/", "/" + String(time), "true");
+        firebaseService->uploadCustomData("feed/", "/" + String(time), "true");
 
         _feeded = false;
     }
 }
 void Feeder::saveSettings()
 {
-    memoryProvider.saveStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings));
+    _memoryProvider->saveStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings));
     _settingsChanged = false;
 }
+
 bool Feeder::loadSettings()
 {
-    if (!memoryProvider.loadStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings)))
+    if (!_memoryProvider->loadStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings)))
     {
         _settings = {BOX};
         saveSettings();
     }
+
+    //TODO check if date is available rather than checking wifi connection
+    if (wifiProvider->isConnected())
+    {
+        loadTriggersFromNVS();
+        printTriggers();
+    }
+
     return true;
 }
 
@@ -77,7 +85,7 @@ void Feeder::removeTrigger(String key)
     if (it != _triggers.end())
     {
         printlnA("Removing trigger");
-        memoryProvider.removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
+        _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
         Alarm.free(it->second->id);                 // clear alarm
         availableIds[it->second->storageId] = true; // id is available again
         _triggers.erase(_triggers.find(key));       // remove record from map
@@ -100,7 +108,7 @@ void Feeder::loadTriggersFromNVS()
 void Feeder::loadTriggerFromNVS(int index)
 {
     FeedTriggerMem enc;
-    if (memoryProvider.loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(FeedTriggerMem)))
+    if (_memoryProvider->loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(FeedTriggerMem)))
     {
         printlnA("Loading feed trigger from memory");
         auto t = std::make_shared<FeedTrigger>();
@@ -169,13 +177,13 @@ void Feeder::onConnectionChange()
     printlnA("Feeder callback");
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_FEEDER_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_FEEDER_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
     if (isBluetoothRunning())
     {
-         std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }
@@ -226,7 +234,7 @@ void Feeder::saveTriggerToNVS(std::shared_ptr<FeedTrigger> trigger)
     m.minute = trigger->minute;
     printA("Size of trigger = ");
     printlnA(sizeof(FeedTriggerMem));
-    memoryProvider.saveStruct(String(MEMORY_TRIGGER_PREFIX) + String(trigger->storageId), &m, sizeof(FeedTriggerMem));
+    _memoryProvider->saveStruct(String(MEMORY_TRIGGER_PREFIX) + String(trigger->storageId), &m, sizeof(FeedTriggerMem));
 }
 
 bool Feeder::parseTime(std::shared_ptr<FeedTrigger> trigger, int time)

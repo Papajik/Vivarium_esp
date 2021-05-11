@@ -2,18 +2,9 @@
 #define _FIREBASE_SERVICE_H_
 
 #include <Arduino.h>
-#include <freertos/semphr.h>
 
-#define STORAGE_BUCKET_ID "vivarium-control-unit.appspot.com"
-#define FIREBASE_HOST "vivarium-control-unit.firebaseio.com"
-#define FIREBASE_TOKEN "bd2c2a9af5f31269ce8868e8b0051839"
-#define FIREBASE_CERT_FILE "/cert.cer"
+
 #include "../bluetooth/i_bluetooth.h"
-#define FIREBASE_SERVICE_ACCOUNT "/service_account_file.json"
-#define DEFAULT_UPLOAD_DELAY 60000                 //1 min
-#define REFRESH_FCM_TOKENS_INTERVAL 60 * 60 * 1000 // every 1 hour refresh FCM tokens
-
-#define FBDO_CLEAR_DELAY 170 * 1000
 
 #define NUMBER_OF_PATHS 5
 
@@ -27,6 +18,9 @@ struct fb_esp_auth_signin_provider_t;
 struct fb_esp_cfg_t;
 class IFirebaseModule;
 class MultiPathStream;
+class MemoryProvider;
+class Auth;
+class MessagingService;
 
 // enum FCM_TYPE
 // {
@@ -46,7 +40,7 @@ enum ChildPath
 class FirebaseService : public IBluetooth
 {
 public:
-    FirebaseService();
+    FirebaseService(Auth *, MemoryProvider *, MessagingService *);
 
     void setupFirebase();
     void stopFirebase();
@@ -68,16 +62,16 @@ public:
 
     void checkSSLConnected();
 
+    void factoryReset();
+
     void onLoop();
-
-
 
     // Messaging
     void refreshFCMTokens();
     void getFCMSettings();
     void parseFCMTokens(FirebaseJson *);
 
-    void sendFCM(String title, String body, String token, bool timePrefix);
+   
 
     void uploadState(String, bool);
     void uploadState(String, float);
@@ -99,6 +93,10 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
+    Auth *_auth;
+    MemoryProvider *_memoryProvider;
+    MessagingService *_messagingService;
+
     bool _toStart = false;
     bool _toStop = false;
 
@@ -115,29 +113,26 @@ private:
 
     std::map<String, unsigned long> _lastValueSendTimeMap;
 
-    String lockOwner = "";
-    void lockSemaphore(String log);
-    void unlockSemaphore();
+
 
     std::vector<String>
         _firebaseMessagingTokens;
 
-    SemaphoreHandle_t bdoMutex;
+
     void startStream();
     void stopStream();
 
     int count = 2541;
     std::vector<IFirebaseModule *> _modules;
 
-    bool _running = false;
-    bool _initialized = false;
-    FirebaseData *firebaseBdo;
+    bool _running;
+    bool _initialized;
     FirebaseData *firebaseStreamBdo;
 
     fb_esp_auth_signin_provider_t *firebaseAuth;
     fb_esp_cfg_t *firebaseConfig;
 };
 
-extern FirebaseService firebaseService;
+extern FirebaseService *firebaseService;
 
 #endif

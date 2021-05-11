@@ -11,10 +11,12 @@
 #define FIREBASE_LED_CONNECTED_KEY "/led/connected"
 
 #define LED_PIN 25
-#define LED_COUNT 20
-#define LED_CHANNEL 1
+
 #define SETTINGS_LED_KEY "led"
 
+
+#define LED_COUNT 20
+#define LED_CHANNEL 1
 #define LED_TRIGGERS_MAX 10
 #define INVALID_MEMORY_ID -1
 
@@ -51,7 +53,7 @@ class LedModule : public IModule,
                   public IBluetooth
 {
 public:
-    LedModule();
+    LedModule(int position, int pin = LED_PIN);
     ~LedModule();
     void setColor(uint32_t color);
     uint32_t getColor();
@@ -78,8 +80,7 @@ public:
 
     bool isStripConnected();
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
+
 
 private:
     bool _stripConnected = false;

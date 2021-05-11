@@ -3,10 +3,14 @@
 
 #include "../state/state.h"
 #include "../memory/memory_provider.h"
+
+class FirebaseService;
+class LedControl;
+
 class IModule
 {
 public:
-    IModule(String);
+    IModule(String, int);
     ~IModule();
 
     bool isConnected();
@@ -23,10 +27,15 @@ public:
     virtual void saveSettings() = 0;
     virtual bool loadSettings() = 0;
 
-    virtual bool isFModule() { return false; }
-    virtual bool isBModule() { return false; }
+    void setMemoryProvider(MemoryProvider *provider);
+
+    void setLedControl(LedControl *ledControl);
 
 protected:
+    uint8_t _position;
+
+    LedControl *_ledControl;
+    MemoryProvider *_memoryProvider;
     bool _connected = false;
     bool _lastConnected = false;
     bool _sourceIsButton = false;

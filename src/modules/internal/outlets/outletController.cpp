@@ -4,16 +4,13 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-OutletController outletController;
+OutletController *outletController;
 
 #define OUTLET_KEY "o"
 
-OutletController::OutletController()
+OutletController::OutletController(MemoryProvider *provider)
 {
-}
-
-void OutletController::begin()
-{
+    _memoryProvider = provider;
     expander.pinMode(P7, OUTPUT);
     expander.pinMode(P6, OUTPUT);
     expander.pinMode(P5, OUTPUT);
@@ -30,7 +27,7 @@ void OutletController::begin()
 
     for (int i = 0; i < OUTLET_COUNT; i++)
     {
-        setOutlet(i, memoryProvider.loadBool(OUTLET_KEY + String(i), false));
+        setOutlet(i, _memoryProvider->loadBool(OUTLET_KEY + String(i), false));
     }
     onLoop();
 }
@@ -49,7 +46,7 @@ void OutletController::setOutlet(int socket, bool on)
 
     _outlets[socket] = on;
     _outletChanged[socket] = true;
-    memoryProvider.saveBool(OUTLET_KEY + String(socket), on);
+    _memoryProvider->saveBool(OUTLET_KEY + String(socket), on);
 }
 
 bool OutletController::isOutletOn(int socket)

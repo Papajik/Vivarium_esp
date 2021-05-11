@@ -3,24 +3,23 @@
 
 #include <Arduino.h>
 
+template <uint8_t Size>
+class ShiftRegister74HC595;
 
-enum Mode
-{
-    M_OUT,
-    M_IN
-};
+//TODO 
 
 class LedControl
 {
 
 public:
     LedControl();
-    void updateLedStatus(Mode m = M_IN);
+    ~LedControl();
+
+    void updateLedStatus(uint8_t, uint8_t);
 
 private:
-    byte _ledByte = 0b00000000;
+    ShiftRegister74HC595<1> *_sr;
 };
 
-extern LedControl ledControl;
 
 #endif

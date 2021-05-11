@@ -9,10 +9,12 @@
 
 #define FIREBASE_PUMP_CONNECTED_KEY "/pump/connected"
 
+#define WATER_PUMP_PIN 26
+
 class WaterPump : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    WaterPump();
+    WaterPump(int, int pin = WATER_PUMP_PIN);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
@@ -35,10 +37,8 @@ public:
     void setGoal(int);
     int getGoal();
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
-
 private:
+    int _pin;
     int _levelGoal = 0;
     bool _running = false;
     bool _settingsChanged = false;

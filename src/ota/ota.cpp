@@ -16,7 +16,7 @@
 
 static String downloadUrl = "";
 
-OtaService otaService;
+OtaService *otaService;
 
 void HttpEvent(HttpEvent_t *event)
 {
@@ -45,23 +45,24 @@ void HttpEvent(HttpEvent_t *event)
   }
 }
 
-OtaService::OtaService()
+OtaService::OtaService(MemoryProvider *memoryProvider)
 {
   printlnA("OTA SERVICE - created");
   HttpsOTA.onHttpEvent(HttpEvent);
+  _memoryProvider = memoryProvider;
 }
 
 void OtaService::begin()
 {
   printlnA("OTA SERVICE - begin");
-  _firmwareVersion = memoryProvider.loadString(FIRMWARE_VERSION_KEY, "0");
-  _newFirmwareVersion = memoryProvider.loadString(FIRMWARE_NEW_VERSION_KEY, "0");
+  _firmwareVersion = _memoryProvider->loadString(FIRMWARE_VERSION_KEY, "0");
+  _newFirmwareVersion = _memoryProvider->loadString(FIRMWARE_NEW_VERSION_KEY, "0");
   printlnA("Current version = " + _firmwareVersion);
   printlnA("Available version = " + _newFirmwareVersion);
 
   if (_firmwareVersion != _newFirmwareVersion)
   {
-    downloadUrl = memoryProvider.loadString(FIRMWARE_DOWNLOAD_URL_KEY, "");
+    downloadUrl = _memoryProvider->loadString(FIRMWARE_DOWNLOAD_URL_KEY, "");
 
     printA("New firmware download url found:");
     printlnA(downloadUrl);
@@ -69,53 +70,29 @@ void OtaService::begin()
   }
 }
 
-/**
- * @brief Parses firmware version. If version is new and has valid url, then proceeds to update.
- * 
- *  
- * If version is same as previous, nothing happens. 
- * If new version is available but URL not, logs and error. 
- * If new version and download URL are available, pause Firebase and Bluetooth, then proceeds to update.
- * 
- * @param version Version from Firebase Stream
- */
-void OtaService::parseNewFirmwareVersion(String version)
+
+bool OtaService::isNewVersion(String version)
 {
-  if (_firmwareVersion != version)
+  return _firmwareVersion != version;
+}
+
+bool OtaService::prepareAndStartUpdate(String downloadUrl, String version)
+{
+  if (!downloadUrl.isEmpty() && !version.isEmpty())
   {
     _newFirmwareVersion = version;
-    printlnA("NEW FIRMWARE AVAILABLE");
-    printlnD("Current version = " + _firmwareVersion);
-    printlnD("Available version = " + _newFirmwareVersion);
-    downloadUrl = firebaseService.getFirmwareDownloadUrl(version);
-    if (downloadUrl != "")
-    {
-      // save new version and name of its file, then proceed to update
-      memoryProvider.saveString(FIRMWARE_NEW_VERSION_KEY, version);
-      memoryProvider.saveString(FIRMWARE_DOWNLOAD_URL_KEY, downloadUrl);
-      printlnD("New firmware file = " + downloadUrl);
-      firebaseService.stopFirebase();
-      bleController.stop();
-      startUpdate();
-    }
-    else
-    {
-      printlnE("New firmware URL not ready, abort update");
-    }
+    _memoryProvider->saveString(FIRMWARE_NEW_VERSION_KEY, version);
+    _memoryProvider->saveString(FIRMWARE_DOWNLOAD_URL_KEY, String(downloadUrl));
+    startUpdate();
+    return true;
   }
+  return false;
 }
 
 void OtaService::startUpdate()
 {
-
-  if (downloadUrl != "")
-  {
-    printlnA("Starting to upgrade");
-    printA("Url = ");
-    printlnA(downloadUrl);
-    _firmwareUpdateRunning = true;
-    HttpsOTA.begin(downloadUrl.c_str(), cert, false);
-  }
+  _firmwareUpdateRunning = true;
+  HttpsOTA.begin(downloadUrl.c_str(), cert, false);
 }
 
 int OtaService::onLoop()
@@ -129,7 +106,7 @@ int OtaService::onLoop()
     if (otaStatus == HTTPS_OTA_SUCCESS)
     {
       printlnA("Firmware updated. Rebooting device");
-      memoryProvider.saveString(FIRMWARE_VERSION_KEY, _newFirmwareVersion);
+      _memoryProvider->saveString(FIRMWARE_VERSION_KEY, _newFirmwareVersion);
       return OTA_COMPLETED;
     }
     else if (otaStatus == HTTPS_OTA_FAIL)

@@ -9,12 +9,12 @@
 
 #define FCM_KEY "DHT"
 
-DhtModule::DhtModule(int pin) : IModule(CONNECTED_KEY)
+
+
+DhtModule::DhtModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
     dht = new DHT(pin, DHT11);
     dht->begin();
-
-    loadSettings();
 }
 
 void DhtModule::readDht()
@@ -53,7 +53,7 @@ void DhtModule::setHumidity(float h)
     {
 
         _humidity = h;
-        firebaseService.uploadCustomData("devices/", FIREBASE_STATE_HUM, _humidity);
+        firebaseService->uploadCustomData("devices/", FIREBASE_STATE_HUM, _humidity);
         stateStorage.setValue(STATE_DHT_HUMIDITY, _humidity);
         if (isBluetoothRunning())
         {
@@ -67,7 +67,7 @@ void DhtModule::setTemp(float t)
     if (t != _temp)
     {
         _temp = t;
-        firebaseService.uploadCustomData("devices/", FIREBASE_STATE_TEMP, _temp);
+        firebaseService->uploadCustomData("devices/", FIREBASE_STATE_TEMP, _temp);
         stateStorage.setValue(STATE_DHT_TEMPERATURE, _temp);
         if (isBluetoothRunning())
         {
@@ -97,27 +97,27 @@ void DhtModule::onLoop()
 void DhtModule::saveSettings()
 {
     printlnV("DHT - Saving settings");
-    memoryProvider.saveFloat(SETTINGS_DHT_MIN_TEMP, _minTemp);
-    memoryProvider.saveFloat(SETTINGS_DHT_MAX_TEMP, _maxTemp);
-    memoryProvider.saveFloat(SETTINGS_DHT_MIN_HUM, _minHum);
-    memoryProvider.saveFloat(SETTINGS_DHT_MAX_HUM, _maxHum);
+    _memoryProvider->saveFloat(SETTINGS_DHT_MIN_TEMP, _minTemp);
+    _memoryProvider->saveFloat(SETTINGS_DHT_MAX_TEMP, _maxTemp);
+    _memoryProvider->saveFloat(SETTINGS_DHT_MIN_HUM, _minHum);
+    _memoryProvider->saveFloat(SETTINGS_DHT_MAX_HUM, _maxHum);
 
     _settingsChanged = false;
 }
 
 bool DhtModule::loadSettings()
 {
-    _minTemp = memoryProvider.loadFloat(SETTINGS_DHT_MIN_TEMP, DHT_INVALID_VALUE);
-    _maxTemp = memoryProvider.loadFloat(SETTINGS_DHT_MAX_TEMP, DHT_INVALID_VALUE);
-    _minHum = memoryProvider.loadFloat(SETTINGS_DHT_MIN_HUM, DHT_INVALID_VALUE);
-    _maxHum = memoryProvider.loadFloat(SETTINGS_DHT_MAX_HUM, DHT_INVALID_VALUE);
+    _minTemp = _memoryProvider->loadFloat(SETTINGS_DHT_MIN_TEMP, DHT_INVALID_VALUE);
+    _maxTemp = _memoryProvider->loadFloat(SETTINGS_DHT_MAX_TEMP, DHT_INVALID_VALUE);
+    _minHum = _memoryProvider->loadFloat(SETTINGS_DHT_MIN_HUM, DHT_INVALID_VALUE);
+    _maxHum = _memoryProvider->loadFloat(SETTINGS_DHT_MAX_HUM, DHT_INVALID_VALUE);
     return true;
 }
 void DhtModule::onConnectionChange()
 {
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_DHT_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_DHT_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
@@ -174,11 +174,11 @@ void DhtModule::checkBounds()
         // upper
         if (_temp > _maxTemp)
         {
-            messagingService.sendFCM(FCM_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            messagingService->sendFCM(FCM_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
         if (_temp < _minTemp)
         {
-            messagingService.sendFCM(FCM_KEY, "Temperature is below minimum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            messagingService->sendFCM(FCM_KEY, "Temperature is below minimum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
     }
 
@@ -187,11 +187,11 @@ void DhtModule::checkBounds()
         // upper
         if (_humidity > _maxHum)
         {
-            messagingService.sendFCM(FCM_KEY, "Humidity is  over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            messagingService->sendFCM(FCM_KEY, "Humidity is  over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
         if (_humidity < _minHum)
         {
-            messagingService.sendFCM(FCM_KEY, "Humidity is below minimum alowed", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            messagingService->sendFCM(FCM_KEY, "Humidity is below minimum alowed", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
         }
     }
 }

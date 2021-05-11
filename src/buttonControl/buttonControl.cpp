@@ -1,10 +1,18 @@
 #include "buttonControl.h"
 #include "../analog/analog.h"
-#include "moduleControl/moduleControl.h"
-#include "bluetooth/bluetoothControl.h"
+
+#include "../bluetooth/bluetooth.h"
+#include "../moduleControl/moduleControl.h"
+#include "../firebase/firebase.h"
+
 #include <freertos/task.h>
 
-ButtonControl buttonControl;
+#include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+#include <WString.h>
+
+ButtonControl *buttonControl;
+
+#define DEBOUNCE_INTERVAL 200
 
 void readAnalogTask(void *parameter)
 {
@@ -14,21 +22,17 @@ void readAnalogTask(void *parameter)
     float avg = ADC_RESOLUTION / float(buttonCount);
     int val;
     int n;
+
     for (;;)
     {
         val = analogRead(M_BUTTONS_PIN); // ADC1 - channel 6 on GPIO2
         for (n = 1; n < 8; n++)
             val += analogRead(M_BUTTONS_PIN);
         val /= 8;
-        // printA("Value = ");
-        // printlnA(val);
-        // printA("Button count = "); printA(buttonCount); printA(", avg =");printA(avg);
-        // printA(", over = ");printA((buttonCount - 0.5) * avg); printA(", mc = ");printlnA(float(MODULE_COUNT))
 
         if (val > (buttonCount - 0.5) * avg)
-        {        
-            moduleControl.buttonPressed(MODULE_BUTTON_RELEASED);
-            bluetoothControl.buttonPressed(BLUETOOTH_BUTTON_RELEASED);
+        {
+            buttonControl->buttonPressed(BUTTON_RELEASED);
         }
         else
         {
@@ -41,30 +45,18 @@ void readAnalogTask(void *parameter)
                     printA(i);
                     printA(" (");
                     printA(val);
-                    printlnA(")");  
+                    printlnA(")");
 
                     if (i == BLUETOOTH_BUTTON)
                     {
-                        bluetoothControl.buttonPressed(i);
+                        buttonControl->buttonPressed(BLUETOOTH_BUTTON);
                     }
                     else
                     {
-                        moduleControl.buttonPressed(MODULE_COUNT - i - 1);
+                        buttonControl->buttonPressed(MODULE_COUNT - 1 - i);
                     }
 
                     break;
-
-                    // if (i < MODULE_COUNT)
-                    // {
-                    //     moduleControl.buttonPressed(i);
-                    // }
-                    // else
-
-                    // {
-                    //     bluetoothControl.buttonPressed(i);
-                    // }
-
-                    // break;
                 }
             }
         }
@@ -73,8 +65,43 @@ void readAnalogTask(void *parameter)
     vTaskDelete(NULL);
 }
 
-ButtonControl::ButtonControl()
+ButtonControl::ButtonControl(FirebaseService *firebaseService, ModuleControl *moduleControl)
 {
+    _firebaseService = firebaseService;
+    _moduleControl = moduleControl;
+}
+
+void ButtonControl::buttonPressed(int button)
+{
+    if (_lastPressedButton == button || millis() < DEBOUNCE_INTERVAL + _lastPressedTime)
+    {
+        return;
+    }
+
+    _lastPressedTime = millis();
+    _lastPressedButton = button;
+
+    printA("Pressed button");
+    printlnA(button);
+    if (button == BLUETOOTH_BUTTON)
+    {
+        if (bleController->isRunning())
+        {
+            printlnA("Stopping bluetooth and starting firebse");
+            bleController->setStopInFuture();
+            _firebaseService->setStartInFuture();
+        }
+        else
+        {
+            printlnA("Starting bluetooth and stopping firebase");
+            _firebaseService->setStopInFuture();
+            bleController->setStartInFuture();
+        }
+    }
+    else
+    {
+        _moduleControl->buttonPressed(button);
+    }
 }
 
 void ButtonControl::start()

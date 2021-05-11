@@ -1,24 +1,20 @@
 
-#include "memory_provider.h"
+#include "memory_provider_internal.h"
 #include <Preferences.h>
-
-#include "../auth/auth.h"
 
 #include <nvs.h>
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-MemoryProvider memoryProvider;
+MemoryProviderInternal::MemoryProviderInternal()
+{
+}
 
-MemoryProvider::MemoryProvider(){
-
-};
-
-void MemoryProvider::begin()
+void MemoryProviderInternal::begin(String name = "vivarium")
 {
     // printlnA("Initializing memory");
     _preferences = new Preferences();
-    _preferences->begin("vivarium", false);
+    _preferences->begin(name.c_str(), false);
     nvs_stats_t nvs_stats;
     nvs_get_stats(NULL, &nvs_stats);
     // printA("Count: UsedEntries = ");
@@ -29,19 +25,29 @@ void MemoryProvider::begin()
     // printlnA(nvs_stats.total_entries);
     if (_preferences->isKey(NUMBER_OF_WRITES_KEY))
     {
-        writeCount = _preferences->getUInt(NUMBER_OF_WRITES_KEY, 0);
+        _writeCount = _preferences->getUInt(NUMBER_OF_WRITES_KEY, 0);
     }
     else
     {
-        writeCount = 0;
+        _writeCount = 0;
+    }
+
+    if (_preferences->isKey(NUMBER_OF_BYTES_KEY))
+    {
+        _bytesWritten = _preferences->getUInt(NUMBER_OF_BYTES_KEY, 0);
+    }
+    else
+    {
+        _bytesWritten = 0;
     }
 }
 
-void MemoryProvider::end(){
+void MemoryProviderInternal::end()
+{
     _preferences->end();
 }
 
-bool MemoryProvider::loadStruct(String key, void *value, size_t len)
+bool MemoryProviderInternal::loadStruct(String key, void *value, size_t len)
 {
 
     if (_preferences->isKey(key.c_str()))
@@ -67,42 +73,34 @@ bool MemoryProvider::loadStruct(String key, void *value, size_t len)
     }
 }
 
-void MemoryProvider::saveStruct(String key, const void *value, size_t len)
+void MemoryProviderInternal::saveStruct(String key, const void *value, size_t len)
 {
     printA("Saving struct under key ");
     printlnA(key);
     size_t bytes = _preferences->putBytes(key.c_str(), value, len);
     debugA("Saved %d bytes", bytes);
-    _incerementWrites();
+    _incrementWrites();
 }
 
-String MemoryProvider::_getStringFromMemory(String key)
+void MemoryProviderInternal::_incrementWrites()
 {
-    if (_preferences->isKey(key.c_str()))
-    {
-        printlnA("Key found, loading from memory");
-        return _preferences->getString(key.c_str(), "");
-    }
-    else
-    {
-        printlnA("Key not found, initializing memory");
-        _preferences->putString(key.c_str(), "");
-        _incerementWrites();
-        return "";
-    }
-};
-
-void MemoryProvider::_incerementWrites()
-{
-    writeCount++;
+    _writeCount++;
     printD("New number of writes = ");
-    printD(writeCount);
+    printD(_writeCount);
     printD(" (");
-    printD(_preferences->putUInt(NUMBER_OF_WRITES_KEY, writeCount));
+    printD(_preferences->putUInt(NUMBER_OF_WRITES_KEY, _writeCount));
     printlnD(" bytes)");
 }
 
-void MemoryProvider::saveString(String key, String value)
+void MemoryProviderInternal::_incrementBytes(int bytes)
+{
+    _bytesWritten += bytes;
+    printD("New number of bytes = ");
+    printD(_bytesWritten);
+    _preferences->putUInt(NUMBER_OF_BYTES_KEY, _bytesWritten);
+}
+
+void MemoryProviderInternal::saveString(String key, String value)
 {
     printD("MP: Saving string ");
     printD(value);
@@ -128,7 +126,7 @@ void MemoryProvider::saveString(String key, String value)
     }
 }
 
-String MemoryProvider::loadString(String key, String defaultValue)
+String MemoryProviderInternal::loadString(String key, String defaultValue)
 {
     if (_preferences->isKey(key.c_str()))
     {
@@ -142,7 +140,7 @@ String MemoryProvider::loadString(String key, String defaultValue)
     }
 }
 
-void MemoryProvider::saveBool(String key, bool value)
+void MemoryProviderInternal::saveBool(String key, bool value)
 {
     printD("MP: Saving bool ");
     printD(value ? "true" : "false");
@@ -159,7 +157,7 @@ void MemoryProvider::saveBool(String key, bool value)
         printlnD(key);
     }
 }
-bool MemoryProvider::loadBool(String key, bool defaultValue)
+bool MemoryProviderInternal::loadBool(String key, bool defaultValue)
 {
     if (_preferences->isKey(key.c_str()))
     {
@@ -171,7 +169,7 @@ bool MemoryProvider::loadBool(String key, bool defaultValue)
     }
 }
 
-void MemoryProvider::saveInt(String key, uint32_t value)
+void MemoryProviderInternal::saveInt(String key, uint32_t value)
 {
     printD("MP: Saving int ");
     printD(value);
@@ -196,7 +194,7 @@ void MemoryProvider::saveInt(String key, uint32_t value)
         printlnD(" - int already stored");
     }
 }
-uint32_t MemoryProvider::loadInt(String key, uint32_t defaultValue)
+uint32_t MemoryProviderInternal::loadInt(String key, uint32_t defaultValue)
 {
     if (_preferences->isKey(key.c_str()))
     {
@@ -208,7 +206,7 @@ uint32_t MemoryProvider::loadInt(String key, uint32_t defaultValue)
     }
 }
 
-void MemoryProvider::saveFloat(String key, float value)
+void MemoryProviderInternal::saveFloat(String key, float value)
 {
     printD("MP: Saving float ");
     printD(value);
@@ -234,7 +232,7 @@ void MemoryProvider::saveFloat(String key, float value)
     }
 }
 
-float MemoryProvider::loadFloat(String key, float defaultValue)
+float MemoryProviderInternal::loadFloat(String key, float defaultValue)
 {
     if (_preferences->isKey(key.c_str()))
     {
@@ -246,7 +244,7 @@ float MemoryProvider::loadFloat(String key, float defaultValue)
     }
 }
 
-void MemoryProvider::saveDouble(String key, double value)
+void MemoryProviderInternal::saveDouble(String key, double value)
 {
     printD("MP: Saving double ");
     if (!_preferences->isKey(key.c_str()))
@@ -271,7 +269,7 @@ void MemoryProvider::saveDouble(String key, double value)
     }
 }
 
-float MemoryProvider::loadDouble(String key, double defaultValue)
+float MemoryProviderInternal::loadDouble(String key, double defaultValue)
 {
     if (_preferences->isKey(key.c_str()))
     {
@@ -283,13 +281,13 @@ float MemoryProvider::loadDouble(String key, double defaultValue)
     }
 }
 
-void MemoryProvider::removeKey(String key)
+void MemoryProviderInternal::removeKey(String key)
 {
     printlnA("MP: Removing key: " + key + "\n");
     _preferences->remove(key.c_str());
 }
 
-void MemoryProvider::factoryReset()
+void MemoryProviderInternal::factoryReset()
 {
     _preferences->clear();
 }

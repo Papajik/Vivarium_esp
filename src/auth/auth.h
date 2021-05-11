@@ -7,6 +7,7 @@
 #include <string>
 
 class NimBLECharacteristic;
+class MemoryProvider;
 
 class Auth : public IBluetooth
 {
@@ -14,12 +15,9 @@ private:
     String _userId;
 
 public:
-    Auth();
+    Auth(MemoryProvider *);
     void setUserId(String id);
     String getUserId();
-
-
-
 
     bool isClaimed();
     void unclaim();
@@ -28,7 +26,6 @@ public:
     void clearUserIdBuffer();
     String getDeviceId();
     void setDeviceId(String deviceId);
-
 
     void loadFromNVS();
     void _saveToNVS();
@@ -44,8 +41,7 @@ private:
     NimBLECharacteristic *deviceIdCharacteristic;
     NimBLECharacteristic *characteristicIsClaimed;
     std::string _userIdbuffer;
+    MemoryProvider *_memoryProvider;
 };
-
-extern Auth auth;
 
 #endif

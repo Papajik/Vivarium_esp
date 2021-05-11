@@ -20,7 +20,7 @@
 class Humidifier : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    Humidifier(int);
+    Humidifier(int, int);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
@@ -40,8 +40,7 @@ public:
 
     bool isHumidifierOn();
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
+ 
 
 private:
     unsigned long _lastValidTemp = 0;

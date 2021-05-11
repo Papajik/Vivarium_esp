@@ -22,16 +22,18 @@ public:
     virtual String getSettingKey() = 0;
     virtual void parseValue(String key, String value) = 0;
     virtual void updateSensorData(FirebaseJson *) = 0;
-    // void addFirebaseService(FirebaseService *service) { firebaseService = service; };
+    void addFirebaseService(FirebaseService *service) { firebaseService = service; };
+    void addMessagingService(MessagingService *service) { messagingService = service; };
 
 protected:
-    // FirebaseService *firebaseService;
+    FirebaseService *firebaseService;
+    MessagingService *messagingService;
 
     void sendConnectionChangeNotification(String module, bool connected)
     {
         String title = "Module " + module;
 
-        messagingService.sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
+        messagingService->sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
     }
 
     void printJson(FirebaseJson *json)

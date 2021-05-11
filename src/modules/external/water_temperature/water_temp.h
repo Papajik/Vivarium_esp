@@ -2,7 +2,7 @@
 #define _WATER_TEMP_H
 
 #define WATER_TEMP_PIN 4
-#define WATER_TEMP_READ_DELAY 500
+
 #define WATER_TEMP_INVALID_VALUE -127
 
 #define SETTINGS_WATER_TEMP_KEY "waterTemp"
@@ -26,7 +26,7 @@ struct WaterTempSettings
 class WaterTempModule : public IModule, public IBluetooth, public IFirebaseModule
 {
 public:
-    WaterTempModule();
+    WaterTempModule(int, int pin = WATER_TEMP_PIN);
     ~WaterTempModule();
     void setMinTemperature(float);
     void setMaxTemperature(float);
@@ -53,8 +53,6 @@ public:
     virtual void updateSensorData(FirebaseJson *);
     void readTemperature();
 
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
 
 private:
     float _currentTemp = WATER_TEMP_INVALID_VALUE;

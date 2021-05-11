@@ -5,19 +5,17 @@
 #define SETTINGS_PUMP_GOAL_KEY "pumpG"
 #define FIREBASE_IS_ON_STATE "/pump/isOn"
 
-#define WATER_PUMP_PIN (int)26
-
-
-WaterPump::WaterPump() : IModule(CONNECTED_KEY)
+WaterPump::WaterPump(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
+    _pin = pin;
 }
 
 void WaterPump::startPump()
 {
     _running = true;
-    digitalWrite(WATER_PUMP_PIN, HIGH);
+    digitalWrite(_pin, HIGH);
 
-    firebaseService.uploadState(FIREBASE_IS_ON_STATE, true);
+    firebaseService->uploadState(FIREBASE_IS_ON_STATE, true);
 
     if (isBluetoothRunning())
     {
@@ -28,8 +26,8 @@ void WaterPump::startPump()
 void WaterPump::stopPump()
 {
     _running = false;
-    digitalWrite(WATER_PUMP_PIN, LOW);
-    firebaseService.uploadState(FIREBASE_IS_ON_STATE, false);
+    digitalWrite(_pin, LOW);
+    firebaseService->uploadState(FIREBASE_IS_ON_STATE, false);
     if (isBluetoothRunning())
     {
         _pumpRunningCharacteristic->setValue("false");
@@ -80,12 +78,12 @@ void WaterPump::onLoop()
 void WaterPump::saveSettings()
 {
     printlnA("Fan - save settings");
-    memoryProvider.saveInt(SETTINGS_PUMP_GOAL_KEY, _levelGoal);
+    _memoryProvider->saveInt(SETTINGS_PUMP_GOAL_KEY, _levelGoal);
     _settingsChanged = false;
 }
 bool WaterPump::loadSettings()
 {
-    _levelGoal = memoryProvider.loadInt(SETTINGS_PUMP_GOAL_KEY, 0);
+    _levelGoal = _memoryProvider->loadInt(SETTINGS_PUMP_GOAL_KEY, 0);
     return true;
 }
 
@@ -93,13 +91,13 @@ void WaterPump::onConnectionChange()
 {
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_PUMP_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_PUMP_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
     if (isBluetoothRunning())
     {
-         std::string s = isConnected()?"true":"false";
+        std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
     }

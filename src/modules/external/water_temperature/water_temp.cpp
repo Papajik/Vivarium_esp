@@ -13,15 +13,14 @@
 #define CONNECTED_KEY "temp/c"
 #define FIREBASE_STATE_TEMP "/sensorData/waterTemp/temp"
 
-WaterTempModule::WaterTempModule() : IModule(CONNECTED_KEY)
+#define WATER_TEMP_READ_DELAY 500
+
+WaterTempModule::WaterTempModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Water temp module created");
-    if (!loadSettings())
-    {
-        _settings = {10, 20};
-    }
+    _settings = {10, 20};
 
-    _oneWire = new OneWire(WATER_TEMP_PIN);
+    _oneWire = new OneWire(pin);
     _dallas = new DallasTemperature(_oneWire);
     _dallas->begin();
     _delay = new millisDelay();
@@ -49,7 +48,7 @@ void WaterTempModule::onConnectionChange()
     }
     if (_sourceIsButton)
     {
-        firebaseService.uploadState(FIREBASE_WT_CONNECTED_KEY, isConnected());
+        firebaseService->uploadState(FIREBASE_WT_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 
@@ -125,12 +124,12 @@ void WaterTempModule::stopReading()
 
 void WaterTempModule::saveSettings()
 {
-    memoryProvider.saveStruct(SETTINGS_WATER_TEMP_KEY, &_settings, sizeof(WaterTempSettings));
+    _memoryProvider->saveStruct(SETTINGS_WATER_TEMP_KEY, &_settings, sizeof(WaterTempSettings));
     _settingsChanged = false;
 }
 bool WaterTempModule::loadSettings()
 {
-    return memoryProvider.loadStruct(SETTINGS_WATER_TEMP_KEY, &_settings, sizeof(WaterTempSettings));
+    return _memoryProvider->loadStruct(SETTINGS_WATER_TEMP_KEY, &_settings, sizeof(WaterTempSettings));
 }
 
 void WaterTempModule::readTemperature()
@@ -145,7 +144,7 @@ void WaterTempModule::readTemperature()
     {
 
         printlnD("Uploading new temperature");
-        firebaseService.uploadCustomData("devices/", FIREBASE_STATE_TEMP, _currentTemp);
+        firebaseService->uploadCustomData("devices/", FIREBASE_STATE_TEMP, _currentTemp);
         if (isBluetoothRunning())
         {
             _currentTempCharacteristic->setValue(_currentTemp);
@@ -163,12 +162,12 @@ void WaterTempModule::checkBoundaries()
     {
         if (_currentTemp > _settings.max_temp)
         {
-            messagingService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
+            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
         }
 
         if (_currentTemp < _settings.min_temp)
         {
-            messagingService.sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
+            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
         }
     }
 }

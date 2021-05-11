@@ -2,13 +2,6 @@
 #define _FAN_H_
 
 #define FAN_PIN 27
-#define FAN_RESOLUTION 8
-#define FAN_FREQUENCY 40
-#define FAN_CHANNEL 0
-
-#define FAN_MAX_SPEED 255
-#define FAN_MIN_SPEED 100
-#define FAN_STOP_SPEED 0
 
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
@@ -17,6 +10,11 @@
 #define SETTINGS_FAN_KEY "fan"
 
 #define FIREBASE_FAN_CONNECTED_KEY "/fan/connected"
+
+#define FAN_STOP_SPEED 0
+
+#define FAN_MAX_SPEED 255
+#define FAN_MIN_SPEED 100
 
 struct FanSettings
 {
@@ -27,7 +25,7 @@ struct FanSettings
 class FanController : public IModule, public IFirebaseModule, public IBluetooth
 {
 public:
-    FanController();
+    FanController(int, int pin = FAN_PIN);
     void setStartAt(float);
     void setMaxAt(float);
     float getMaxAt();
@@ -55,9 +53,6 @@ public:
     virtual void onBLEDisconnect();
     virtual void onBLEConnect();
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
-
-    virtual bool isFModule() { return true; }
-    virtual bool isBModule() { return true; }
 
 private:
     NimBLECharacteristic *_currentSpeedCharacteristic;
