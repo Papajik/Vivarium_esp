@@ -26,8 +26,8 @@ public:
     void addMessagingService(MessagingService *service) { messagingService = service; };
 
 protected:
-    FirebaseService *firebaseService;
-    MessagingService *messagingService;
+    FirebaseService *firebaseService = nullptr;
+    MessagingService *messagingService = nullptr;
 
     void sendConnectionChangeNotification(String module, bool connected)
     {

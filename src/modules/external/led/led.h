@@ -14,7 +14,6 @@
 
 #define SETTINGS_LED_KEY "led"
 
-
 #define LED_COUNT 20
 #define LED_CHANNEL 1
 #define LED_TRIGGERS_MAX 10
@@ -31,13 +30,6 @@ struct LedTrigger
     AlarmId id;
     uint32_t color;
     String firebaseKey;
-    LedTrigger() { printlnA("Led trigger created"); }
-    ~LedTrigger()
-    {
-        Serial.print("Led trigger ");
-        Serial.print(firebaseKey);
-        printlnA("destroyed");
-    }
 };
 
 struct LedTriggerMem
@@ -66,6 +58,11 @@ public:
 
     bool getTriggerColor(uint8_t, uint32_t *color);
 
+    bool getNextTriggerColor(uint32_t *);
+    bool getNextTriggerTime(int *);
+
+    int getTriggersCount();
+
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
     virtual void setupBLEState(NimBLEService *state);
@@ -80,8 +77,6 @@ public:
 
     bool isStripConnected();
 
-
-
 private:
     bool _stripConnected = false;
 
@@ -92,6 +87,8 @@ private:
     NimBLECharacteristic *_colorCharacteristic;
 
     bool availableIds[LED_TRIGGERS_MAX];
+
+    std::shared_ptr<LedTrigger> getNextTrigger();
 
     int asignAvailableMemoryId();
 
@@ -110,6 +107,8 @@ private:
     void parseTriggerValue(String, String);
 
     void removeTrigger(String);
+
+    void clearAllTriggers();
 
     /// Module
     virtual void onConnectionChange();

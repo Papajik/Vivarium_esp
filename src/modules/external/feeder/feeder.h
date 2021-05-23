@@ -12,10 +12,10 @@
 #define FEEDER_MODE_1_RPM 15
 #define FEEDER_MODE_2_RPM 15
 #define FEEDER_STEPS_PER_REVOLUTION 2048
-#define FEEDER_IN_1 14
-#define FEEDER_IN_2 12
-#define FEEDER_IN_3 13
-#define FEEDER_IN_4 0
+#define FEEDER_IN_1 0
+#define FEEDER_IN_2 13
+#define FEEDER_IN_3 14
+#define FEEDER_IN_4 27
 #define FEEDER_MAX_TRIGERS 10
 
 #define SETTINGS_FEEDER_KEY "feeder"
@@ -45,13 +45,6 @@ struct FeedTrigger
     int minute;
     AlarmId id;
     String firebaseKey;
-    FeedTrigger() { printlnA("Feeder trigger created"); }
-    ~FeedTrigger()
-    {
-        Serial.print("Feeder trigger ");
-        Serial.print(firebaseKey);
-        printlnA(" destroyed");
-    }
 };
 
 struct FeedTriggerMem
@@ -91,15 +84,28 @@ public:
     void parseTriggerFromCharacteristics();
     void removeTriggerFromCharacteristic();
 
+    bool getNextTriggerTime(int *time);
+
+    int getTriggersCount();
+    int getLastFeeded();
+    bool feededRecently();
+
+    void printTriggers();
+
 private:
-    NimBLECharacteristic *_timeCharacteristic;
-    NimBLECharacteristic *_idCharacteristic;
+    void clearAllTriggers();
+    std::shared_ptr<FeedTrigger> getNextTrigger();
+    int _lastFeededTime = 0;
+
+    NimBLECharacteristic *_timeCharacteristic = nullptr;
+    NimBLECharacteristic *_idCharacteristic = nullptr;
 
     bool _feeded;
     FeederSettings _settings;
     /// FirebaseKEy -> FeedTrigger
     std::map<String, std::shared_ptr<FeedTrigger>> _triggers;
-    Stepper *_stepper;
+    std::shared_ptr<Stepper> _stepper;
+    // Stepper *_stepper = nullptr;
 
     bool availableIds[FEEDER_MAX_TRIGERS];
     int asignAvailableMemoryId();
@@ -111,7 +117,7 @@ private:
     virtual bool loadSettings();
 
     void printTrigger(std::shared_ptr<FeedTrigger>);
-    void printTriggers();
+    
 
     void parseTriggersJson(FirebaseJson *);
     void parseTriggerJson(FirebaseJson *, String);

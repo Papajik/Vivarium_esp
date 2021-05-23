@@ -6,7 +6,6 @@
 
 #include <Firebase_ESP_Client.h>
 
-
 #include "semaphore/firebaseSemaphore.h"
 #include "firebaseBdo.h"
 
@@ -21,6 +20,8 @@ void MessagingService::setDistinctNotification(bool b)
 
 void MessagingService::setDelayFCM(int i)
 {
+    printlnA(i);
+    printlnA(_delayFCMNotification);
     _delayFCMNotification = i;
 }
 

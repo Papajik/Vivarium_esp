@@ -4,6 +4,9 @@
 #include <ErriezRobotDyn4DigitDisplay.h> //https://github.com/Erriez/ErriezRobotDyn4DigitDisplay
 #include <millisDelay.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+#include <time.h>
+
+int hour, minute;
 
 ClockDisplay::ClockDisplay(int clk, int dio)
 {
@@ -17,29 +20,28 @@ void ClockDisplay::begin()
     _clock->begin();
     _clock->setBrightness(clockSettings.brigthness);
     _delay->start(clockSettings.refresh_interval);
-    _clock->doubleDots(true);
+    displayInvalid();
+
 }
 
 void ClockDisplay::refreshDisplay()
 {
     if (_delay->justFinished())
     {
-        struct tm timeinfo;
+        tm timeinfo;
         if (!getLocalTime(&timeinfo))
         {
-
-            for (int i = 0; i < 4; i++)
-            {
-               _clock->digit(i, 0);
-            }
-            _clock->doubleDots(false);
-
             printlnE("ClockDisplay - Failed to obtain time");
+            displayInvalid();
             return;
         }
-        printlnV(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-        _clock->time(timeinfo.tm_hour, timeinfo.tm_min);
-        _clock->doubleDots(true);
+        printlnI(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+        printlnI(timeinfo.tm_hour);
+        printlnI(timeinfo.tm_min);
+        minute = timeinfo.tm_min;
+        hour = timeinfo.tm_hour;
+        // _clock->time(timeinfo.tm_hour, timeinfo.tm_min);
+        _clock->time(hour, minute);
         if (clockSettings.refresh_interval != _delay->delay())
         {
             _delay->stop();
@@ -58,6 +60,16 @@ void ClockDisplay::setRefreshInterval(unsigned long interval)
     {
         clockSettings.refresh_interval = interval;
     }
+}
+
+void ClockDisplay::displayInvalid()
+{
+    printlnA("Display invalid");
+    for (int i = 0; i < 4; i++)
+    {
+        _clock->digit(i, 0);
+    }
+    _clock->doubleDots(false);
 }
 
 ClockDisplay clockDisplay(CLK_PIN, DIO_PIN);

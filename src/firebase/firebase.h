@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-
 #include "../bluetooth/i_bluetooth.h"
 
 #define NUMBER_OF_PATHS 5
@@ -14,8 +13,7 @@
 class FirebaseData;
 class FirebaseJson;
 class FirebaseStream;
-struct fb_esp_auth_signin_provider_t;
-struct fb_esp_cfg_t;
+
 class IFirebaseModule;
 class MultiPathStream;
 class MemoryProvider;
@@ -37,10 +35,14 @@ enum ChildPath
     BLE_NAME = 4
 };
 
+void testFirebase();
+
+
 class FirebaseService : public IBluetooth
 {
 public:
     FirebaseService(Auth *, MemoryProvider *, MessagingService *);
+    ~FirebaseService();
 
     void setupFirebase();
     void stopFirebase();
@@ -70,8 +72,6 @@ public:
     void refreshFCMTokens();
     void getFCMSettings();
     void parseFCMTokens(FirebaseJson *);
-
-   
 
     void uploadState(String, bool);
     void uploadState(String, float);
@@ -107,17 +107,14 @@ private:
     unsigned long _lastCleanTime = 0; // clear firebaseObject every 2:50 to provide enough heap for SSL hanshake
     unsigned long _lastFCMTokenCheck = 0;
 
-    int _delayFCMNotification = 0;
-    bool _notificationConnectionOn = false;
-    bool _notificationCrossLimit = false;
+    // int _delayFCMNotification = 0;
+    // bool _notificationConnectionOn = false;
+    // bool _notificationCrossLimit = false;
 
     std::map<String, unsigned long> _lastValueSendTimeMap;
 
-
-
     std::vector<String>
         _firebaseMessagingTokens;
-
 
     void startStream();
     void stopStream();
@@ -125,12 +122,9 @@ private:
     int count = 2541;
     std::vector<IFirebaseModule *> _modules;
 
-    bool _running;
-    bool _initialized;
+    bool _running = false;
+    bool _initialized = false;
     FirebaseData *firebaseStreamBdo;
-
-    fb_esp_auth_signin_provider_t *firebaseAuth;
-    fb_esp_cfg_t *firebaseConfig;
 };
 
 extern FirebaseService *firebaseService;

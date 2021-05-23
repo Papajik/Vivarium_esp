@@ -10,7 +10,7 @@
 /// Firebase
 void LedModule::parseJson(FirebaseJson *data, String path)
 {
-    printlnA("LED - parseJson");
+    printlnI("LED - parseJson");
     printlnV("Path: " + path);
 
     FirebaseJsonData jsonData;
@@ -54,7 +54,7 @@ void LedModule::parseJson(FirebaseJson *data, String path)
     //   printTriggers();
 }
 
-String LedModule::getSettingKey() {return SETTINGS_LED_KEY; }
+String LedModule::getSettingKey() { return SETTINGS_LED_KEY; }
 
 void LedModule::parseValue(String key, String value)
 {
@@ -106,7 +106,7 @@ void LedModule::parseTriggersJson(FirebaseJson *json)
     String key;
     String value;
     String firebaseId;
-    
+
     FirebaseJsonData innerData;
     FirebaseJson innerJson;
     std::vector<String> toDelete;
@@ -195,7 +195,6 @@ void LedModule::parseTriggersJson(FirebaseJson *json)
                 {
                     auto trigger = std::make_shared<LedTrigger>();
                     innerJson.setJsonData(value);
-    
 
                     if (innerJson.get(innerData, "/time", false))
                     {
@@ -233,7 +232,7 @@ void LedModule::parseTriggersJson(FirebaseJson *json)
 void LedModule::parseTriggerJson(FirebaseJson *json, String path)
 {
     FirebaseJsonData jsonData;
-    printlnA("LED  parseTriggerJson");
+    printlnI("LED  parseTriggerJson");
     int index = path.lastIndexOf("/");
     String triggerKey = path.substring(index + 1);
 

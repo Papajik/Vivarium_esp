@@ -1,7 +1,7 @@
 #ifndef _FAN_H_
 #define _FAN_H_
 
-#define FAN_PIN 27
+#define FAN_PIN 12
 
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"

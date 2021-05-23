@@ -18,7 +18,7 @@ void Feeder::parseJson(FirebaseJson *json, String path)
     if (path.startsWith(PREFIX_SETTINGS + String(KEY_TRIGGERS)))
     {
         parseTriggerJson(json, path);
-        printTriggers();
+        // printTriggers();
         return;
     }
 
@@ -102,8 +102,8 @@ void Feeder::parseTriggerValue(String key, String value)
     String triggerKey = key.substring(0, index);
     triggerKey = triggerKey.substring(triggerKey.lastIndexOf("/") + 1);
 
-    printlnV("jsonKey =" + jsonKey);
-    printlnV("triggerKey = " + triggerKey);
+    printlnA("jsonKey =" + jsonKey);
+    printlnA("triggerKey = " + triggerKey);
 
     if (value == "null")
     {

@@ -103,8 +103,19 @@ void WiFiProvider::restart()
 
 void WiFiProvider::syncTime()
 {
-    printlnD("Sync time with NTP server");
+    printlnA("Sync time with NTP server");
     configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC, NTP_SERVER_EUROPE, NTP_SERVER, NTP_SERVER_BACKUP);
+    tm timeinfo;
+    if (!getLocalTime(&timeinfo))
+    {
+        printlnE("Syncing Failed");
+        return;
+    }
+    else
+    {
+        printA("Time synchronized - ");
+        printlnA(String(timeinfo.tm_hour)+":"+String(timeinfo.tm_min));
+    }
 }
 
 String WiFiProvider::getPassphrase()

@@ -23,38 +23,49 @@ bool IModule::isConnected()
 
 void IModule::setConnected(bool connected, bool fromButton)
 {
-    printA("Module " + _connectionKey);
-    printA(" - set connected: ");
-    printlnA(connected ? "true" : "false");
+    printD("Module " + _connectionKey);
+    printD(" - set connected: ");
+    printlnD(connected ? "true" : "false");
 
     _connected = connected;
     _sourceIsButton = fromButton;
-    _memoryProvider->saveBool(_connectionKey, connected);
-    _ledControl->updateLedStatus(_position, connected);
+    if (_memoryProvider != nullptr)
+        _memoryProvider->saveBool(_connectionKey, connected);
+
+    if (_ledControl != nullptr)
+    {
+        connected ? _ledControl->setLedOn(_position) : _ledControl->setLedOff(_position);
+    }
+    // _ledControl->updateLedStatus(_position, connected);
 }
 
 void IModule::checkConnectionChange()
 {
     if (_connected != _lastConnected)
     {
-
         _lastConnected = _connected;
-        _ledControl->updateLedStatus(_position, _connected);
+        if (_ledControl != nullptr)
+        {
+            _connected ? _ledControl->setLedOn(_position) : _ledControl->setLedOff(_position);
+        }
+        // _ledControl->updateLedStatus(_position, _connected);
         onConnectionChange();
     }
 }
 
 void IModule::loadConnectionState()
 {
-
-    _connected = _memoryProvider->loadBool(_connectionKey, false);
-    if (_connected)
+    if (_memoryProvider != nullptr)
     {
-        printlnV(_connectionKey + " connected");
-    }
-    else
-    {
-        printlnV(_connectionKey + " disconnected");
+        _connected = _memoryProvider->loadBool(_connectionKey, false);
+        if (_connected)
+        {
+            printlnV(_connectionKey + " connected");
+        }
+        else
+        {
+            printlnV(_connectionKey + " disconnected");
+        }
     }
 }
 
@@ -63,7 +74,6 @@ void IModule::setMemoryProvider(MemoryProvider *provider)
     _memoryProvider = provider;
     loadConnectionState();
     loadSettings();
-    
 }
 
 void IModule::setLedControl(LedControl *ledControl)
@@ -72,3 +82,8 @@ void IModule::setLedControl(LedControl *ledControl)
 }
 
 void IModule::beforeShutdown() {}
+
+uint8_t IModule::getPosition()
+{
+    return _position;
+}

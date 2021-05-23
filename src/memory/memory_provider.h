@@ -6,32 +6,33 @@
 class MemoryProvider
 {
 public:
-    MemoryProvider() {};
-    virtual void begin(String name = "vivarium");
-    virtual void end();
+    MemoryProvider(){};
+    virtual ~MemoryProvider(){};
+    virtual void begin(String name = "vivarium") = 0;
+    virtual void end() = 0;
 
     // Extern modules settings
-    virtual void saveStruct(String key, const void *, size_t);
-    virtual bool loadStruct(String key, void *, size_t);
+    virtual void saveStruct(String key, const void *, size_t) = 0;
+    virtual bool loadStruct(String key, void *, size_t) = 0;
 
     //Writes
-    virtual void saveString(String key, String value);
-    virtual String loadString(String key, String defaultValue);
+    virtual void saveString(String key, String value) = 0;
+    virtual String loadString(String key, String defaultValue) = 0;
 
-    virtual void saveBool(String key, bool value);
-    virtual bool loadBool(String key, bool defaultValue);
+    virtual void saveBool(String key, bool value) = 0;
+    virtual bool loadBool(String key, bool defaultValue) = 0;
 
-    virtual void saveInt(String key, uint32_t value);
-    virtual uint32_t loadInt(String key, uint32_t defaultValue);
+    virtual void saveInt(String key, uint32_t value) = 0;
+    virtual uint32_t loadInt(String key, uint32_t defaultValue) = 0;
 
-    virtual void saveFloat(String key, float value);
-    virtual float loadFloat(String key, float defaultValue);
+    virtual void saveFloat(String key, float value) = 0;
+    virtual float loadFloat(String key, float defaultValue) = 0;
 
-    virtual void saveDouble(String key, double value);
-    virtual float loadDouble(String key, double defaultValue);
+    virtual void saveDouble(String key, double value) = 0;
+    virtual float loadDouble(String key, double defaultValue) = 0;
 
-    virtual void removeKey(String key);
-    virtual void factoryReset();
+    virtual void removeKey(String key) = 0;
+    virtual void factoryReset() = 0;
 
     int getWriteCount() { return _writeCount; }
     int getBytesWritten() { return _bytesWritten; }

@@ -11,6 +11,26 @@
 
 #include "../../../debug/memory.h"
 
+void ledTriggerCallback()
+{
+    printlnA("LED Trigger callback");
+    AlarmId id = Alarm.getTriggeredAlarmId();
+    if (ledModulePtr != nullptr)
+    {
+        uint32_t color;
+        if (ledModulePtr->getTriggerColor(id, &color))
+        {
+            printA("Color: ");
+            printlnA(String(color));
+            ledModulePtr->setColor(color);
+        }
+    }
+    else
+    {
+        printlnE("Led Module is nullptr");
+    }
+}
+
 LedModule *ledModulePtr;
 
 LedModule::LedModule(int position, int pin) : IModule(CONNECTED_KEY, position)
@@ -24,14 +44,26 @@ LedModule::~LedModule()
 {
     delete _strip;
     rmt_driver_uninstall((rmt_channel_t)LED_CHANNEL);
+    clearAllTriggers();
+}
+
+void LedModule::clearAllTriggers()
+{
+    if (_triggers.empty())
+        return;
+    for (auto p : _triggers)
+    {
+        Alarm.free(p.second->id);
+    }
+    _triggers.clear();
 }
 
 void LedModule::setColor(uint32_t color)
 {
     if (_currentColor != color)
     {
-        printlnA("new color");
-        printlnA(String(color));
+        // printlnA("new color");
+        // printlnA(String(color));
         _currentColor = color;
         _settingsChanged = true;
     }
@@ -74,7 +106,8 @@ void LedModule::showColor()
             _currentColorCharacteristic->setValue(_currentColor);
             _currentColorCharacteristic->notify();
         }
-        firebaseService->uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
+        if (firebaseService != nullptr)
+            firebaseService->uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
     }
 }
 
@@ -85,7 +118,8 @@ void LedModule::uploadColorChange()
     time(&now);
     char time[40];
     ultoa(now, time, 10);
-    firebaseService->uploadCustomData("led/", "/" + String(time), String(_currentColor));
+    if (firebaseService != nullptr)
+        firebaseService->uploadCustomData("led/", "/" + String(time), String(_currentColor));
 }
 
 void LedModule::saveSettings()
@@ -114,13 +148,8 @@ void LedModule::printTrigger(std::shared_ptr<LedTrigger> t)
 {
     if (t != nullptr)
     {
-        printlnA(String("ID: ") + String(t->id) + String('(') + t->firebaseKey + String(") ") +
-                 String(" --> ") + String(t->hour) + String(":") + String(t->minute) + String(" - ") +
+        printlnI(String("ID: ") + String(t->id) + String('(fKey: ') + t->firebaseKey + String(") --> ") + String(t->hour) + String(":") + String(t->minute) + String(" - ") +
                  String(t->color));
-    }
-    else
-    {
-        printlnA("Trigger nullptr");
     }
 }
 
@@ -145,8 +174,97 @@ int LedModule::asignAvailableMemoryId()
     return INVALID_MEMORY_ID;
 }
 
+bool LedModule::getNextTriggerColor(uint32_t *color)
+{
+
+    std::shared_ptr<LedTrigger> t = getNextTrigger();
+    if (t != nullptr)
+    {
+        *color = t->color;
+        return true;
+    }
+    return false;
+}
+
+std::shared_ptr<LedTrigger> LedModule::getNextTrigger()
+{
+    tm timeinfo;
+    std::shared_ptr<LedTrigger> h = nullptr;
+    std::shared_ptr<LedTrigger> l = nullptr;
+
+    if (_triggers.empty())
+        return nullptr;
+
+    if (getLocalTime(&timeinfo))
+    {
+        int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
+
+        for (auto p : _triggers)
+        {
+            int ttc = getTime(p.second->hour, p.second->minute);
+
+            //Lookup for the lowest time
+            if (ttc < time) // assign only triggers with lower time than current value
+            {
+                if (h == nullptr)
+                {
+                    if (l == nullptr)
+                    {
+
+                        l = p.second;
+                    }
+                    else
+                    {
+                        if (getTime(l->hour, l->minute) > ttc)
+                        {
+                            l = p.second;
+                        }
+                    }
+                }
+            }
+
+            //Lookup for the lowest of higher times
+            if (ttc > time)
+            {
+                if (h == nullptr)
+                {
+                    h = p.second;
+                }
+                else
+                {
+                    if (getTime(h->hour, h->minute) > ttc)
+                    {
+                        h = p.second;
+                    }
+                }
+            }
+        }
+    }
+    return h != nullptr ? h : l;
+}
+
+bool LedModule::getNextTriggerTime(int *time)
+{
+    std::shared_ptr<LedTrigger> t = getNextTrigger();
+    if (t != nullptr)
+    {
+        *time = getTime(t->hour, t->minute);
+        return true;
+    }
+
+    return false;
+}
+
+int LedModule::getTriggersCount()
+{
+    return _triggers.size();
+}
+
 void LedModule::saveTriggerToNVS(std::shared_ptr<LedTrigger> trigger)
 {
+    if (_memoryProvider == nullptr)
+        return;
+
     if (trigger->storageId == INVALID_MEMORY_ID)
     {
         trigger->storageId = asignAvailableMemoryId();
@@ -168,6 +286,9 @@ void LedModule::saveTriggerToNVS(std::shared_ptr<LedTrigger> trigger)
 
 void LedModule::loadTriggerFromNVS(int index)
 {
+    if (_memoryProvider == nullptr)
+        return;
+
     LedTriggerMem enc;
     if (_memoryProvider->loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(LedTriggerMem)))
     {
@@ -199,26 +320,6 @@ bool LedModule::getTriggerColor(uint8_t id, uint32_t *color)
     return false;
 }
 
-void ledTriggerCallback()
-{
-    printlnA("LED Trigger callback");
-    AlarmId id = Alarm.getTriggeredAlarmId();
-    if (ledModulePtr != nullptr)
-    {
-        uint32_t color;
-        if (ledModulePtr->getTriggerColor(id, &color))
-        {
-            printA("Color: ");
-            printlnA(String(color));
-            ledModulePtr->setColor(color);
-        }
-    }
-    else
-    {
-        printlnE("Led Module is nullptr");
-    }
-}
-
 void LedModule::printTriggers()
 {
 
@@ -229,7 +330,7 @@ void LedModule::printTriggers()
         printV(" >>>> ");
         printTrigger(t.second);
     }
-    Alarm.printAlarms();
+    // Alarm.printAlarms();
     printlnV("");
 }
 
@@ -238,11 +339,13 @@ void LedModule::removeTrigger(String key)
     auto it = _triggers.find(key);
     if (it != _triggers.end())
     {
-        printlnA("Removing trigger");
-        _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
-        Alarm.free(it->second->id);                 // clear alarm
-        availableIds[it->second->storageId] = true; // id is available again
-        _triggers.erase(_triggers.find(key));       // remove record from map
+        printlnI("Removing trigger");
+        if (_memoryProvider != nullptr)
+            _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
+        Alarm.free(it->second->id); // clear alarm
+        if (it->second->storageId != INVALID_MEMORY_ID)
+            availableIds[it->second->storageId] = true; // id is available again
+        _triggers.erase(_triggers.find(key));           // remove record from map
     }
 }
 
@@ -259,7 +362,8 @@ void LedModule::onConnectionChange()
 
     if (_sourceIsButton)
     {
-        firebaseService->uploadState(FIREBASE_LED_CONNECTED_KEY, isConnected());
+        if (firebaseService != nullptr)
+            firebaseService->uploadState(FIREBASE_LED_CONNECTED_KEY, isConnected());
         _sourceIsButton = false;
     }
 

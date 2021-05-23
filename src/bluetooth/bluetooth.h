@@ -81,7 +81,7 @@ class LedControl;
 class BLEController
 {
 public:
-  BLEController();
+  BLEController(MemoryProvider *, LedControl *);
 
   /*
   @brief Starts bluetooth server. 

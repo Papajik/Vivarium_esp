@@ -17,6 +17,7 @@ void LcdDisplay::begin()
 {
     _lcd->init();
     _lcd->backlight();
+    showDefaultScreen();
     _delay = new millisDelay();
 
     _delay->start(lcdSettings.switch_screen_interval);

@@ -56,7 +56,7 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
 
     otaService = new OtaService(memoryProvider);
 
-    bleController = new BLEController();
+    bleController = new BLEController(memoryProvider, ledControl);
 
     messagingService = new MessagingService();
 

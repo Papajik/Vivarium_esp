@@ -8,8 +8,8 @@
 #define SETTINGS_HEATER_KEY "heater"
 #define FIREBASE_HEATER_CONNECTED_KEY "/heater/connected"
 
-#define HEATER_PIN 17
-#define HEATER_SYNC_PIN 16
+#define HEATER_PIN 2
+#define HEATER_SYNC_PIN 15
 #define GOAL_INVALID -1
 class AutoPID;
 class dimmerLamp;

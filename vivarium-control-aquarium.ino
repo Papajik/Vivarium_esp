@@ -13,6 +13,14 @@
 //#define DEBUG_INITIAL_LEVEL DEBUG_LEVEL_VERBOSE
 //#define DEBUG_USE_FLASH_F true
 
+#define UNIT_TEST
+
+#ifdef UNIT_TEST
+
+#include "test/test.h"
+
+#else
+
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
@@ -31,7 +39,6 @@
 #include "src/modules/external/heater/heater.h"
 #include "src/modules/external/water_pump/water_pump.h"
 
-
 #include "src/modules/external/dht/dht.h"
 #include "src/modules/external/humidifer/humidifier.h"
 
@@ -47,13 +54,15 @@ void setupExternalModules()
 {
   printlnA("SETUP EXTERNAL MODULES");
 
-  PhModule *ph = new PhModule(1);
-  WaterTempModule *wt = new WaterTempModule(0);
-  FanController *fan = new FanController(2);
-  LedModule *led = new LedModule(4);
+  WaterLevel *waterLevel = new WaterLevel(0);
+  LedModule *led = new LedModule(1);
+  WaterPump *waterPump = new WaterPump(2);
   Feeder *feeder = new Feeder(3);
-  WaterLevel *waterLevel = new WaterLevel(6);
-  WaterPump *waterPump = new WaterPump(5);
+  FanController *fan = new FanController(4);
+
+  PhModule *ph = new PhModule(5);
+  WaterTempModule *wt = new WaterTempModule(6);
+
   Heater *heater = new Heater(-1);
 
   // Water temp
@@ -125,3 +134,4 @@ void loop()
   delay(1000); //TODO remove - for debug only
   vivarium.onLoop();
 }
+#endif

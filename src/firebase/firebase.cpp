@@ -1,6 +1,5 @@
 #include "firebase.h"
 
-#include "service_account.h"
 #include "cert.h"
 #include <HardwareSerial.h>
 #include "../auth/auth.h"
@@ -21,10 +20,14 @@
 
 // #define FIREBASE_TOKEN "bd2c2a9af5f31269ce8868e8b0051839"
 // #define FIREBASE_SERVICE_ACCOUNT "/service_account_file.json"
+// #define FIREBASE_CERT_FILE "/cert.cer"
 
 #define STORAGE_BUCKET_ID "vivarium-control-unit.appspot.com"
-#define FIREBASE_HOST "vivarium-control-unit.firebaseio.com"
-#define FIREBASE_CERT_FILE "/cert.cer"
+
+#define DATABASE_URL "vivarium-control-unit.firebaseio.com"
+
+#define FIREBASE_PROJECT_ID "vivarium-control-unit"
+#define FIREBASE_CLIENT_EMAIL "firebase-adminsdk-dg0j0@vivarium-control-unit.iam.gserviceaccount.com"
 
 #define DEFAULT_UPLOAD_DELAY 60000                 //1 min
 #define REFRESH_FCM_TOKENS_INTERVAL 60 * 60 * 1000 // every 1 hour refresh FCM tokens
@@ -36,19 +39,97 @@ FirebaseService *firebaseService;
 void streamCallback(MultiPathStream data);
 void streamTimeoutCallback(bool timeout);
 
-FirebaseService::FirebaseService(Auth *auth, MemoryProvider *provider, MessagingService *service)
+FirebaseAuth auth;
+FirebaseConfig config;
+
+//TODO remove later
+
+const char *private_key = "-----BEGIN PRIVATE KEY-----\n"
+                          "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+HBEl6IocCh/V\n"
+                          "dvWJeDcZ2CSO6CTBRStNlarfh4lMvfHivPKg90mvbVTsq1+ptjAU+PfTcrvMmgDO\n"
+                          "MTr7fqDGHL1WrSCvSFkaYzAQuaX6BWBfVHZduCHejrULpDtWjR2jdzI2FY7JX6Nz\n"
+                          "cKHJTB4GPbMlmqm7BcMapgtiqPXVr37eZkKErdZhPDc2wI+EWBx59Xh3nfmhy8fD\n"
+                          "qZkru+wVaBUqOeSO9AjVmDqz7/BugH24gYrfMyVXdlRuF/v5FEh/UHtvg+07Sbm7\n"
+                          "DJTBnOKFL9KGsOnWTeDfJmnjNT7GQ481EY2ncuo+Ot/KXTlIpa6nD4T9ZDBAwEkw\n"
+                          "BurgcfEdAgMBAAECggEAL5+1VgNCcdLBdca2rMjeOM2yHtCdwILU3bs0EooQBZcB\n"
+                          "vNSrjVJVdapUX3Nw5AFdWyuhXal8zTz5Ha4sgesPWIHDlq6JJQ/hLmCRnmb7Yr4t\n"
+                          "DcSJYGHrriaeyPtL2BtCxPvrqqvM2LpqJlWdWeGFFfgn5DAx+8VuQkM9T+pWp0BA\n"
+                          "ZmeFUwOxBjy93JfIG7EpdaianOs8fjnUqRtvI4ORKb8VI1cJc8jd9SXjBuQrUmUf\n"
+                          "Ei/356jNlpU/rjqcASpAdi9AM3d/qXVrU9sGFaQ3InUPlQfXkERp+779qTIKy79+\n"
+                          "XO1pb8PA6+fGx2+s1AOQGy8t22pGNApFUCFcfX0YewKBgQDd1RXXowGY5ZN7Pbrw\n"
+                          "Lib2g/1nfrZFHYJMMFy8fIPowgT/Joh7ipE2VAtCpfAj4z3p5V48AWajS41kModt\n"
+                          "w36LsW8GxbB5c6E4Bj9GVgleF9LotykymCP0gXxrvRWN9Mk9LruMIx0XsUcly14K\n"
+                          "c9ziFAYEU26yyXbaf55DR/IkUwKBgQDbZCUwmAq33+E2A81n9UjK+k+KGWlLCaZh\n"
+                          "Zz+KrFqwd4EytvrdZi5bAAthL9tKzOpwGJrJ9NubJzlLHhTUCe+PR/az/82mTWIv\n"
+                          "Xszq3Qbu6O9y82FA/57ANiLJSwuNZNwEcULwCsawugVYCWvo3KcduZIw806SXRc/\n"
+                          "i3tJXGzmzwKBgBIWrhFHWXn+PmhuQDAVk1fGq4Mk8ffw0A8mYml8PcVdDMtBeR+Z\n"
+                          "zP2BHOnyXgKPJR1NdsGt25C1OHJTLHfm2QrLDSKgPCOrKhpHaCF0Io9poekYBmP5\n"
+                          "w/TMGjku0fMhYsd6aBClTFoCOqr6SlDP4dMNjvALXZt2khp/DYiu9S/BAoGAJiYv\n"
+                          "4VdO5dJkUwQuP5mDYuhL1HO+v3GaIO3XOsHlszHUoYD39m/CN8i2MdwkgclIKt3c\n"
+                          "bKnLVhtn9wvwCz7/DScyWvJsTDLAlAQkFeMBRaHzoUV479iDPmErg10tURTsvUkE\n"
+                          "nsEA89IlA73/qapU1PJj3WcxjnnphP84HPWZajkCgYAcEsRZqmmzV+D5ZKr9gWlm\n"
+                          "HiLzSXMud8RogXQ7TMUstkazdBxXh30opdSSoVRSC/kOnWTwa0TLw18KJ3Q9vkOO\n"
+                          "zb2Di2oncdEubuDXxvLYAEZ5NhXWMfUlkPYcw5IDMhwaFynS7gv0wu1/4Y6ClAu7\n"
+                          "v4gC8z0U0CM+Pitu5m+8zw==\n"
+                          "-----END PRIVATE KEY-----\n";
+
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
+
+FirebaseData *fbdo;
+
+/* 6. Define the FirebaseAuth data for authentication data */
+FirebaseAuth firebaseAuth;
+
+/* 7. Define the FirebaseConfig data for config data */
+FirebaseConfig firebaseConfig;
+
+String path = "";
+unsigned long dataMillis = 0;
+int count = 0;
+
+void testFirebase()
 {
-    firebaseAuth = new FirebaseAuth();
-    firebaseConfig = new FirebaseConfig();
+    // fbdo = new FirebaseData();
+    // firebaseBdo = new FirebaseData();
+
+    firebaseConfig.service_account.data.client_email = FIREBASE_CLIENT_EMAIL;
+    firebaseConfig.service_account.data.project_id = FIREBASE_PROJECT_ID;
+    firebaseConfig.service_account.data.private_key = private_key;
+
+    firebaseAuth.token.uid = "";
+
+    firebaseConfig.database_url = DATABASE_URL;
+
+    Firebase.reconnectWiFi(true);
+    firebaseBdo->setResponseSize(4096);
+
+    String base_path = "/Test/token";
+
+    firebaseConfig.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
+
+    firebaseConfig.max_token_generation_retry = 5;
+
+    Serial.println("Firebase pre - begin");
+    Firebase.begin(&firebaseConfig, &firebaseAuth);
+
+    Serial.println("After begin");
+
+    path = base_path + firebaseAuth.token.uid.c_str();
+}
+
+//TODO remove above
+
+FirebaseService::FirebaseService(Auth *auth, MemoryProvider *provider, MessagingService *service) : _auth(auth), _memoryProvider(provider), _messagingService(service)
+{
     firebaseStreamBdo = new FirebaseData();
+    firebaseBdo = new FirebaseData();
     _modules.reserve(8);
     _firebaseMessagingTokens.reserve(5);
+}
 
-    _auth = auth;
-    _memoryProvider = provider;
-
-    _running = false;
-    _initialized = false;
+FirebaseService::~FirebaseService()
+{
 }
 
 void FirebaseService::checkStop()
@@ -74,36 +155,62 @@ void FirebaseService::setupFirebase()
 {
     if (!_initialized)
     {
+        testFirebase();
+
         // firebaseConfig->cert.file = FIREBASE_CERT_FILE;
         // firebaseConfig->cert.file_storage = mem_storage_type_flash;
 
-        firebaseConfig->cert.data = cert;
-        firebaseConfig->host = FIREBASE_HOST;
+        // firebaseConfig.cert.data = cert;
+        // firebaseConfig.service_account.data.client_id = "115674499447632950713";
+        // config.service_account.data.private_key = private_key;
+        // firebaseConfig.service_account.data.private_key_id = "66837c5ae5c45ba17275a615f27382cc1eaac9ef";
+        // firebaseAuth.token.uid = ""; //Empty for sign in as admin
 
-        firebaseConfig->service_account.data.client_email = "firebase-adminsdk-dg0j0@vivarium-control-unit.iam.gserviceaccount.com";
-        firebaseConfig->service_account.data.client_id = "115674499447632950713";
-        firebaseConfig->service_account.data.private_key = private_key;
-        firebaseConfig->service_account.data.private_key_id = "66837c5ae5c45ba17275a615f27382cc1eaac9ef";
-        firebaseConfig->service_account.data.project_id = "vivarium-control-unit";
-        firebaseAuth->token.uid = ""; //Empty for sign in as admin
+        // config.database_url = FIREBASE_RTDB_URL;
 
-        Firebase.begin(firebaseConfig, firebaseAuth);
-        Firebase.reconnectWiFi(true);
-        printlnA("Firebase begin");
-        firebaseStreamBdo->setResponseSize(2048);
-        firebaseBdo->setResponseSize(1024);
+        // printMemory();
 
-        Firebase.setFloatDigits(2);
-        Firebase.setDoubleDigits(2);
+        // config.service_account.data.client_email = FIREBASE_CLIENT_EMAIL;
+        // config.service_account.data.project_id = FIREBASE_PROJECT_ID;
+        // // config.service_account.data.private_key = PRIVATE_KEY;
 
-        printlnA("paths: ");
-        for (int i = 0; i < NUMBER_OF_PATHS; i++)
-        {
-            printlnA(childPaths[i].c_str());
-        }
+        // auth.token.uid = "";
+        // config.database_url = DATABASE_URL;
 
-        _initialized = true;
+        // // config.token_status_callback = tokenStatusCallback;
+
+        // firebaseStreamBdo->setResponseSize(4096);
+        // firebaseBdo->setResponseSize(2048);
+
+        // config.max_token_generation_retry = 5;
+
+        // Firebase.reconnectWiFi(true);
+
+        // printlnA("Firebase begin");
+        // Firebase.begin(&config, &auth);
+        // printlnA("....");
+
+        // Firebase.setFloatDigits(2);
+        // Firebase.setDoubleDigits(2);
+
+        // _initialized = true;
+
+        // printMemory();
     }
+    unsigned long start = millis();
+
+    while (!Firebase.ready())
+    {
+        delay(1000);
+        printA(".");
+        if (millis() - start > 10000)
+        {
+            printlnE("Token init failed");
+            return;
+        }
+    }
+    printlnA("Token init success - Firebase ready");
+
     checkActiveStatus();
     getFCMSettings();
     startFirebase();
@@ -113,6 +220,7 @@ void FirebaseService::checkActiveStatus()
 {
     printlnA("checkActiveStatus");
     String path = "/devices/" + _auth->getDeviceId() + "/info/active";
+    printlnA(path);
     firebaseSemaphore.lockSemaphore("checkActiveStatus");
     if (Firebase.RTDB.getBool(firebaseBdo, path.c_str()))
     {
@@ -129,6 +237,7 @@ void FirebaseService::checkActiveStatus()
     {
 
         printlnA("Couldnt receive active status");
+        printlnA(firebaseBdo->errorReason());
     }
     firebaseSemaphore.unlockSemaphore();
 }
@@ -158,8 +267,12 @@ void FirebaseService::startStream()
         printlnA("------------------------------------");
         printlnA();
     }
-    Firebase.RTDB.setMultiPathStreamCallback(firebaseStreamBdo, streamCallback, streamTimeoutCallback);
-    printlnA("STREAM STARTED");
+    else
+    {
+        Firebase.RTDB.setMultiPathStreamCallback(firebaseStreamBdo, streamCallback, streamTimeoutCallback);
+        printlnA("STREAM STARTED");
+    }
+
     printMemory();
 }
 
@@ -331,11 +444,10 @@ void FirebaseService::jsonCallback(FirebaseJson *json, String path)
 }
 void FirebaseService::valueCallback(MultiPathStream *data)
 {
-    printlnI("Firebase valueCallback");
-    printMemory();
-    printlnI("FB Parse value");
-    printlnI("Data path = " + data->dataPath);
-    printlnI("Data type = " + data->type);
+    printlnD("Firebase valueCallback");
+    printlnV("FB Parse value");
+    printlnV("Data path = " + data->dataPath);
+    printlnV("Data type = " + data->type);
 
     String dataPath = data->dataPath.substring(1);
 
@@ -343,26 +455,26 @@ void FirebaseService::valueCallback(MultiPathStream *data)
     int secondIndex = dataPath.indexOf("/", index + 1);
 
     String settingsKey = dataPath.substring(index + 1, secondIndex);
-    printlnI("key = " + settingsKey);
-    printI("Modules ");
-    printlnI((int)_modules.size());
+    printlnV("key = " + settingsKey);
+    printV("Modules ");
+    printlnV((int)_modules.size());
 
     for (IFirebaseModule *module : _modules)
     {
         String s = module->getSettingKey();
 
-        printI("Trying module");
-        printlnI(s);
+        printV("Trying module");
+        printlnV(s);
 
         if (s == settingsKey)
         {
-            printlnI("Settings key equals");
+            printlnV("Settings key equals");
             module->parseValue(data->dataPath, data->value);
             printMemory();
         }
         else
         {
-            printlnI("settings key is not equal");
+            printlnV("settings key is not equal");
         }
     }
 }
@@ -581,31 +693,31 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
     }
 }
 
-void streamCallback(MultiPathStream data)
+void streamCallback(MultiPathStream stream)
 {
     printlnA("Stream callback");
 
     // Check active status
-    data.get(firebaseService->childPaths[ChildPath::ACTIVE_STATUS]);
-    if (data.type == "boolean" && data.value == "false")
+    stream.get(firebaseService->childPaths[ChildPath::ACTIVE_STATUS]);
+    if (stream.type == "boolean" && stream.value == "false")
     {
         firebaseService->factoryReset();
     }
 
     //Check firmware
-    data.get(firebaseService->childPaths[ChildPath::FIRMWARE]);
-    if (data.type == "string" && (data.value != ""))
+    stream.get(firebaseService->childPaths[ChildPath::FIRMWARE]);
+    if (stream.type == "string" && (stream.value != ""))
     {
         if (otaService != nullptr)
         {
-            if (otaService->isNewVersion(data.value))
+            if (otaService->isNewVersion(stream.value))
             {
-                String url = firebaseService->getFirmwareDownloadUrl(data.value);
+                String url = firebaseService->getFirmwareDownloadUrl(stream.value);
                 if (!url.isEmpty())
                 {
                     firebaseService->stopFirebase();
                     bleController->stop();
-                    if (!otaService->prepareAndStartUpdate(url, data.value))
+                    if (!otaService->prepareAndStartUpdate(url, stream.value))
                     {
                         //If preparation failed, start firebase again
                         firebaseService->startFirebase();
@@ -616,25 +728,25 @@ void streamCallback(MultiPathStream data)
     }
 
     // Check Bluetooth name
-    data.get(firebaseService->childPaths[ChildPath::BLE_NAME]);
-    if (data.type == "string" && (data.value != ""))
+    stream.get(firebaseService->childPaths[ChildPath::BLE_NAME]);
+    if (stream.type == "string" && (stream.value != ""))
     {
-        bleController->setBleName(data.value);
+        bleController->setBleName(stream.value);
     }
 
     for (int i = 0; i < 2; i++)
     {
-        data.get(firebaseService->childPaths[i]);
-        printlnA(data.dataPath);
-        if (data.type == "json")
+        stream.get(firebaseService->childPaths[i]);
+        printlnA(stream.dataPath);
+        if (stream.type == "json")
         {
             FirebaseJson json;
-            json.setJsonData(data.value);
-            firebaseService->jsonCallback(&json, data.dataPath);
+            json.setJsonData(stream.value);
+            firebaseService->jsonCallback(&json, stream.dataPath);
         }
-        else if (data.type != "")
+        else if (stream.type != "")
         {
-            firebaseService->valueCallback(&data);
+            firebaseService->valueCallback(&stream);
         }
     }
 }
@@ -722,16 +834,15 @@ void FirebaseService::getFCMSettings()
         FirebaseJson &json = firebaseBdo->jsonObject();
         FirebaseJsonData data;
 
-        if (json.get(data, "/nDelay", false))
-        {
-            // _delayFCMNotification = data.intValue;
-            _messagingService->setDelayFCM(data.intValue);
-        }
-
         if (json.get(data, "/nLimit", false))
         {
             // _notificationCrossLimit = data.boolValue;
             _messagingService->setNotifyOnCrossLimit(data.boolValue);
+        }
+
+        if (json.get(data, "/nDelay", false))
+        {
+            _messagingService->setDelayFCM(data.intValue);
         }
 
         if (json.get(data, "/nConn", false))
@@ -755,12 +866,12 @@ void FirebaseService::getFCMSettings()
             }
         }
 
-        printA("DELAY = ");
-        printlnA(_delayFCMNotification);
-        printA("limit = ");
-        printlnA(_notificationCrossLimit);
-        printA("connection = ");
-        printlnA(_notificationConnectionOn);
+        // printA("DELAY = ");
+        // printlnA(_delayFCMNotification);
+        // printA("limit = ");
+        // printlnA(_notificationCrossLimit);
+        // printA("connection = ");
+        // printlnA(_notificationConnectionOn);
     }
     else
     {

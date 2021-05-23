@@ -144,9 +144,9 @@ bool Auth::isClaimed()
 
 String Auth::getDeviceId()
 {
-    printlnV("Get device Id.");
-    printV("Returning = ");
-    printlnV(_deviceId);
+    printlnA("Get device Id.");
+    printA("Returning = ");
+    printlnA(_deviceId);
     return _deviceId;
 }
 

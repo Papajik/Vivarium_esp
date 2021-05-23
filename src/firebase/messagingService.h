@@ -13,6 +13,11 @@ enum FCM_TYPE
 
 class MessagingService
 {
+    int _delayFCMNotification = 0;
+    bool _notifyOnConnectionChange = false;
+    bool _notifyOnCrossLimit = false;
+    bool _distinctNotifications = false;
+
 public:
     MessagingService();
     void loadSettings();
@@ -27,10 +32,6 @@ public:
 private:
     void sendMessage(String title, String body, String token, bool timePrefix);
     //settings
-    int _delayFCMNotification = 0;
-    bool _notifyOnConnectionChange = false;
-    bool _notifyOnCrossLimit = false;
-    bool _distinctNotifications = false;
 
     std::map<String, unsigned long> _lastValueSendTimeMap;
     unsigned long _lastValueSendTime = 0;

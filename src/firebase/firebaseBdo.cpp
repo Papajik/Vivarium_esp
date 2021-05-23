@@ -1,5 +1,5 @@
 #include "firebaseBdo.h"
 
-#include <Firebase_ESP_Client.h>
+class FirebaseData;
 
-FirebaseData *firebaseBdo  = new FirebaseData();
+FirebaseData *firebaseBdo;

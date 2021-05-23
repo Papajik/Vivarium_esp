@@ -5,8 +5,6 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-
-
 ModuleControl::ModuleControl()
 {
 
@@ -21,13 +19,14 @@ int ModuleControl::addModule(IModule *module)
 
 void ModuleControl::buttonPressed(int pressed)
 {
-
-    if (pressed >= 0 && pressed < _modules.size())
+    if (pressed >= 0)
     {
-        IModule *m = _modules[pressed];
-        if (m != nullptr)
+        for (IModule *m : _modules)
         {
-            m->setConnected(!m->isConnected(), true);
+            if (m->getPosition() == pressed)
+            {
+                m->setConnected(!m->isConnected(), true);
+            }
         }
     }
 }
@@ -47,7 +46,17 @@ int ModuleControl::moduleCount()
 
 bool ModuleControl::isModuleConnected(int i)
 {
-    return _modules[i]->isConnected();
+    if (_modules.empty())
+        return false;
+
+    for (IModule *m : _modules)
+    {
+        if (m->getPosition() == i)
+        {
+            return m->isConnected();
+        }
+    }
+    return false;
 }
 
 void ModuleControl::beforeShutdown()

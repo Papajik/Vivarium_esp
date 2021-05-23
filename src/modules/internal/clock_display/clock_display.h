@@ -9,8 +9,8 @@
 #define MIN_INTERVAL_CONSTRAINT 1000
 #define MAX_INTERVAL_CONSTRAINT 60000
 
-#define CLK_PIN 2  
-#define DIO_PIN 15
+#define CLK_PIN 16 
+#define DIO_PIN 17
 
 class millisDelay;
 class RobotDyn4DigitDisplay;
@@ -45,6 +45,7 @@ public:
     void setRefreshInterval(unsigned long);
 
 private:
+    void displayInvalid();
     RobotDyn4DigitDisplay *_clock;
     millisDelay *_delay;
 };

@@ -11,7 +11,7 @@ class IModule
 {
 public:
     IModule(String, int);
-    ~IModule();
+    virtual ~IModule();
 
     bool isConnected();
     void setConnected(bool, bool);
@@ -31,11 +31,13 @@ public:
 
     void setLedControl(LedControl *ledControl);
 
+    uint8_t getPosition();
+
 protected:
     uint8_t _position;
 
-    LedControl *_ledControl;
-    MemoryProvider *_memoryProvider;
+    LedControl *_ledControl = nullptr;
+    MemoryProvider *_memoryProvider = nullptr;
     bool _connected = false;
     bool _lastConnected = false;
     bool _sourceIsButton = false;

@@ -135,7 +135,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
 
 //****************
 
-BLEController::BLEController()
+BLEController::BLEController(MemoryProvider *provider, LedControl *ledControl) : _memoryProvider(provider), _ledControl(ledControl)
 {
     _modules.reserve(8);
 }
@@ -329,7 +329,7 @@ void BLEController::checkStop()
     {
         stop();
         _toStop = false;
-        _ledControl->updateLedStatus(BLUETOOTH_BUTTON, false);
+        _ledControl->setLedOff(BLUETOOTH_BUTTON);
     }
 }
 
@@ -371,7 +371,7 @@ void BLEController::checkBluetooth()
         {
             init();
             _toStart = false;
-            _ledControl->updateLedStatus(BLUETOOTH_BUTTON, true);
+            _ledControl->setLedOn(BLUETOOTH_BUTTON);
         }
     }
 }
