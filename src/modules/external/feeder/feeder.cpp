@@ -13,12 +13,23 @@ Feeder *feederPtr;
 Feeder::Feeder(int position, int in_1, int in_2, int in_3, int in_4) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Feeder created");
-    _stepper = new Stepper(FEEDER_STEPS_PER_REVOLUTION, in_1, in_3, in_2, in_4);
+    _stepper = std::make_shared<Stepper>(FEEDER_STEPS_PER_REVOLUTION, in_1, in_3, in_2, in_4);
 }
 
 Feeder::~Feeder()
 {
-    delete _stepper;
+    clearAllTriggers();
+}
+
+void Feeder::clearAllTriggers()
+{
+    if (_triggers.empty())
+        return;
+    for (auto p : _triggers)
+    {
+        Alarm.free(p.second->id);
+    }
+    _triggers.clear();
 }
 
 int Feeder::asignAvailableMemoryId()
@@ -56,7 +67,10 @@ void Feeder::onLoop()
 }
 void Feeder::saveSettings()
 {
-    _memoryProvider->saveStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings));
+    if (_memoryProvider != nullptr)
+    {
+        _memoryProvider->saveStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings));
+    }
     _settingsChanged = false;
 }
 
@@ -85,14 +99,12 @@ void Feeder::removeTrigger(String key)
     if (it != _triggers.end())
     {
         printlnA("Removing trigger");
-        _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
-        Alarm.free(it->second->id);                 // clear alarm
-        availableIds[it->second->storageId] = true; // id is available again
-        _triggers.erase(_triggers.find(key));       // remove record from map
-    }
-    else
-    {
-        printlnA("trigger not found");
+        if (_memoryProvider != nullptr)
+            _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
+        Alarm.free(it->second->id); // clear alarm
+        if (it->second->storageId != INVALID_MEMORY_ID)
+            availableIds[it->second->storageId] = true; // id is available again
+        _triggers.erase(it);                            // remove record from map
     }
 }
 
@@ -103,6 +115,11 @@ void Feeder::loadTriggersFromNVS()
     {
         loadTriggerFromNVS(i);
     }
+}
+
+int Feeder::getTriggersCount()
+{
+    return _triggers.size();
 }
 
 void Feeder::loadTriggerFromNVS(int index)
@@ -152,7 +169,7 @@ void Feeder::feed()
         steps = 200;
         break;
     default:
-        speed = 0;
+        speed = 15;
         steps = 0;
         break;
     }
@@ -165,6 +182,21 @@ void Feeder::feed()
     digitalWrite(FEEDER_IN_4, LOW);
 
     _feeded = true;
+
+    tm timeinfo;
+    if (getLocalTime(&timeinfo))
+    {
+        _lastFeededTime = getTime(timeinfo.tm_hour, timeinfo.tm_min);
+    }
+}
+
+int Feeder::getLastFeeded()
+{
+    return _lastFeededTime;
+}
+bool Feeder::feededRecently()
+{
+    return _feeded;
 }
 
 void feederCallback()
@@ -195,7 +227,7 @@ void Feeder::printTrigger(std::shared_ptr<FeedTrigger> t)
 {
     if (t != nullptr)
     {
-        printlnA(String("ID: ") + String(t->id) + String('(') + t->firebaseKey + String(" ..- ") + String(MEMORY_TRIGGER_PREFIX) + String(t->storageId) + String(") ") +
+        printlnI(String("ID: ") + String(t->id) + String('(') + t->firebaseKey + String(" ..- ") + String(MEMORY_TRIGGER_PREFIX) + String(t->storageId) + String(") ") +
                  String(" --> ") + String(t->hour) + String(":") + String(t->minute));
     }
     else
@@ -206,19 +238,22 @@ void Feeder::printTrigger(std::shared_ptr<FeedTrigger> t)
 
 void Feeder::printTriggers()
 {
-    printlnA("All feeder triggers: ");
+    printlnI("All feeder triggers: ");
     for (auto &&t : _triggers)
     {
-        printA(t.first);
-        printA(" >>>> ");
+        printI(t.first);
+        printI(" >>>> ");
         printTrigger(t.second);
     }
     Alarm.printAlarms();
-    printlnA("");
+    printlnI("");
 }
 
 void Feeder::saveTriggerToNVS(std::shared_ptr<FeedTrigger> trigger)
 {
+    if (_memoryProvider == nullptr)
+        return;
+
     if (trigger->storageId == INVALID_MEMORY_ID)
     {
         trigger->storageId = asignAvailableMemoryId();
@@ -278,8 +313,77 @@ void Feeder::createTrigger(int time, String key)
     auto t = std::make_shared<FeedTrigger>();
     t->hour = time / 256;
     t->minute = time % 256;
-    t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, feederCallback);
     t->firebaseKey = key;
+    t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, feederCallback);
     _triggers.insert({key, t});
     saveTriggerToNVS(t);
+}
+
+bool Feeder::getNextTriggerTime(int *time)
+{
+    std::shared_ptr<FeedTrigger> t = getNextTrigger();
+    if (t != nullptr)
+    {
+        *time = getTime(t->hour, t->minute);
+        return true;
+    }
+
+    return false;
+}
+
+std::shared_ptr<FeedTrigger> Feeder::getNextTrigger()
+{
+    tm timeinfo;
+    std::shared_ptr<FeedTrigger> h = nullptr;
+    std::shared_ptr<FeedTrigger> l = nullptr;
+
+    if (_triggers.empty())
+        return nullptr;
+
+    if (getLocalTime(&timeinfo))
+    {
+        int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
+
+        for (auto p : _triggers)
+        {
+            int ttc = getTime(p.second->hour, p.second->minute);
+
+            //Lookup for the lowest time
+            if (ttc < time) // assign only triggers with lower time than current value
+            {
+                if (h == nullptr)
+                {
+                    if (l == nullptr)
+                    {
+
+                        l = p.second;
+                    }
+                    else
+                    {
+                        if (getTime(l->hour, l->minute) > ttc)
+                        {
+                            l = p.second;
+                        }
+                    }
+                }
+            }
+
+            //Lookup for the lowest of higher times
+            if (ttc > time)
+            {
+                if (h == nullptr)
+                {
+                    h = p.second;
+                }
+                else
+                {
+                    if (getTime(h->hour, h->minute) > ttc)
+                    {
+                        h = p.second;
+                    }
+                }
+            }
+        }
+    }
+    return h != nullptr ? h : l;
 }
