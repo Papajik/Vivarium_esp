@@ -15,7 +15,6 @@
 
 #include <ShiftRegister74HC595.h>
 
-
 LedControl::LedControl()
 {
     _sr = new ShiftRegister74HC595<1>(MODULES_DATA_PIN, MODULES_CLOCK_PIN, MODULES_LATCH_PIN);
@@ -23,10 +22,28 @@ LedControl::LedControl()
     ledcSetup(CHANNEL, FREQUENCY, RESOLUTION);
     ledcAttachPin(MODULES_BRIGHTNESS_PIN, CHANNEL);
 
-    ledcWrite(CHANNEL, 0);
+    ledcWrite(CHANNEL, 200);
+}
+
+LedControl::~LedControl(){
+    
+}
+
+void LedControl::setLedOn(uint8_t pin)
+{
+    updateLedStatus(pin, 0);
+}
+void LedControl::setLedOff(uint8_t pin)
+{
+    updateLedStatus(pin, 1);
 }
 
 void LedControl::updateLedStatus(uint8_t position, uint8_t value)
 {
     _sr->set(position, value);
+}
+
+uint8_t LedControl::getLedStatus(uint8_t pin)
+{
+    return _sr->get(pin);
 }

@@ -46,16 +46,7 @@ void readAnalogTask(void *parameter)
                     printA(" (");
                     printA(val);
                     printlnA(")");
-
-                    if (i == BLUETOOTH_BUTTON)
-                    {
-                        buttonControl->buttonPressed(BLUETOOTH_BUTTON);
-                    }
-                    else
-                    {
-                        buttonControl->buttonPressed(MODULE_COUNT - 1 - i);
-                    }
-
+                    buttonControl->buttonPressed(i);
                     break;
                 }
             }
