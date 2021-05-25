@@ -151,12 +151,12 @@ private:
 
   uint16_t conn_handle = 0;
 
-  bool _deviceConnected;
-  bool _oldDeviceConnected;
+  bool _deviceConnected = false;
+  bool _oldDeviceConnected = false;
 
-  String _bluetoothName;
-  bool _nameChanged;
-  bool _secured;
+  String _bluetoothName = "";
+  bool _nameChanged = false;
+  bool _secured = false;
 };
 
 extern BLEController *bleController;

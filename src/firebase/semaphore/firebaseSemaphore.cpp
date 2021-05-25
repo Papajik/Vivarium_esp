@@ -17,14 +17,12 @@ FirebaseSemaphore::~FirebaseSemaphore()
 
 void FirebaseSemaphore::lockSemaphore(String owner)
 {
-    printI("Lock semaphore by ");
+    printI("Lock semaphore by " + owner);
     _owner = owner;
-    printlnI(owner);
     xSemaphoreTake(bdoMutex, portMAX_DELAY);
 }
 void FirebaseSemaphore::unlockSemaphore()
 {
     xSemaphoreGive(bdoMutex);
-    printI("Unlock semaphore from ");
-    printlnI(_owner);
+    printI("Unlock semaphore from " + _owner);
 }

@@ -18,8 +18,8 @@ private:
     unsigned long _lastPressedTime = 0;
     int _lastPressedButton = BUTTON_RELEASED;
 
-    FirebaseService *_firebaseService;
-    ModuleControl *_moduleControl;
+    FirebaseService *_firebaseService = nullptr;
+    ModuleControl *_moduleControl = nullptr;
 };
 
 extern ButtonControl *buttonControl;

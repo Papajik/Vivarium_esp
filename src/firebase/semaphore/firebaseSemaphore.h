@@ -16,8 +16,7 @@ public:
 
 private:
     SemaphoreHandle_t bdoMutex;
-    bool _owner;
-    bool _locked;
+    String _owner = "";
 };
 
 extern FirebaseSemaphore firebaseSemaphore;

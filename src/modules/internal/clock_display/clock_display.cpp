@@ -64,7 +64,6 @@ void ClockDisplay::setRefreshInterval(unsigned long interval)
 
 void ClockDisplay::displayInvalid()
 {
-    printlnA("Display invalid");
     for (int i = 0; i < 4; i++)
     {
         _clock->digit(i, 0);

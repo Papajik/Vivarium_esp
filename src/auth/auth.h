@@ -11,9 +11,6 @@ class MemoryProvider;
 
 class Auth : public IBluetooth
 {
-private:
-    String _userId;
-
 public:
     Auth(MemoryProvider *);
     void setUserId(String id);
@@ -36,12 +33,13 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
-    String _deviceId;
-    bool _uidChanged;
-    NimBLECharacteristic *deviceIdCharacteristic;
-    NimBLECharacteristic *characteristicIsClaimed;
+    String _userId = "";
+    String _deviceId = "";
+    bool _uidChanged = false;
+    NimBLECharacteristic *deviceIdCharacteristic = nullptr;
+    NimBLECharacteristic *characteristicIsClaimed = nullptr;
     std::string _userIdbuffer;
-    MemoryProvider *_memoryProvider;
+    MemoryProvider *_memoryProvider = nullptr;
 };
 
 #endif
