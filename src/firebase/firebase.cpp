@@ -85,8 +85,6 @@ FirebaseAuth firebaseAuth;
 FirebaseConfig firebaseConfig;
 
 String path = "";
-unsigned long dataMillis = 0;
-int count = 0;
 
 void testFirebase()
 {
@@ -427,8 +425,11 @@ void FirebaseService::logNewStart()
 
 void FirebaseService::factoryReset()
 {
+    if (_memoryProvider != nullptr)
+    {
     _memoryProvider->factoryReset();
     ESP.restart();
+}
 }
 
 void FirebaseService::jsonCallback(FirebaseJson *json, String path)

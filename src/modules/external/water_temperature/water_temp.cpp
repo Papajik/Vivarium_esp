@@ -15,15 +15,15 @@
 
 #define WATER_TEMP_READ_DELAY 500
 
-WaterTempModule::WaterTempModule(int position, int pin) : IModule(CONNECTED_KEY, position)
+WaterTempModule::WaterTempModule(int position, int pin)
+    : IModule(CONNECTED_KEY, position),
+      _oneWire(new OneWire(pin)),
+      _dallas(new DallasTemperature(_oneWire)),
+      _delay(new millisDelay())
 {
     printlnA("Water temp module created");
     _settings = {10, 20};
-
-    _oneWire = new OneWire(pin);
-    _dallas = new DallasTemperature(_oneWire);
     _dallas->begin();
-    _delay = new millisDelay();
 }
 
 WaterTempModule::~WaterTempModule()
@@ -169,5 +169,17 @@ void WaterTempModule::checkBoundaries()
         {
             messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
         }
+    }
+}
+
+std::vector<String> WaterTempModule::getText()
+{
+    if (!_connected)
+    {
+        return {"Water Temp", "Disconnected"};
+    }
+    else
+    {
+        return {"Water Temp: " + String(_currentTemp, 1), "LL: " + String(_settings.min_temp, 1) + " HL: " + String(_settings.max_temp, 1)};
     }
 }

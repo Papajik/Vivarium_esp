@@ -24,9 +24,11 @@ public:
     virtual void updateSensorData(FirebaseJson *);
 
 private:
+    void updateOutletState();
+
     MemoryProvider *_memoryProvider;
-    bool _outlets[OUTLET_COUNT];
-    bool _outletChanged[OUTLET_COUNT];
+    bool _outlets[OUTLET_COUNT] = {false};
+    bool _outletChanged[OUTLET_COUNT] = {false};
 };
 
 extern OutletController *outletController;

@@ -3,6 +3,7 @@
 
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #include "../../../bluetooth/i_bluetooth.h"
 
@@ -23,7 +24,7 @@
 
 class DHT;
 
-class DhtModule : public IModule, public IFirebaseModule, public IBluetooth
+class DhtModule : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
     DhtModule(int, int pin = DHT_PIN);
@@ -62,11 +63,14 @@ public:
     float getMinTemp();
     NimBLECharacteristic *_humidityCharacteristic;
 
+    /// LCD
+    std::vector<String> getText();
+
 private:
-    float _maxTemp;
-    float _minTemp;
-    float _minHum;
-    float _maxHum;
+    float _maxTemp = 0;
+    float _minTemp = 0;
+    float _minHum = 0;
+    float _maxHum = 0;
 
     unsigned long _lastFirebaseMsg = 0;
 

@@ -73,6 +73,7 @@ class IBluetooth;
 class NimBLEServer;
 class MemoryProvider;
 class LedControl;
+class TextOutput;
 
 /**
  * @brief Bluetooth Controller
@@ -81,7 +82,7 @@ class LedControl;
 class BLEController
 {
 public:
-  BLEController(MemoryProvider *, LedControl *);
+  BLEController(MemoryProvider *, LedControl *, TextOutput *);
 
   /*
   @brief Starts bluetooth server. 
@@ -111,11 +112,12 @@ public:
 
   void setConnectionHandle(uint16_t);
 
-  IBluetoothPIN *bluetoothPINHandler;
-
   void setBleName(String name);
 
   bool isRunning();
+
+  void setPin(int);
+  void onAuthenticationComplete();
 
   void stop();
 
@@ -123,9 +125,17 @@ public:
   void setStopInFuture();
   void checkStop();
 
+  void setClientAddress(String address);
+
+  void setAuthenticationComplete(bool);
+
 private:
-  MemoryProvider *_memoryProvider;
-  LedControl *_ledControl;
+  bool _authenticationCompleted = false;
+
+  IBluetoothPIN *_bluetoothPINHandler = nullptr;
+
+  MemoryProvider *_memoryProvider = nullptr;
+  LedControl *_ledControl = nullptr;
 
   bool _toStart = false;
   bool _toStop = false;
@@ -148,6 +158,7 @@ private:
   std::vector<IBluetooth *> _modules;
 
   NimBLEServer *pServer = nullptr;
+  TextOutput *_textOutput = nullptr;
 
   uint16_t conn_handle = 0;
 
@@ -155,6 +166,7 @@ private:
   bool _oldDeviceConnected = false;
 
   String _bluetoothName = "";
+  String _clientAddress = "";
   bool _nameChanged = false;
   bool _secured = false;
 };

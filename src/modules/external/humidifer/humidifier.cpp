@@ -8,9 +8,8 @@
 
 #define FCM_KEY "Humidifier"
 
-Humidifier::Humidifier(int outlet, int position) : IModule(CONNECTED_KEY, position)
+Humidifier::Humidifier(int outlet, int position) : IModule(CONNECTED_KEY, position), _outlet(outlet)
 {
-    _outlet = outlet;
     loadSettings();
 }
 
@@ -128,6 +127,8 @@ void Humidifier::failSafeCheck()
 
 void Humidifier::setOn(bool b)
 {
+    if (_isOn == b)
+        return;
     _isOn = b;
     outletController->setOutlet(_outlet, b);
     firebaseService->uploadState(FIREBASE_IS_ON_STATE, b);
@@ -143,4 +144,16 @@ void Humidifier::setOn(bool b)
 bool Humidifier::isHumidifierOn()
 {
     return _isOn;
+}
+
+std::vector<String> Humidifier::getText()
+{
+    if (!_connected)
+    {
+        return {"Humidifier", "Disconnected"};
+    }
+    else
+    {
+        return {"Humidifier: " + String(_isOn ? "ON" : "OFF"), "Goal: " + String(_humGoal, 2) + " %"};
+    }
 }

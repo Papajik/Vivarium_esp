@@ -33,6 +33,7 @@ class Auth;
 class LedControl;
 class ModuleControl;
 class MessagingService;
+class TextModule;
 
 class Vivarium
 {
@@ -43,10 +44,10 @@ public:
     void addModule(IModule *m);
 
     void onLoop();
-    LcdDisplay *getDisplay();
 
     void addBLEModule(IBluetooth *m);
     void addFirebaseModule(IFirebaseModule *m);
+    void addTextModule(TextModule *m);
 
 private:
     void mainLoop();

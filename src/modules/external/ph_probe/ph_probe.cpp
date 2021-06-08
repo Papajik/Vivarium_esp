@@ -44,10 +44,9 @@ int _comparePh(const void *arg1, const void *arg2)
     return 0;
 }
 
-PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position)
+PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position), _pin(pin)
 {
 
-    _pin = pin;
     printlnA("PhModule created");
 
     // settings is changed when memoryProvider is set
@@ -58,7 +57,6 @@ PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position)
     //stateStorage.setCallback(STATE_WATER_PH, new ChangePhCallback(this), type_float);
 }
 
-//TODO test with mock analogRead
 float PhModule::_readPh()
 {
     printlnD("READING PH");
@@ -134,8 +132,11 @@ void PhModule::startScan()
         }
         _delay->start(_settings.continuous_delay);
     }
-
     _readPh();
+    if (!_settings.continuous)
+    {
+        printText({"pH Probe", "pH: " + String(_lastPhValue)}, 5000);
+    }
 }
 
 void PhModule::stopScan()
@@ -296,4 +297,16 @@ void PhModule::setSettingsChanged(bool b)
 {
     printA("PH probe - settings changed to ");
     printlnA(b ? "True" : "false");
+}
+
+std::vector<String> PhModule::getText()
+{
+    if (!_connected)
+    {
+        return {"pH Probe", "Disconnected"};
+    }
+    else
+    {
+        return {"pH Probe", "pH: " + String(_lastPhValue)};
+    }
 }

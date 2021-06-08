@@ -119,9 +119,9 @@ public:
 private:
     MemoryProvider *memoryProvider;
 
-    String _pass;
-    String _ssid;
-    bool _settingsChanged;
+    String _pass = "";
+    String _ssid = "";
+    bool _settingsChanged = false;
 
     int count = 0;
       

@@ -1,5 +1,6 @@
 #include "ota.h"
 #include "../memory/memory_provider.h"
+#include "../modules/internal/lcd_display/textOutput.h"
 
 #include "../firebase/firebase.h"
 #include "WiFi.h"
@@ -45,11 +46,10 @@ void HttpEvent(HttpEvent_t *event)
   }
 }
 
-OtaService::OtaService(MemoryProvider *memoryProvider)
+OtaService::OtaService(MemoryProvider *memoryProvider, TextOutput *output) : _memoryProvider(memoryProvider), _textOutput(output)
 {
   printlnA("OTA SERVICE - created");
   HttpsOTA.onHttpEvent(HttpEvent);
-  _memoryProvider = memoryProvider;
 }
 
 void OtaService::begin()
@@ -69,7 +69,6 @@ void OtaService::begin()
     startUpdate();
   }
 }
-
 
 bool OtaService::isNewVersion(String version)
 {
@@ -91,6 +90,7 @@ bool OtaService::prepareAndStartUpdate(String downloadUrl, String version)
 
 void OtaService::startUpdate()
 {
+  _textOutput->setText({"Firmware update", _newFirmwareVersion});
   _firmwareUpdateRunning = true;
   HttpsOTA.begin(downloadUrl.c_str(), cert, false);
 }
@@ -105,12 +105,14 @@ int OtaService::onLoop()
     // Restart ESP on successfull update
     if (otaStatus == HTTPS_OTA_SUCCESS)
     {
+      _textOutput->setText({"Firmware update", "DONE"}, 2000);
       printlnA("Firmware updated. Rebooting device");
       _memoryProvider->saveString(FIRMWARE_VERSION_KEY, _newFirmwareVersion);
       return OTA_COMPLETED;
     }
     else if (otaStatus == HTTPS_OTA_FAIL)
     {
+      _textOutput->setText({"Firmware update", "¨FAILED"}, 2000);
       printlnE("Firmware upgrade Fail");
       _firmwareUpdateRunning = false;
       return OTA_CANCEL;
@@ -119,6 +121,24 @@ int OtaService::onLoop()
     {
       if (millis() > _lastWrite + WRITE_DELAY)
       {
+        updateTextCount++;
+        if (updateTextCount > 3)
+          updateTextCount = 0;
+        switch (updateTextCount)
+        {
+        case 0:
+          _textOutput->setText({"Firmware update", _newFirmwareVersion});
+          break;
+        case 1:
+          _textOutput->setText({"Firmware update.", _newFirmwareVersion});
+          break;
+        case 2:
+          _textOutput->setText({"Firmware update..", _newFirmwareVersion});
+          break;
+        case 3:
+        default:
+          _textOutput->setText({"Firmware update...", _newFirmwareVersion});
+        }
         _lastWrite = millis();
         printlnA("*");
       }

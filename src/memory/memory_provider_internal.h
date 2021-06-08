@@ -2,6 +2,8 @@
 #define MEMORY_INTERNAL_H
 
 #include "memory_provider.h"
+#include <FreeRTOS.h>
+#include <freertos/semphr.h>
 
 #define SETTINGS_KEY "settings"
 
@@ -21,6 +23,7 @@ class MemoryProviderInternal : public MemoryProvider
 {
 public:
     MemoryProviderInternal();
+    ~MemoryProviderInternal();
     void begin(String name);
     void end();
 
@@ -49,7 +52,13 @@ public:
     void factoryReset();
 
 private:
-    Preferences *_preferences;
+    
+    void lockSemaphore(String owner);
+    void unlockSemaphore();
+
+    SemaphoreHandle_t preferencesMutex;
+    String _mutexOwner = ""; 
+    Preferences *_preferences = nullptr;
     void _incrementWrites();
     void _incrementBytes(int bytes);
 };

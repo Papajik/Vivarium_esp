@@ -4,6 +4,7 @@
 #include "../../module.h"
 #include "../../../bluetooth/i_bluetooth.h"
 #include "../../../firebase/i_FirebaseModule.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 #include <map>
 #include <memory>
 #include <TimeAlarms.h>
@@ -42,7 +43,8 @@ struct LedTriggerMem
 
 class LedModule : public IModule,
                   public IFirebaseModule,
-                  public IBluetooth
+                  public IBluetooth,
+                  public TextModule
 {
 public:
     LedModule(int position, int pin = LED_PIN);
@@ -62,6 +64,9 @@ public:
     bool getNextTriggerTime(int *);
 
     int getTriggersCount();
+
+    /// LCD
+    std::vector<String> getText();
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
@@ -127,7 +132,6 @@ private:
 
     bool parseTime(std::shared_ptr<LedTrigger>, int time);
     std::shared_ptr<LedTrigger> findTrigger(String key);
-    int getTime(int hour, int minute);
     void createTrigger(int time, int color, String key);
 };
 

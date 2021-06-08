@@ -9,8 +9,6 @@
 
 #define FCM_KEY "DHT"
 
-
-
 DhtModule::DhtModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
     dht = new DHT(pin, DHT11);
@@ -51,7 +49,7 @@ void DhtModule::setHumidity(float h)
 {
     if (h != _humidity)
     {
-
+        
         _humidity = h;
         firebaseService->uploadCustomData("devices/", FIREBASE_STATE_HUM, _humidity);
         stateStorage.setValue(STATE_DHT_HUMIDITY, _humidity);
@@ -201,3 +199,15 @@ float DhtModule::getMinHum() { return _minHum; }
 
 float DhtModule::getMaxTemp() { return _maxTemp; }
 float DhtModule::getMinTemp() { return _minTemp; }
+
+std::vector<String> DhtModule::getText()
+{
+    if (!_connected)
+    {
+        return {"DHT", "Disconnected"};
+    }
+    else
+    {
+        return {"DHT:", "T: " + String(_temp, 2) + "   H: " + String(_humidity, 2)};
+    }
+}

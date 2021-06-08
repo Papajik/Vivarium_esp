@@ -35,13 +35,13 @@ public:
 
 protected:
     uint8_t _position;
+    String _connectionKey;
 
     LedControl *_ledControl = nullptr;
     MemoryProvider *_memoryProvider = nullptr;
     bool _connected = false;
     bool _lastConnected = false;
     bool _sourceIsButton = false;
-    String _connectionKey;
 
 private:
     void loadConnectionState();

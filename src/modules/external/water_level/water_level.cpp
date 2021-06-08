@@ -9,16 +9,26 @@
 
 #define W_LEVEL_REPEAT_AFTER 2000
 
-WaterLevel::WaterLevel(int position, int echo, int trig) : IModule(CONNECTED_KEY, position)
+WaterLevel::WaterLevel(int position, int echo, int trig)
+    : IModule(CONNECTED_KEY, position),
+      _delay(new millisDelay()),
+      _sonar(new NewPing(trig, echo))
 {
     printlnA("Water level created");
-    _delay = new millisDelay();
-    _sonar = new NewPing(trig, echo);
     _delay->start(W_LEVEL_REPEAT_AFTER);
     _settings = {0, 0, 0};
 }
+
+WaterLevel::~WaterLevel()
+{
+    delete _delay;
+    delete _sonar;
+}
+
 void WaterLevel::setMaxLevel(int l)
 {
+    Serial.println("Set max level");
+    Serial.println(l);
     if (_settings.maxLevel != l)
     {
         _settings.maxLevel = l;
@@ -27,6 +37,8 @@ void WaterLevel::setMaxLevel(int l)
 }
 void WaterLevel::setMinLevel(int l)
 {
+    Serial.println("Set min level");
+    Serial.println(l);
     if (_settings.minLevel != l)
     {
         _settings.minLevel = l;
@@ -146,5 +158,17 @@ void WaterLevel::checkBoundaries()
     if (_waterLevel < _settings.minLevel)
     {
         messagingService->sendFCM(FCM_KEY, "Water level is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+    }
+}
+
+std::vector<String> WaterLevel::getText()
+{
+    if (!_connected)
+    {
+        return {"Water Level", "Disconnected"};
+    }
+    else
+    {
+        return {"Water Level: " + String(_waterLevel, 1), "LL: " + String(_settings.minLevel, 1) + " HL: " + String(_settings.maxLevel, 1)};
     }
 }

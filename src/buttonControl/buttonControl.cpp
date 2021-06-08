@@ -102,6 +102,6 @@ void ButtonControl::start()
         "readAnalogTask", /* String with name of task. */
         5000,             /* Stack size in bytes this task takes 2696 bytes */
         NULL,             /* Parameter passed as input of the task */
-        5,                /* Priority of the task. */
+        1,                /* Priority of the task.  */
         NULL);            /* Task handle. */
 }

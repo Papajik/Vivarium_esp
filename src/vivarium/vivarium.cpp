@@ -13,7 +13,7 @@
 #include "../ota/ota.h"
 #include "../bluetooth/bluetooth.h"
 #include "../modules/internal/lcd_display/lcd.h"
-#include "../modules/internal/lcd_display/aqua_screens.h"
+#include "../modules/internal/lcd_display/textModule.h"
 #include "../modules/internal/clock_display/clock_display.h"
 #include "../moduleControl/moduleControl.h"
 #include "../buttonControl/buttonControl.h"
@@ -54,9 +54,9 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
     auth->loadFromNVS();
     auth->setDeviceId(deviceId);
 
-    otaService = new OtaService(memoryProvider);
+    otaService = new OtaService(memoryProvider, &lcdDisplay);
 
-    bleController = new BLEController(memoryProvider, ledControl);
+    bleController = new BLEController(memoryProvider, ledControl, &lcdDisplay);
 
     messagingService = new MessagingService();
 
@@ -77,7 +77,6 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
 
     wifiProvider->setupWiFi();
     lcdDisplay.begin();
-    setAquariumScreens(&lcdDisplay);
     otaService->begin();
     clockDisplay.begin();
 }
@@ -109,11 +108,6 @@ void Vivarium::finalize()
     printMemory();
 }
 
-LcdDisplay *Vivarium::getDisplay()
-{
-    return &lcdDisplay;
-}
-
 void Vivarium::addModule(IModule *m)
 {
     moduleControl->addModule(m);
@@ -124,6 +118,12 @@ void Vivarium::addModule(IModule *m)
 void Vivarium::addBLEModule(IBluetooth *m)
 {
     bleController->addModule(m);
+}
+
+void Vivarium::addTextModule(TextModule *m)
+{
+    m->addTextOutput(&lcdDisplay);
+    lcdDisplay.addModule(m);
 }
 
 void Vivarium::addFirebaseModule(IFirebaseModule *m)
@@ -137,27 +137,17 @@ void Vivarium::onLoop()
 {
     if (!otaService->isFirmwareUpdating())
     {
-        if (firebaseService->checkFirebase() != 0)
-        {
-            moduleControl->beforeShutdown();
-            ESP.restart();
-        }
-        //Check if Firebase should stop
-        firebaseService->checkStop();
-
-        bleController->checkStop();
-
-        outletController->onLoop();
-
-        bleController->checkBluetooth();
-        lcdDisplay.onLoop();
-        clockDisplay.refreshDisplay();
-        moduleControl->onLoop();
-        wifiProvider->onLoop();
-        firebaseService->onLoop();
-        Alarm.delay(0);
+        mainLoop();
     }
     else
+        {
+        otaLoop();
+        }
+
+    debugHandle();
+    }
+
+void Vivarium::otaLoop()
     {
         otaResponse = otaService->onLoop();
         switch (otaResponse)
@@ -175,13 +165,21 @@ void Vivarium::onLoop()
         }
     }
 
-    debugHandle();
-}
-
-void Vivarium::otaLoop()
-{
-}
-
 void Vivarium::mainLoop()
 {
+    if (firebaseService->checkFirebase() != 0)
+    {
+        moduleControl->beforeShutdown();
+        ESP.restart();
+}
+    //Check if Firebase should stop
+    firebaseService->checkStop();
+    bleController->checkStop();
+    outletController->onLoop();
+    bleController->checkBluetooth();
+    lcdDisplay.onLoop();
+    moduleControl->onLoop();
+    wifiProvider->onLoop();
+    firebaseService->onLoop();
+    Alarm.delay(0);
 }

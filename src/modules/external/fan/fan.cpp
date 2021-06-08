@@ -16,7 +16,6 @@ FanController::FanController(int position, int pin) : IModule(CONNECTED_KEY, pos
 {
     printlnA("Fan controller created");
 
-    
     _settings = {20, 30};
 
     ledcSetup(FAN_CHANNEL, FAN_FREQUENCY, FAN_RESOLUTION);
@@ -143,4 +142,16 @@ void FanController::onConnectionChange()
     }
 
     sendConnectionChangeNotification("FAN", isConnected());
+}
+
+std::vector<String> FanController::getText()
+{
+    if (!_connected)
+    {
+        return {"Fan", "Disconnected"};
+    }
+    else
+    {
+        return {"Fan: " + String(_currentSpeed) + " %", "Start:" + String(_settings.setStartAt, 1) + "Max: " + String(_settings.setMaxAt, 1)};
+    }
 }

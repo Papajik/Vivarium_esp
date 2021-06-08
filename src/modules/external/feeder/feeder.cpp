@@ -1,5 +1,6 @@
 #include "feeder.h"
 #include "../../../wifi/wifiProvider.h"
+#include "../../../utils/timeHelper.h"
 
 #include <Stepper.h>
 
@@ -9,7 +10,7 @@
 #define CONNECTED_KEY "feeder/c"
 #define MEMORY_TRIGGER_PREFIX "feedT."
 
-Feeder *feederPtr;
+Feeder *feederPtr = nullptr;
 Feeder::Feeder(int position, int in_1, int in_2, int in_3, int in_4) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Feeder created");
@@ -184,7 +185,7 @@ void Feeder::feed()
     _feeded = true;
 
     tm timeinfo;
-    if (getLocalTime(&timeinfo))
+    if (getLocalTime(&timeinfo, 100))
     {
         _lastFeededTime = getTime(timeinfo.tm_hour, timeinfo.tm_min);
     }
@@ -302,11 +303,6 @@ std::shared_ptr<FeedTrigger> Feeder::findTrigger(String key)
     }
 }
 
-int Feeder::getTime(int hour, int minute)
-{
-    return hour * 256 + minute;
-}
-
 // Time and firebasekey
 void Feeder::createTrigger(int time, String key)
 {
@@ -340,7 +336,7 @@ std::shared_ptr<FeedTrigger> Feeder::getNextTrigger()
     if (_triggers.empty())
         return nullptr;
 
-    if (getLocalTime(&timeinfo))
+    if (getLocalTime(&timeinfo, 100))
     {
         int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
 
@@ -386,4 +382,24 @@ std::shared_ptr<FeedTrigger> Feeder::getNextTrigger()
         }
     }
     return h != nullptr ? h : l;
+}
+
+std::vector<String> Feeder::getText()
+{
+    if (!_connected)
+    {
+        return {"Feeder", "Disconnected"};
+    }
+    else
+    {
+        int time;
+        if (getNextTriggerTime(&time))
+        {
+            return {"Feeder", "Next: " + formatTime(time)};
+        }
+        else
+        {
+            return {"Feeder", "No trigger"};
+        }
+    }
 }

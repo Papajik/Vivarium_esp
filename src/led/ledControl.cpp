@@ -23,10 +23,12 @@ LedControl::LedControl()
     ledcAttachPin(MODULES_BRIGHTNESS_PIN, CHANNEL);
 
     ledcWrite(CHANNEL, 200);
+
+    _sr->setAllHigh();
 }
 
-LedControl::~LedControl(){
-    
+LedControl::~LedControl()
+{
 }
 
 void LedControl::setLedOn(uint8_t pin)

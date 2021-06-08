@@ -5,11 +5,13 @@
 
 #include <vector>
 #include "../../../bluetooth/i_bluetooth_pin.h"
+#include "textOutput.h"
+#include "textModule.h"
 
 // editable settings
-#define DEFAULT_LCD_INTERVAL 5000 // 5 seconds between screens
-#define DEFAULT_LCD_NAME "Vivarium"
-#define LCD_NAME_LENGTH 10
+#define DEFAULT_LCD_INTERVAL 2500 // 3.5 seconds between screens
+#define DEFAULT_LCD_NAME "Smart Vivarium"
+#define LCD_NAME_LENGTH 15
 
 //
 #define LCD_ADDRESS 0x27
@@ -21,31 +23,37 @@ class millisDelay;
 
 typedef void (*ScreenCallback)(LiquidCrystal_I2C *lcd);
 
-class LcdDisplay : public IBluetoothPIN
+class LcdDisplay : public IBluetoothPIN, public TextOutput
 {
 public:
     LcdDisplay();
+    ~LcdDisplay();
     void begin();
     void setRefreshInterval(int interval);
     void onLoop();
-    int addScreen(ScreenCallback callback);
-    int addScreen(ScreenCallback callback, int position);
+
+    int addModule(TextModule *module);
+
     void showPIN();
     void hidePIN();
     void setPINToShow(int);
 
+    void resetTimer();
+    virtual void onTextUnlocked();
+
 private:
+    virtual void displayText(const std::vector<String> &);
     void refreshScreen();
     void nextScreen();
     void showDefaultScreen();
+    void showUpdateStatus();
 
-    std::vector<ScreenCallback> _screens;
-    int _screen_count = 0;
+    void displayTextFromVector(std::vector<String>);
+
+    std::vector<TextModule *> _modules;
     int _current_screen = 0;
-    
-
-    LiquidCrystal_I2C *_lcd;
     millisDelay *_delay;
+    LiquidCrystal_I2C *_lcd;
 };
 
 struct LcdSettings

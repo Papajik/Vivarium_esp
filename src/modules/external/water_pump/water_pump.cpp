@@ -5,9 +5,10 @@
 #define SETTINGS_PUMP_GOAL_KEY "pumpG"
 #define FIREBASE_IS_ON_STATE "/pump/isOn"
 
-WaterPump::WaterPump(int position, int pin) : IModule(CONNECTED_KEY, position)
+WaterPump::WaterPump(int position, int pin)
+    : IModule(CONNECTED_KEY, position),
+      _pin(pin)
 {
-    _pin = pin;
 }
 
 void WaterPump::startPump()
@@ -117,4 +118,18 @@ void WaterPump::setGoal(int g)
 int WaterPump::getGoal()
 {
     return _levelGoal;
+}
+
+std::vector<String> WaterPump::getText()
+{
+    if (!_connected)
+    {
+        return {"Water Pump", "Disconnected"};
+    }
+    else
+    {
+        return {
+            "Water Pump" + _running ? "ON" : "OFF",
+            "Goal: " + String(_levelGoal, 2) + " cm"};
+    }
 }

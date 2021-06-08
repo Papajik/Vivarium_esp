@@ -20,7 +20,7 @@ void WaterLevel::parseJson(FirebaseJson *data, String path)
 {
     printlnA("WaterLevel - parseJson");
 
-    printlnV("Path: " + path);
+    printlnA("Path: " + path);
     FirebaseJsonData jsonData;
 
     if (data->get(jsonData, KEY_SENSOR_HEIGHT, false))

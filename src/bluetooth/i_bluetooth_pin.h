@@ -9,9 +9,10 @@ public:
     virtual void setPINToShow(int pin) = 0;
 
 protected:
-    int _pin = 0;
+    int _pin = -1;
     bool _to_display = false;
-    bool _pin_displayed = false;
+    bool _is_pin_displayed = false;
+    bool _to_hide = false;
 };
 
 #endif

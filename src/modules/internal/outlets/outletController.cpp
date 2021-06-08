@@ -8,13 +8,12 @@ OutletController *outletController;
 
 #define OUTLET_KEY "o"
 
-OutletController::OutletController(MemoryProvider *provider)
+OutletController::OutletController(MemoryProvider *provider) : _memoryProvider(provider)
 {
-    _memoryProvider = provider;
-    expander.pinMode(P7, OUTPUT);
-    expander.pinMode(P6, OUTPUT);
-    expander.pinMode(P5, OUTPUT);
-    expander.pinMode(P4, OUTPUT);
+    expander.pinMode(P0, OUTPUT, LOW);
+    expander.pinMode(P1, OUTPUT, LOW);
+    expander.pinMode(P2, OUTPUT, HIGH);
+    expander.pinMode(P3, OUTPUT, HIGH);
 
     if (expander.begin())
     {
@@ -34,15 +33,15 @@ OutletController::OutletController(MemoryProvider *provider)
 
 void OutletController::setOutlet(int socket, bool on)
 {
-    printlnI("Outlet controll");
-    printI("Socket ");
-    printI(socket);
-    printI(" is ");
-    printlnI(on ? "ON" : "OFF");
-    printI("Outlet pin: ");
-    printlnI(5 - socket);
-    printI("LED pin: ");
-    printlnI(7 - socket);
+    printlnA("Outlet controll");
+    printA("Socket ");
+    printA(socket);
+    printA(" is ");
+    printlnA(on ? "ON" : "OFF");
+    printA("Outlet pin: ");
+    printlnA(OUTLET_COUNT - socket - 1);
+    printA("LED pin: ");
+    printlnA(OUTLET_COUNT * 2 - socket - 1);
 
     _outlets[socket] = on;
     _outletChanged[socket] = true;
@@ -56,16 +55,22 @@ bool OutletController::isOutletOn(int socket)
 
 void OutletController::onLoop()
 {
+    updateOutletState();
+}
+
+void OutletController::updateOutletState()
+{
     for (int i = 0; i < OUTLET_COUNT; i++)
     {
         if (_outletChanged[i])
         {
             _outletChanged[i] = false;
             // Outlet
-            expander.digitalWrite(5 - i, _outlets[i] ? 1 : 0);
+            expander.digitalWrite(OUTLET_COUNT - i - 1, _outlets[i] ? HIGH : LOW);
 
             // LED
-            expander.digitalWrite(7 - i, _outlets[i] ? 0 : 1);
+            expander.digitalWrite(OUTLET_COUNT * 2 - i - 1, _outlets[i] ? LOW : HIGH);
+
         }
     }
 }

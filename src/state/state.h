@@ -72,7 +72,7 @@ private:
   std::map<String, state_item<bool>> bool_items;
 
   UpdateTimeCallback updateTimeCallback;
-  time_t last_update;
+  time_t last_update = 0;
   void updateTime();
 
 public:

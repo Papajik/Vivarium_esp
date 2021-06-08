@@ -9,11 +9,12 @@
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
 class MemoryProvider;
+class TextOutput;
 
 class OtaService
 {
 public:
-    OtaService(MemoryProvider *);
+    OtaService(MemoryProvider *, TextOutput *);
     void begin();
     bool isNewVersion(String);
     bool prepareAndStartUpdate(String, String);
@@ -24,10 +25,12 @@ private:
     void startUpdate();
 
     MemoryProvider *_memoryProvider;
+    TextOutput *_textOutput;
+    int updateTextCount = 0;
 
-    unsigned long _lastWrite;
-    String _firmwareVersion;
-    String _newFirmwareVersion;
+    unsigned long _lastWrite = 0;
+    String _firmwareVersion = "";
+    String _newFirmwareVersion = "";
 
     bool _firmwareUpdateRunning = false;
 };

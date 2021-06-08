@@ -4,6 +4,7 @@
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #define FIREBASE_HUM_CONNECTED_KEY "/hum/connected"
 
@@ -17,7 +18,7 @@
 
 #define HUMIDIFIER_FAILSAFE_DELAY 10000 // 10 seconds
 
-class Humidifier : public IModule, public IFirebaseModule, public IBluetooth
+class Humidifier : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
     Humidifier(int, int);
@@ -40,6 +41,9 @@ public:
 
     bool isHumidifierOn();
 
+    /// LCD
+    std::vector<String> getText();
+
  
 
 private:
@@ -47,8 +51,8 @@ private:
 
     void setOn(bool);
 
-    bool _isOn;
-    bool _settingsChanged;
+    bool _isOn = false;
+    bool _settingsChanged = false;
     int _outlet;
 
     float _humGoal;

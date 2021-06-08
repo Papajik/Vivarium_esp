@@ -114,7 +114,7 @@ void WiFiProvider::syncTime()
     else
     {
         printA("Time synchronized - ");
-        printlnA(String(timeinfo.tm_hour)+":"+String(timeinfo.tm_min));
+        printlnA(String(timeinfo.tm_hour) + ":" + String(timeinfo.tm_min));
     }
 }
 
@@ -142,9 +142,9 @@ void WiFiProvider::setSsid(String ssid)
 
 void WiFiProvider::loadFromNVS()
 {
-
-    _pass = memoryProvider->loadString(WIFI_PASSWORD_KEY, "");
-    _ssid = memoryProvider->loadString(WIFI_SSID_KEY, "");
+    // Use current value as default
+    _pass = memoryProvider->loadString(WIFI_PASSWORD_KEY, _pass);
+    _ssid = memoryProvider->loadString(WIFI_SSID_KEY, _ssid);
 
     printA("SSID = ");
     printlnA(_ssid.c_str());
@@ -154,7 +154,6 @@ void WiFiProvider::loadFromNVS()
 
 void WiFiProvider::onLoop()
 {
-
     if (_settingsChanged)
     {
         saveToNVS();

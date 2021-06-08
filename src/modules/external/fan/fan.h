@@ -6,6 +6,7 @@
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #define SETTINGS_FAN_KEY "fan"
 
@@ -22,7 +23,7 @@ struct FanSettings
     float setMaxAt;
 };
 
-class FanController : public IModule, public IFirebaseModule, public IBluetooth
+class FanController : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
     FanController(int, int pin = FAN_PIN);
@@ -54,8 +55,11 @@ public:
     virtual void onBLEConnect();
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
+    /// LCD
+    std::vector<String> getText();
+
 private:
-    NimBLECharacteristic *_currentSpeedCharacteristic;
+    NimBLECharacteristic *_currentSpeedCharacteristic = nullptr;
     FanSettings _settings;
     bool _settingsChanged = false;
     void parseFanSpeed(float temperature);

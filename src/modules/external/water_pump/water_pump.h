@@ -4,6 +4,7 @@
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #define SETTINGS_PUMP_KEY "pump"
 
@@ -11,7 +12,11 @@
 
 #define WATER_PUMP_PIN 26
 
-class WaterPump : public IModule, public IFirebaseModule, public IBluetooth
+class WaterPump
+    : public IModule,
+      public IFirebaseModule,
+      public IBluetooth,
+      public TextModule
 {
 public:
     WaterPump(int, int pin = WATER_PUMP_PIN);
@@ -37,12 +42,15 @@ public:
     void setGoal(int);
     int getGoal();
 
+    /// LCD
+    std::vector<String> getText();
+
 private:
     int _pin;
     int _levelGoal = 0;
     bool _running = false;
     bool _settingsChanged = false;
-    NimBLECharacteristic *_pumpRunningCharacteristic;
+    NimBLECharacteristic *_pumpRunningCharacteristic = nullptr;
 
     /// Module
     virtual void onLoop();

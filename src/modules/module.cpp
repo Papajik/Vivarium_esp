@@ -6,9 +6,9 @@
 #include "../led/ledControl.h"
 
 IModule::IModule(String connectionKey, int position)
+    : _position(position),
+      _connectionKey(connectionKey)
 {
-    _connectionKey = connectionKey;
-    _position = position;
 }
 
 IModule::~IModule()
@@ -48,7 +48,6 @@ void IModule::checkConnectionChange()
         {
             _connected ? _ledControl->setLedOn(_position) : _ledControl->setLedOff(_position);
         }
-        // _ledControl->updateLedStatus(_position, _connected);
         onConnectionChange();
     }
 }

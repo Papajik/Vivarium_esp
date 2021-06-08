@@ -38,8 +38,8 @@ public:
     int getBytesWritten() { return _bytesWritten; }
 
 protected:
-    unsigned int _writeCount;
-    unsigned int _bytesWritten;
+    unsigned int _writeCount = 0;
+    unsigned int _bytesWritten = 0;
     virtual void _incrementWrites();
     virtual void _incrementBytes(int bytes);
 };

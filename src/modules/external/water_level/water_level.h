@@ -4,6 +4,7 @@
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #define SETTINGS_WL_KEY "wl"
 #define FIREBASE_WL_CONNECTED_KEY "/wl/connected"
@@ -22,10 +23,15 @@ struct WaterLevelSettings
     int sensorHeight;
 };
 
-class WaterLevel : public IModule, public IFirebaseModule, public IBluetooth
+class WaterLevel
+    : public IModule,
+      public IFirebaseModule,
+      public IBluetooth,
+      public TextModule
 {
 public:
     WaterLevel(int, int echo = W_LEVEL_ECHO_PIN, int trig = W_LEVEL_TRIG_PIN);
+    ~WaterLevel();
     void setMaxLevel(int);
     void setMinLevel(int);
     void setSensorHeight(int);
@@ -37,6 +43,9 @@ public:
     void setLevel(int);
 
     void checkBoundaries();
+
+    /// LCD
+    std::vector<String> getText();
 
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
@@ -54,12 +63,12 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
-    NimBLECharacteristic *_waterLevelCharacteristic;
-    int _waterLevel;
-    millisDelay *_delay;
+    NimBLECharacteristic *_waterLevelCharacteristic = nullptr;
+    int _waterLevel = 0;
+    millisDelay *_delay = nullptr;
     WaterLevelSettings _settings;
     bool _settingsChanged = false;
-    NewPing *_sonar;
+    NewPing *_sonar = nullptr;
 
     void readLevel();
 

@@ -13,6 +13,7 @@
 #include "../wifi/wifiProvider.h"
 
 #include "../led/ledControl.h"
+#include "../modules/internal/lcd_display/textOutput.h"
 
 #define CREDENTIAL_HANDLES 3
 
@@ -58,6 +59,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         bleController->setConnectionHandle(desc->conn_handle);
         printlnD("OnConnect");
         bleController->setDeviceConnected(true);
+        bleController->setClientAddress(String(NimBLEAddress(desc->peer_ota_addr).toString().c_str()));
     };
 
     void onDisconnect(BLEServer *pServer)
@@ -86,10 +88,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         int passkey = random(100000, 999999);
         printA("passkey = ");
         printlnA(passkey);
-        if (bleController->bluetoothPINHandler != nullptr)
-        {
-            bleController->bluetoothPINHandler->setPINToShow(passkey);
-        }
+        bleController->setPin(passkey);
         return passkey;
     }
 
@@ -97,10 +96,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
     {
         printI("onPassKeyNotify: ");
         printlnI(pass_key);
-        if (bleController->bluetoothPINHandler != nullptr)
-        {
-            bleController->bluetoothPINHandler->setPINToShow(pass_key);
-        }
+        bleController->setPin(pass_key);
     }
 
     bool onSecurityRequest()
@@ -121,10 +117,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         else
         {
             printlnI("Starting BLE work!");
-            if (bleController->bluetoothPINHandler != nullptr)
-            {
-                bleController->bluetoothPINHandler->hidePIN();
-            }
+            bleController->setAuthenticationComplete(true);
         }
     }
 };
@@ -135,13 +128,14 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
 
 //****************
 
-BLEController::BLEController(MemoryProvider *provider, LedControl *ledControl) : _memoryProvider(provider), _ledControl(ledControl)
+BLEController::BLEController(MemoryProvider *provider, LedControl *ledControl, TextOutput *output) : _memoryProvider(provider), _ledControl(ledControl), _textOutput(output)
 {
     _modules.reserve(8);
 }
 
 void BLEController::init()
 {
+    _textOutput->setText({"Bluetooth", "Initializing."});
 
     // Create the BLE Device
     printlnA("");
@@ -167,13 +161,18 @@ void BLEController::init()
     // pSecurity->setCapability(ESP_IO_CAP_OUT);
     // pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
     // }
-
+    _textOutput->setText({"Bluetooth", "Initializing."});
     setupModuleServices();
+    _textOutput->setText({"Bluetooth", "Initializing.."});
     pServer->getAdvertising()->start();
     printlnA("Server started");
 
     _running = true;
     _initialized = true;
+
+    _ledControl->setLedOn(BLUETOOTH_BUTTON);
+
+    _textOutput->setText({"Bluetooth ON", "Waiting..."});
     printMemory();
 }
 
@@ -241,6 +240,8 @@ bool BLEController::isDeviceDisconnecting()
 
 void BLEController::onDeviceConnecting()
 {
+    _textOutput->setText({"BLE - connected"});
+
     printlnA("BLE - OnDeviceConnecting");
     for (IBluetooth *module : _modules)
     {
@@ -254,6 +255,7 @@ void BLEController::onDeviceConnecting()
 
 void BLEController::onDeviceDisconnecting()
 {
+    _textOutput->setText({"Bluetooth", "Disconnecting"});
     _oldDeviceConnected = _deviceConnected;
 
     /// Turn off bluetooth is wifi has credentials
@@ -285,6 +287,11 @@ void BLEController::onDeviceDisconnecting()
     {
         init();
     }
+
+    if (_running)
+    {
+        _textOutput->setText({"Bluetooth", "Waiting..."});
+    }
 }
 
 /**
@@ -296,6 +303,7 @@ void BLEController::stop()
     printlnA("Bluetooth Deinitializing");
     if (_running)
     {
+        _textOutput->setText({"Bluetooth", "Turning off"}, 2000);
         printMemory();
         if (isDeviceConnected())
         {
@@ -307,11 +315,35 @@ void BLEController::stop()
         printMemory();
         printlnA("Bluetooth Deinitialized");
         _running = false;
+        _ledControl->setLedOff(BLUETOOTH_BUTTON);
     }
     else
     {
         printlnA("Bluetooth not running - no deinitialization needed");
     }
+}
+
+void BLEController::setPin(int pin)
+{
+    if (_bluetoothPINHandler != nullptr)
+    {
+        _bluetoothPINHandler->setPINToShow(pin);
+    }
+}
+
+void BLEController::setAuthenticationComplete(bool b)
+{
+    _authenticationCompleted = b;
+}
+
+void BLEController::onAuthenticationComplete()
+{
+    _authenticationCompleted = false;
+    if (_bluetoothPINHandler != nullptr)
+    {
+        _bluetoothPINHandler->hidePIN();
+    }
+    _textOutput->setText({"BLE - connected", _clientAddress});
 }
 
 void BLEController::setStartInFuture()
@@ -329,8 +361,12 @@ void BLEController::checkStop()
     {
         stop();
         _toStop = false;
-        _ledControl->setLedOff(BLUETOOTH_BUTTON);
     }
+}
+
+void BLEController::setClientAddress(String address)
+{
+    _clientAddress = address;
 }
 
 void BLEController::restartAdvertising()
@@ -345,13 +381,17 @@ void BLEController::setDeviceConnected(bool connected)
 
 void BLEController::addBluetoothPINHandler(IBluetoothPIN *p)
 {
-    bluetoothPINHandler = p;
+    _bluetoothPINHandler = p;
 }
 
 void BLEController::checkBluetooth()
 {
     if (_running)
     {
+        if (_authenticationCompleted)
+        {
+            onAuthenticationComplete();
+        }
         if (isDeviceConnected())
         {
             delay(10); //give bluetooth some time
@@ -371,7 +411,6 @@ void BLEController::checkBluetooth()
         {
             init();
             _toStart = false;
-            _ledControl->setLedOn(BLUETOOTH_BUTTON);
         }
     }
 }

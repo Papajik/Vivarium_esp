@@ -12,6 +12,7 @@
 #include "../../module.h"
 #include "../../../bluetooth/i_bluetooth.h"
 #include "../../../firebase/i_FirebaseModule.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 class DallasTemperature;
 class millisDelay;
@@ -23,7 +24,11 @@ struct WaterTempSettings
     float min_temp;
 };
 
-class WaterTempModule : public IModule, public IBluetooth, public IFirebaseModule
+class WaterTempModule
+    : public IModule,
+      public IBluetooth,
+      public IFirebaseModule,
+      public TextModule
 {
 public:
     WaterTempModule(int, int pin = WATER_TEMP_PIN);
@@ -39,6 +44,9 @@ public:
     void startReadings();
     void stopReading();
 
+    /// LCD
+    std::vector<String> getText();
+
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
     virtual void setupBLEState(NimBLEService *state);
@@ -53,14 +61,14 @@ public:
     virtual void updateSensorData(FirebaseJson *);
     void readTemperature();
 
-
 private:
     float _currentTemp = WATER_TEMP_INVALID_VALUE;
     NimBLECharacteristic *_currentTempCharacteristic;
-    DallasTemperature *_dallas;
     OneWire *_oneWire;
-    WaterTempSettings _settings;
+    DallasTemperature *_dallas;
     millisDelay *_delay;
+
+    WaterTempSettings _settings;
 
     /// Module
     virtual void onConnectionChange();

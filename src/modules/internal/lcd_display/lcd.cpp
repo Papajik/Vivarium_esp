@@ -1,16 +1,25 @@
 #include "lcd.h"
 #include "aqua_screens.h"
-
+#include <stdio.h>
 #include <millisDelay.h>
 #include <LiquidCrystal_I2C.h>
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
+#include "../../../state/state.h"
+
 LcdDisplay::LcdDisplay()
+    : _delay(new millisDelay()),
+      _lcd(new LiquidCrystal_I2C(LCD_ADDRESS, LCD_COLS, LCD_ROWS))
 {
-    _screens.reserve(6);
-    _lcd = new LiquidCrystal_I2C(LCD_ADDRESS, LCD_COLS, LCD_ROWS);
+    // _screens.reserve(6);
+    _modules.reserve(8);
+}
+LcdDisplay::~LcdDisplay()
+{
+    delete _lcd;
+    delete _delay;
 }
 
 void LcdDisplay::begin()
@@ -18,45 +27,73 @@ void LcdDisplay::begin()
     _lcd->init();
     _lcd->backlight();
     showDefaultScreen();
-    _delay = new millisDelay();
 
     _delay->start(lcdSettings.switch_screen_interval);
 }
 
 void LcdDisplay::showDefaultScreen()
 {
-    printlnA("Default screen show");
+    printlnD("Default screen show");
     _lcd->clear();
     _lcd->setCursor(0, 0);
     _lcd->print(lcdSettings.display_name);
 }
 
+void LcdDisplay::resetTimer()
+{
+    if (_delay->isRunning())
+    {
+        _delay->restart();
+    }
+}
+
+void LcdDisplay::onTextUnlocked()
+{
+    resetTimer();
+}
+
 void LcdDisplay::onLoop()
 {
-    if (!_pin_displayed && _to_display)
+    //Check if text is ready to be unlocked
+    checkLockedTextDelay();
+
+    // Pin has highest priory
+    if (_to_display)
     {
         showPIN();
     }
 
-    if (_pin_displayed && !_to_display)
+    if (_to_hide)
     {
-        _pin_displayed = false;
-        // to prevent multiple refresh screen.
-        // _delay->repeat() in refreshScreen() would be called multiple times to catch up with current time otherwise
         _delay->restart();
-        refreshScreen();
+        if (!_textLocked)
+        {
+            refreshScreen();
+        }
     }
 
-    if (_delay->justFinished() && !_pin_displayed)
+    // Second priority is textOutput
+    if (_textLocked)
+    {
+        return;
+    }
+
+    if (_delay->justFinished() && !_is_pin_displayed)
     {
         refreshScreen();
+
         _delay->repeat();
+        // if there is problem with time change
+        if (_delay->remaining() == 0)
+        {
+            _delay->restart();
+        }
     }
 }
 
 void LcdDisplay::refreshScreen()
 {
-    if (_screen_count == 0)
+    if (_modules.empty())
     {
         showDefaultScreen();
     }
@@ -78,35 +115,98 @@ void LcdDisplay::setRefreshInterval(int interval)
 
 void LcdDisplay::nextScreen()
 {
-    printlnD("Switching screen");
+    printA("Switching screen:");
     _current_screen++;
-    if (_current_screen == _screen_count)
+    printlnD(_current_screen);
+
+    if (_current_screen < _modules.size())
+    {
+        displayTextFromVector(_modules[_current_screen]->getText());
+    }
+
+    if (_current_screen == _modules.size())
+    {
+        showUpdateStatus();
+    }
+
+    if (_current_screen == _modules.size() + 1)
         _current_screen = 0;
-    printV("Switch to ");
-    printlnV(_current_screen);
-    _screens[_current_screen](_lcd);
 }
 
-int LcdDisplay::addScreen(ScreenCallback callback)
+void LcdDisplay::showUpdateStatus()
 {
-    _screens.push_back(callback);
-    _screen_count++;
-    return _screen_count;
+    printlnD("displayUpdateStatus");
+    _lcd->clear();
+    _lcd->setCursor(0, 0);
+    _lcd->print("Last update ");
+
+    _lcd->setCursor(0, 1);
+
+    char LCDTime[] = "000000000000000";
+
+    time_t t = stateStorage.getLastUpdate();
+
+    if (t != 0)
+    {
+        tm *time = localtime(&t);
+
+        sprintf(LCDTime, "%02d:%02d:%02d %02d.%02d.", time->tm_hour, time->tm_min, time->tm_sec, time->tm_mday, time->tm_mon);
+        _lcd->print(LCDTime);
+    }
+    else
+    {
+        _lcd->print("--:--");
+    }
 }
 
-int LcdDisplay::addScreen(ScreenCallback callback, int position)
+void LcdDisplay::displayTextFromVector(std::vector<String> texts)
 {
-    auto pos = _screens.begin() + position;
-    _screens.insert(pos, callback);
-    _screen_count++;
-    return _screen_count;
+    _lcd->clear();
+    if (!texts.empty())
+    {
+        _lcd->setCursor(0, 0);
+        printlnD(texts[0]);
+        _lcd->print(texts[0]);
+        if (texts.size() > 1)
+        {
+            printlnD(texts[1]);
+            _lcd->setCursor(0, 1);
+            _lcd->print(texts[1]);
+        }
+    }
+    else
+    {
+        showDefaultScreen();
+    }
+}
+
+// int LcdDisplay::addScreen(ScreenCallback callback)
+// {
+//     _screens.push_back(callback);
+//     _screen_count++;
+//     return _screen_count;
+// }
+
+// int LcdDisplay::addScreen(ScreenCallback callback, int position)
+// {
+//     auto pos = _screens.begin() + position;
+//     _screens.insert(pos, callback);
+//     _screen_count++;
+//     return _screen_count;
+// }
+
+int LcdDisplay::addModule(TextModule *module)
+{
+    _modules.push_back(module);
+    return _modules.size();
 }
 
 void LcdDisplay::showPIN()
 {
+    _to_display = false;
     printA("Showing PIN on display = ");
     printlnA(_pin);
-    _pin_displayed = true;
+    _is_pin_displayed = true;
     _lcd->clear();
     _lcd->setCursor(0, 0);
     _lcd->print("PIN");
@@ -117,14 +217,34 @@ void LcdDisplay::showPIN()
 void LcdDisplay::hidePIN()
 {
     printlnD("Hiding pin");
-
-    _to_display = false;
+    _to_hide = true;
+    _is_pin_displayed = false;
 }
 
 void LcdDisplay::setPINToShow(int pin)
 {
     _pin = pin;
     _to_display = true;
+}
+
+void LcdDisplay::displayText(const std::vector<String> &text)
+{
+    printlnA("Display Text");
+    if (text.empty())
+        return;
+    printlnA("First row");
+    printlnA(text[0]);
+    _lcd->clear();
+    _lcd->setCursor(0, 0);
+    _lcd->print(text[0]);
+
+    if (text.size() >= 2)
+    {
+        printlnA("Second row");
+        printlnA(text[1]);
+        _lcd->setCursor(0, 1);
+        _lcd->print(text[1]);
+    }
 }
 
 LcdDisplay lcdDisplay;

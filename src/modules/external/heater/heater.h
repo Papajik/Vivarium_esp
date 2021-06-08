@@ -4,6 +4,7 @@
 #include "../../module.h"
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 
 #define SETTINGS_HEATER_KEY "heater"
 #define FIREBASE_HEATER_CONNECTED_KEY "/heater/connected"
@@ -21,13 +22,15 @@ enum Mode
     UNKNWON = -1
 };
 
+String modeToString(Mode m);
+
 struct HeaterSettings
 {
     Mode mode;
     double tempGoal; //temp goal
 };
 
-class Heater : public IModule, public IFirebaseModule, public IBluetooth
+class Heater : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
     Heater(int, int pwm = HEATER_PIN, int sync = HEATER_SYNC_PIN);
@@ -59,15 +62,18 @@ public:
 
     double getCurrentPower();
 
+    /// LCD
+    std::vector<String> getText();
+
 private:
     double _oldPower = 0;
 
     NimBLECharacteristic *_currentPowerCharacteristic;
     bool _settingsChanged = false;
-    dimmerLamp *_dimmer;
-    AutoPID *_pid;
+    dimmerLamp *_dimmer = nullptr;
+    AutoPID *_pid = nullptr;
     HeaterSettings _settings;
-    double _currentTemperature;
+    double _currentTemperature = 0;
     // double _tempGoal;
     double _currentPower = 0;
     unsigned long _lastValidTemp = 0;

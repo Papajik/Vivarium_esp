@@ -21,6 +21,19 @@
 
 #define HEATER_TEMP_INVALID -127
 
+String modeToString(Mode m)
+{
+    switch (m)
+    {
+    case PID:
+        return "PID";
+    case AUTO:
+        return "AUTO";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 Heater::Heater(int position, int pwm, int sync) : IModule(CONNECTED_KEY, position)
 {
     printlnA("Heater created");
@@ -230,5 +243,17 @@ void Heater::failSafeCheck()
         printlnA("Heater disconnected");
         printlnE("Heater failsafe");
         setConnected(false, true);
+    }
+}
+
+std::vector<String> Heater::getText()
+{
+    if (!_connected)
+    {
+        return {"Heater", "Disconnected"};
+    }
+    else
+    {
+        return {"Heater: " + modeToString(_settings.mode), "G: " + String(_settings.tempGoal, 1) + ", Power: " + String(_currentPower, 1)};
     }
 }

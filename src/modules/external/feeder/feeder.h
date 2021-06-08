@@ -5,6 +5,7 @@
 
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 #include <TimeAlarms.h>
 #include <map>
 #include <memory>
@@ -56,7 +57,8 @@ struct FeedTriggerMem
 
 class Feeder : public IModule,
                public IFirebaseModule,
-               public IBluetooth
+               public IBluetooth,
+               public TextModule
 {
 public:
     Feeder(int, int in_1 = FEEDER_IN_1, int in_2 = FEEDER_IN_2, int in_3 = FEEDER_IN_3, int in_4 = FEEDER_IN_4);
@@ -92,6 +94,9 @@ public:
 
     void printTriggers();
 
+    /// LCD
+    std::vector<String> getText();
+
 private:
     void clearAllTriggers();
     std::shared_ptr<FeedTrigger> getNextTrigger();
@@ -100,7 +105,7 @@ private:
     NimBLECharacteristic *_timeCharacteristic = nullptr;
     NimBLECharacteristic *_idCharacteristic = nullptr;
 
-    bool _feeded;
+    bool _feeded = false;
     FeederSettings _settings;
     /// FirebaseKEy -> FeedTrigger
     std::map<String, std::shared_ptr<FeedTrigger>> _triggers;
@@ -117,7 +122,6 @@ private:
     virtual bool loadSettings();
 
     void printTrigger(std::shared_ptr<FeedTrigger>);
-    
 
     void parseTriggersJson(FirebaseJson *);
     void parseTriggerJson(FirebaseJson *, String);
@@ -133,8 +137,6 @@ private:
 
     bool parseTime(std::shared_ptr<FeedTrigger>, int time);
     std::shared_ptr<FeedTrigger> findTrigger(String key);
-    int getTime(int hour, int minute);
-
     void createTrigger(int time, String key);
 };
 

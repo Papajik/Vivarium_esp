@@ -11,6 +11,8 @@
 
 #include "../../../debug/memory.h"
 
+#include "../../../utils/timeHelper.h"
+
 void ledTriggerCallback()
 {
     printlnA("LED Trigger callback");
@@ -31,7 +33,7 @@ void ledTriggerCallback()
     }
 }
 
-LedModule *ledModulePtr;
+LedModule *ledModulePtr = nullptr;
 
 LedModule::LedModule(int position, int pin) : IModule(CONNECTED_KEY, position)
 {
@@ -195,7 +197,7 @@ std::shared_ptr<LedTrigger> LedModule::getNextTrigger()
     if (_triggers.empty())
         return nullptr;
 
-    if (getLocalTime(&timeinfo))
+    if (getLocalTime(&timeinfo, 100))
     {
         int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
 
@@ -400,12 +402,27 @@ std::shared_ptr<LedTrigger> LedModule::findTrigger(String key)
     }
 }
 
-int LedModule::getTime(int hour, int minute)
-{
-    return hour * 256 + minute;
-}
-
 bool LedModule::isStripConnected()
 {
     return _stripConnected;
+}
+
+std::vector<String> LedModule::getText()
+{
+    if (!_connected)
+    {
+        return {"LED", "Disconnected"};
+    }
+    else
+    {
+        int time;
+        if (getNextTriggerTime(&time))
+        {
+            return {"LED", "Next: " + formatTime(time)};
+        }
+        else
+        {
+            return {"LED", "No trigger"};
+        }
+    }
 }

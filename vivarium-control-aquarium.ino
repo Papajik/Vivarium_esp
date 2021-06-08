@@ -69,45 +69,55 @@ void setupExternalModules()
   vivarium.addModule(wt);
   vivarium.addBLEModule(wt);
   vivarium.addFirebaseModule(wt);
+  vivarium.addTextModule(wt);
 
   // Ph
   vivarium.addModule(ph);
   vivarium.addBLEModule(ph);
   vivarium.addFirebaseModule(ph);
+  vivarium.addTextModule(ph);
 
   vivarium.addModule(fan);
   vivarium.addBLEModule(fan);
   vivarium.addFirebaseModule(fan);
+  vivarium.addTextModule(fan);
 
   vivarium.addModule(feeder);
   vivarium.addBLEModule(feeder);
   vivarium.addFirebaseModule(feeder);
+  vivarium.addTextModule(feeder);
 
   vivarium.addModule(waterPump);
   vivarium.addBLEModule(waterPump);
   vivarium.addFirebaseModule(waterPump);
+  vivarium.addTextModule(waterPump);
 
   vivarium.addModule(heater);
   vivarium.addBLEModule(heater);
   vivarium.addFirebaseModule(heater);
+  vivarium.addTextModule(heater);
 
   vivarium.addModule(led);
   vivarium.addBLEModule(led);
   vivarium.addFirebaseModule(led);
+  vivarium.addTextModule(led);
 
   vivarium.addModule(waterLevel);
   vivarium.addBLEModule(waterLevel);
   vivarium.addFirebaseModule(waterLevel);
+  vivarium.addTextModule(waterLevel);
 
   // DhtModule *dht = new DhtModule(0);
   // vivarium.addModule(dht);
   // vivarium.addFirebaseModule(dht);
   // vivarium.addBLEModule(dht);
+  //  vivarium.addTextModule(dht);
 
   // Humidifier *hum = new Humidifier(0, 2);
   // vivarium.addModule(hum);
   // vivarium.addFirebaseModule(hum);
   // vivarium.addBLEModule(hum);
+  // vivarium.addTextModule(hum);
 }
 
 // *******

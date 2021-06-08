@@ -3,6 +3,7 @@
 
 #include "../../module.h"
 #include "../../../bluetooth/i_bluetooth.h"
+#include "../../../modules/internal/lcd_display/textModule.h"
 #include "../../../firebase/i_FirebaseModule.h"
 
 class millisDelay;
@@ -30,7 +31,7 @@ struct PhModuleSettings
     float min_ph;
 };
 
-class PhModule : public IModule, public IBluetooth, public IFirebaseModule
+class PhModule : public IModule, public IBluetooth, public IFirebaseModule, public TextModule
 {
 
 public:
@@ -80,6 +81,9 @@ public:
     virtual void getHandlesCount(int *, int *, int *);
 
     virtual void onLoop();
+
+    /// LCD
+    std::vector<String> getText();
 
     //Bluetooth
     BLECharacteristic *characteristicWaterPh;
