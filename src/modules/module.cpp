@@ -23,7 +23,7 @@ bool IModule::isConnected()
 
 void IModule::setConnected(bool connected, bool fromButton)
 {
-    printD("Module " + _connectionKey);
+    printA("Module " + _connectionKey);
     printD(" - set connected: ");
     printlnD(connected ? "true" : "false");
 

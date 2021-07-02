@@ -24,12 +24,12 @@ void MemoryProviderInternal::begin(String name = "vivarium")
     _preferences->begin(name.c_str(), false);
     nvs_stats_t nvs_stats;
     nvs_get_stats(NULL, &nvs_stats);
-    printA("Count: UsedEntries = ");
-    printlnA(nvs_stats.used_entries);
-    printA("FreeEntries = ");
-    printlnA(nvs_stats.free_entries);
-    printA("AllEntries = ");
-    printlnA(nvs_stats.total_entries);
+    // printA("Count: UsedEntries = ");
+    // printlnA(nvs_stats.used_entries);
+    // printA("FreeEntries = ");
+    // printlnA(nvs_stats.free_entries);
+    // printA("AllEntries = ");
+    // printlnA(nvs_stats.total_entries);
     lockSemaphore("begin");
     if (_preferences->isKey(NUMBER_OF_WRITES_KEY))
     {
@@ -96,13 +96,11 @@ void MemoryProviderInternal::saveStruct(String key, const void *value, size_t le
     size_t bytes = _preferences->putBytes(key.c_str(), value, len);
     unlockSemaphore();
     debugA("Saved %d bytes", bytes);
-
     _incrementWrites();
 }
 
 void MemoryProviderInternal::_incrementWrites()
 {
-
     _writeCount++;
     printD("New number of writes = ");
     printD(_writeCount);
@@ -125,28 +123,28 @@ void MemoryProviderInternal::_incrementBytes(int bytes)
 
 void MemoryProviderInternal::saveString(String key, String value)
 {
-    Serial.print("MP: Saving string ");
-    Serial.print(value);
+    printD("MP: Saving string ");
+    printD(value);
     lockSemaphore("saveString_" + key);
     if (!_preferences->isKey(key.c_str()))
     {
         size_t bytes = _preferences->putString(key.c_str(), value);
-        Serial.print(" (");
-        Serial.print(bytes);
-        Serial.print(" bytes) under key ");
-        Serial.println(key);
+        printD(" (");
+        printD(bytes);
+        printD(" bytes) under key ");
+        printlnD(key);
     }
     else if (_preferences->getString(key.c_str(), String("")) != value)
     {
         size_t bytes = _preferences->putString(key.c_str(), value);
-        Serial.print(" (");
-        Serial.print(bytes);
-        Serial.print(" bytes) under key ");
-        Serial.println(key);
+        printD(" (");
+        printD(bytes);
+        printD(" bytes) under key ");
+        printlnD(key);
     }
     else
     {
-        Serial.println(" - string is already stored");
+        printlnD(" - string is already stored");
     }
     unlockSemaphore();
 }
@@ -177,9 +175,7 @@ void MemoryProviderInternal::saveBool(String key, bool value)
     lockSemaphore("saveBool_" + key);
     if (!_preferences->isKey(key.c_str()))
     {
-        Serial.println("Before putBool");
         _preferences->putBool(key.c_str(), value);
-        Serial.println("After putBool");
     }
     else if (_preferences->getBool(key.c_str()) != value)
     {
@@ -365,6 +361,12 @@ void MemoryProviderInternal::factoryReset()
 
 void MemoryProviderInternal::lockSemaphore(String owner)
 {
+    // nvs_stats_t nvs_stats;
+    // nvs_get_stats(NULL, &nvs_stats);
+    // Serial.printf("Count: NamespaceCount = %d \n", nvs_stats.namespace_count);
+    // Serial.printf("Count: UsedEntries = %d \n", nvs_stats.used_entries);
+    // Serial.printf("Count: FreeEntries = %d \n", nvs_stats.free_entries);
+    // Serial.printf("Count: AllEntries = %d \n", nvs_stats.total_entries);
     Serial.println("Lock memory semaphore by " + owner);
     if (_mutexOwner != "")
         Serial.println("Already locked from " + _mutexOwner);

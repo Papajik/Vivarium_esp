@@ -80,7 +80,9 @@ void WaterLevel::onLoop()
     checkConnectionChange();
     if (_settingsChanged)
     {
+        Serial.println("WL - settings change  - saving");
         saveSettings();
+        Serial.println("WL - settings change  - saved");
     }
     if (isConnected())
     {
@@ -120,6 +122,10 @@ void WaterLevel::setLevel(int level)
 
 void WaterLevel::saveSettings()
 {
+    Serial.println("WL - saving settings");
+    Serial.println(_settings.maxLevel);
+    Serial.println(_settings.minLevel);
+    Serial.println(_settings.sensorHeight);
     _memoryProvider->saveStruct(SETTINGS_WL_KEY, &_settings, sizeof(WaterLevelSettings));
     _settingsChanged = false;
 }

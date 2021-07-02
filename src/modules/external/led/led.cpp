@@ -15,7 +15,7 @@
 
 void ledTriggerCallback()
 {
-    printlnA("LED Trigger callback");
+    Serial.println("LED Trigger callback");
     AlarmId id = Alarm.getTriggeredAlarmId();
     if (ledModulePtr != nullptr)
     {

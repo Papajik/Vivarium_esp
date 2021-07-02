@@ -144,16 +144,11 @@ bool Auth::isClaimed()
 
 String Auth::getDeviceId()
 {
-    printlnA("Get device Id.");
-    printA("Returning = ");
-    printlnA(_deviceId);
     return _deviceId;
 }
 
 void Auth::setDeviceId(String deviceId)
 {
-    printV("Saving deviceID: ");
-    printlnV(deviceId);
     _deviceId = deviceId;
 }
 

@@ -35,24 +35,6 @@ protected:
 
         messagingService->sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
     }
-
-    void printJson(FirebaseJson *json)
-    {
-        size_t size = json->iteratorBegin();
-        int type;
-        String value;
-        String key;
-        printlnA("Printing JSON");
-        for (int i = 0; i < size; i++)
-        {
-            json->iteratorGet(i, type, key, value);
-            printlnA(i);
-            printA("type = ");
-            printlnA(type);
-            printlnA("Key = " + key);
-            printlnA("value = " + value);
-        }
-    }
 };
 
 #endif

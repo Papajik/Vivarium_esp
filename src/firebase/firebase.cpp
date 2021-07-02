@@ -338,6 +338,7 @@ void FirebaseService::uploadSensorData()
 {
     if (_running)
     {
+        printlnA("Upload sensor data");
         time_t now;
         time(&now);
 
@@ -350,6 +351,8 @@ void FirebaseService::uploadSensorData()
 
         for (IFirebaseModule *m : _modules)
         {
+            printA("Updating sensor data->");
+            printlnA(m->getSettingKey());
             m->updateSensorData(&json);
         }
         String buffer;
@@ -427,9 +430,11 @@ void FirebaseService::factoryReset()
 {
     if (_memoryProvider != nullptr)
     {
-    _memoryProvider->factoryReset();
-    ESP.restart();
-}
+        printlnA("Factory reset");
+        _memoryProvider->factoryReset();
+        printlnA("Factory reset done");
+        ESP.restart();
+    }
 }
 
 void FirebaseService::jsonCallback(FirebaseJson *json, String path)
@@ -485,7 +490,7 @@ void FirebaseService::uploadState(String key, bool value)
     if (_running)
     {
 
-        printlnI("uploading state");
+        printlnA("uploading state");
 
         String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
         checkSSLConnected();
@@ -632,11 +637,16 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, String data
     if (_running)
     {
 
-        printlnV("uploadCustomData");
+        printlnA("uploadCustomData");
+        printlnA(prefix);
+        printlnA(suffix);
+        printlnA("----");
         String path = prefix + _auth->getDeviceId() + suffix;
-
+        printlnA("Before ssl check");
         checkSSLConnected();
+        printlnA("after ssl check");
         firebaseSemaphore.lockSemaphore("uploadCustomData");
+
         if (Firebase.RTDB.set(firebaseBdo, path.c_str(), data))
         {
             printlnV("custom data uploaded");
@@ -674,7 +684,7 @@ void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
 {
     if (_running)
     {
-        printlnV("uploadCustomData");
+        printlnA("uploadCustomData");
         String path = prefix + _auth->getDeviceId() + suffix;
 
         checkSSLConnected();
@@ -700,13 +710,18 @@ void streamCallback(MultiPathStream stream)
 
     // Check active status
     stream.get(firebaseService->childPaths[ChildPath::ACTIVE_STATUS]);
+    printlnA("check active status");
     if (stream.type == "boolean" && stream.value == "false")
     {
+        printlnA("FactoryReset");
         firebaseService->factoryReset();
     }
+    printlnA("active status checked");
 
     //Check firmware
     stream.get(firebaseService->childPaths[ChildPath::FIRMWARE]);
+    printlnA("check firmware");
+
     if (stream.type == "string" && (stream.value != ""))
     {
         if (otaService != nullptr)
@@ -727,18 +742,22 @@ void streamCallback(MultiPathStream stream)
             }
         }
     }
+    printlnA("Firmware checked");
 
     // Check Bluetooth name
     stream.get(firebaseService->childPaths[ChildPath::BLE_NAME]);
+    printlnA("bluetooth name check");
     if (stream.type == "string" && (stream.value != ""))
     {
         bleController->setBleName(stream.value);
     }
+    printlnA("ble checked");
 
     for (int i = 0; i < 2; i++)
     {
         stream.get(firebaseService->childPaths[i]);
         printlnA(stream.dataPath);
+        printlnA(stream.type);
         if (stream.type == "json")
         {
             FirebaseJson json;
