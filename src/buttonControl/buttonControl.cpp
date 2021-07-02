@@ -22,17 +22,25 @@ void readAnalogTask(void *parameter)
     float avg = ADC_RESOLUTION / float(buttonCount);
     int val;
     int n;
+    int lastButton = BUTTON_RELEASED;
 
     for (;;)
     {
         val = analogRead(M_BUTTONS_PIN); // ADC1 - channel 6 on GPIO2
-        for (n = 1; n < 8; n++)
+        for (n = 1; n < 16; n++)
             val += analogRead(M_BUTTONS_PIN);
-        val /= 8;
+        val /= 16;
 
         if (val > (buttonCount - 0.5) * avg)
         {
-            buttonControl->buttonPressed(BUTTON_RELEASED);
+            if (lastButton == BUTTON_RELEASED)
+            {
+                buttonControl->buttonPressed(BUTTON_RELEASED);
+            }
+            else
+            {
+                lastButton = BUTTON_RELEASED;
+            }
         }
         else
         {
@@ -41,12 +49,19 @@ void readAnalogTask(void *parameter)
 
                 if (val < round((i + 0.5) * avg))
                 {
-                    printA("Button pressed: ");
-                    printA(i);
-                    printA(" (");
-                    printA(val);
-                    printlnA(")");
-                    buttonControl->buttonPressed(i);
+                    if (lastButton == i)
+                    {
+                        printA("Val: ");
+                        printA(val);
+                        printA("\t =>");
+                        printlnA(i);
+                        buttonControl->buttonPressed(i);
+                    }
+                    else
+                    {
+                        lastButton = i;
+                    }
+
                     break;
                 }
             }
