@@ -3,14 +3,14 @@
 
 #include <Arduino.h>
 
-#define DEFAULT_CLOCK_BRIGHTNESS 7
-#define DEFAULT_CLOCK_REFRESH_INTERVAL 15000 //refresh 4 times per minute to display more accurate time
+#define DEFAULT_CLOCK_BRIGHTNESS 6
+#define DEFAULT_CLOCK_REFRESH_INTERVAL 5000 //refresh every 5 seconds to display more accurate time
 
 #define MIN_INTERVAL_CONSTRAINT 1000
 #define MAX_INTERVAL_CONSTRAINT 60000
 
-#define CLK_PIN 16 
 #define DIO_PIN 17
+#define CLK_PIN 16
 
 class millisDelay;
 class RobotDyn4DigitDisplay;
@@ -26,6 +26,7 @@ class ClockDisplay
 {
 public:
     ClockDisplay(int clk, int dio);
+    ~ClockDisplay();
 
     /*
     @Brief Initializes 4DigitDisplay, sets brigthness and starts delay to refresh display
@@ -42,12 +43,14 @@ public:
     There is risk of skipping minute on clock otherwise 
     @param interval Refresh interval in [ms]
     */
-    void setRefreshInterval(unsigned long);
+    void setRefreshInterval(unsigned long ms);
 
 private:
     void displayInvalid();
+    bool showTime();
     RobotDyn4DigitDisplay *_clock;
     millisDelay *_delay;
+    tm timeinfo;
 };
 
 struct ClockSettings
