@@ -31,27 +31,46 @@
 #include "../monitor/monitor.h"
 #include "../watchdog/watchdog.h"
 
+// External modules
+#include "../modules/external/ph_probe/ph_probe.h"
+#include "../modules/external/water_temperature/water_temp.h"
+#include "../modules/external/fan/fan.h"
+#include "../modules/external/led/led.h"
+#include "../modules/external/feeder/feeder.h"
+#include "../modules/external/water_level/water_level.h"
+#include "../modules/external/heater/heater.h"
+#include "../modules/external/water_pump/water_pump.h"
+
+#include "../modules/external/dht/dht.h"
+#include "../modules/external/humidifer/humidifier.h"
+
+#include "esp_log.h"
+
+#define WIFI_RECONNECT_DELAY 60000
+
 Vivarium::Vivarium() {}
 
-void Vivarium::setup(String deviceId = DEVICE_ID)
+void Vivarium::setup(int outletCount, String deviceId)
 {
+
     Serial.begin(115200);
-
+    esp_log_level_set("*", ESP_LOG_VERBOSE);
     printlnA("**** Setup: initializing ...");
-    printlnA("...20...");
-    printMemory();
-    printHeapInfo();
 
-    // setupDebug();
+    lcdDisplay.begin();
+    lcdDisplay.setText({"Smart Vivarium", "Setup"});
+
+    Debugger::setupDebug();
     initAnalog();
 
     ledControl = new LedControl();
 
     memoryProvider = new MemoryProviderInternal();
+    Debugger::addProvider(memoryProvider);
 
     wifiProvider = new WiFiProvider(memoryProvider);
 
-    memoryProvider->begin();
+    memoryProvider->init();
 
     auth = new Auth(memoryProvider);
     auth->loadFromNVS();
@@ -61,7 +80,7 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
 
     bleController = new BLEController(memoryProvider, ledControl, &lcdDisplay);
 
-    messagingService = new MessagingService();
+    messagingService = new MessagingService(auth);
 
     firebaseService = new FirebaseService(auth, memoryProvider, messagingService);
 
@@ -74,18 +93,23 @@ void Vivarium::setup(String deviceId = DEVICE_ID)
     bleController->addModule(auth);
     bleController->addModule(firebaseService);
 
-    outletController = new OutletController(memoryProvider);
+    outletController = new OutletController(memoryProvider, outletCount);
 
     firebaseService->addModule(outletController);
+    bleController->addModule(outletController);
+    wifiProvider->addTextOutput(&lcdDisplay);
 
     wifiProvider->setupWiFi();
-    lcdDisplay.begin();
+
+    delay(2000);
     otaService->begin();
     clockDisplay.begin();
+    lcdDisplay.setText({"Smart Vivarium", "WiFi set"});
 }
 
 void Vivarium::finalize()
 {
+    lcdDisplay.setText({"Smart Vivarium", "Finalize"});
     if (!otaService->isFirmwareUpdating())
     {
         printlnA("\nFinalize\n");
@@ -93,14 +117,19 @@ void Vivarium::finalize()
         printHeapInfo();
         if (wifiProvider->isConnected() && auth->isClaimed())
         {
+            lcdDisplay.setText({"Smart Vivarium", "Init FB"});
             printlnA("WiFi connected - initializing firebase");
+
             firebaseService->setupFirebase();
             firebaseService->logNewStart();
+            lcdDisplay.setText({"Smart Vivarium", "FB Ready"});
         }
         else
         {
+            lcdDisplay.setText({"Smart Vivarium", "Init BLE"});
             printlnA("Init bluetooth");
             bleController->init();
+            lcdDisplay.setText({"Smart Vivarium", "BLE Ready"});
         }
 
         printHeapInfo();
@@ -114,6 +143,9 @@ void Vivarium::finalize()
     watchdog.addVivarium(this);
     runner.addCallback(watchdog.getCallback());
     runner.startRunner();
+    lcdDisplay.setText({"Smart Vivarium", "Ready"});
+    delay(2000);
+    lcdDisplay.unlockText();
 }
 
 void Vivarium::addModule(IModule *m)
@@ -143,6 +175,7 @@ void Vivarium::addFirebaseModule(IFirebaseModule *m)
 
 void Vivarium::onLoop()
 {
+    pingAlive();
     if (!otaService->isFirmwareUpdating())
     {
         mainLoop();
@@ -154,6 +187,12 @@ void Vivarium::onLoop()
 
     debugHandle();
     }
+
+void Vivarium::restart()
+{
+    moduleControl->beforeShutdown();
+    ESP.restart();
+}
 
 void Vivarium::otaLoop()
     {
@@ -177,12 +216,31 @@ void Vivarium::mainLoop()
 {
     if (firebaseService->checkFirebase() != 0)
     {
-        moduleControl->beforeShutdown();
-        ESP.restart();
+        restart();
 }
-    //Check if Firebase should stop
+    clockDisplay.refreshDisplay();
+    // Check if Firebase/BLE should stop
     firebaseService->checkStop();
     bleController->checkStop();
+    // Check wifi and try to restart if necessary
+    // TODO Check if working when sudden change of network connection occurs
+
+    if (_lastWifiRetry < WIFI_RECONNECT_DELAY + millis() &&
+        !wifiProvider->isConnected() &&
+        wifiProvider->hasCredentials() &&
+        auth->isClaimed() &&
+        !bleController->isDeviceConnected())
+    {
+
+        printlnA("Wifi connect retry ");
+        _lastWifiRetry = millis();
+        if (wifiProvider->connect(5000) == WL_CONNECTED)
+        {
+            bleController->stop();
+            firebaseService->setupFirebase();
+        }
+    }
+
     outletController->onLoop();
     bleController->checkBluetooth();
     lcdDisplay.onLoop();
@@ -190,4 +248,106 @@ void Vivarium::mainLoop()
     wifiProvider->onLoop();
     firebaseService->onLoop();
     Alarm.delay(0);
+void Vivarium::createModule(ModuleType type, int position, int outlet)
+{
+
+    switch (type)
+    {
+    case ModuleType::DHT_MODULE:
+    {
+        DhtModule *dht = new DhtModule(position);
+        addModule(dht);
+        addFirebaseModule(dht);
+        addBLEModule(dht);
+        addTextModule(dht);
+    }
+    break;
+    case ModuleType::FAN:
+    {
+        FanController *fan = new FanController(position);
+        addModule(fan);
+        addFirebaseModule(fan);
+        addBLEModule(fan);
+        addTextModule(fan);
+    }
+    break;
+    case ModuleType::FEEDER:
+    {
+        feederPtr = new Feeder(position);
+        addModule(feederPtr);
+        addFirebaseModule(feederPtr);
+        addBLEModule(feederPtr);
+        addTextModule(feederPtr);
+    }
+    break;
+    case ModuleType::HEATER:
+    {
+        Heater *heater = new Heater(position);
+        addModule(heater);
+        addFirebaseModule(heater);
+        addBLEModule(heater);
+        addTextModule(heater);
+    }
+    break;
+    case ModuleType::HUMIDIFIER:
+        if (outlet != -1)
+        {
+
+            Humidifier *hum = new Humidifier(outlet, position);
+            addModule(hum);
+            addFirebaseModule(hum);
+            addBLEModule(hum);
+            addTextModule(hum);
+        }
+
+        break;
+    case ModuleType::LED:
+    {
+        ledModulePtr = new LedModule(position);
+        addModule(ledModulePtr);
+        addFirebaseModule(ledModulePtr);
+        addBLEModule(ledModulePtr);
+        addTextModule(ledModulePtr);
+    }
+    break;
+    case ModuleType::PH_PROBE:
+    {
+        PhModule *ph = new PhModule(position);
+        addModule(ph);
+        addFirebaseModule(ph);
+        addBLEModule(ph);
+        addTextModule(ph);
+    }
+    break;
+    case ModuleType::WATER_LEVEL:
+    {
+        WaterLevel *waterLevel = new WaterLevel(position);
+        addModule(waterLevel);
+        addBLEModule(waterLevel);
+        addFirebaseModule(waterLevel);
+        addTextModule(waterLevel);
+    }
+    break;
+    case ModuleType::WATER_PUMP:
+    {
+        WaterPump *waterPump = new WaterPump(position);
+        addModule(waterPump);
+        addFirebaseModule(waterPump);
+        addBLEModule(waterPump);
+        addTextModule(waterPump);
+    }
+    break;
+    case ModuleType::WATER_TEMPERATURE:
+    {
+        WaterTempModule *wt = new WaterTempModule(position);
+        addModule(wt);
+        addFirebaseModule(wt);
+        addBLEModule(wt);
+        addTextModule(wt);
+    }
+    break;
+
+    default:
+        break;
+    }
 }
