@@ -3,6 +3,7 @@
 
 #define OTA_IDLE 1
 #define OTA_CANCEL -1
+#define OTA_FAIL -2
 #define OTA_COMPLETED 2
 #define OTA_UPDATING 0
 
@@ -20,6 +21,7 @@ public:
     bool prepareAndStartUpdate(String, String);
     int onLoop();
     bool isFirmwareUpdating();
+    bool failCallback();
 
 private:
     void startUpdate();

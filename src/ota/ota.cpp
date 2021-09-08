@@ -12,7 +12,6 @@
 #define FIRMWARE_VERSION_KEY "fw_ver"
 #define FIRMWARE_NEW_VERSION_KEY "fw_ver_new"
 #define FIRMWARE_DOWNLOAD_URL_KEY "fw_name"
-#define FIRMWARE_URL "https://firebasestorage.googleapis.com/v0/b/vivarium-control-unit.appspot.com/o/firmware%2F"
 #define WRITE_DELAY 1000
 
 static String downloadUrl = "";
@@ -90,9 +89,9 @@ bool OtaService::prepareAndStartUpdate(String downloadUrl, String version)
 
 void OtaService::startUpdate()
 {
-  _textOutput->setText({"Firmware update", _newFirmwareVersion});
+  _textOutput->setText({"FW update", _newFirmwareVersion});
   _firmwareUpdateRunning = true;
-  HttpsOTA.begin(downloadUrl.c_str(), cert, false);
+  HttpsOTA.begin(downloadUrl.c_str(), https_cert, false);
 }
 
 int OtaService::onLoop()
@@ -105,17 +104,18 @@ int OtaService::onLoop()
     // Restart ESP on successfull update
     if (otaStatus == HTTPS_OTA_SUCCESS)
     {
-      _textOutput->setText({"Firmware update", "DONE"}, 2000);
+      _textOutput->setText({"FW update", "DONE"}, 2000);
       printlnA("Firmware updated. Rebooting device");
       _memoryProvider->saveString(FIRMWARE_VERSION_KEY, _newFirmwareVersion);
       return OTA_COMPLETED;
     }
     else if (otaStatus == HTTPS_OTA_FAIL)
     {
-      _textOutput->setText({"Firmware update", "¨FAILED"}, 2000);
+
+      _textOutput->setText({"FW update", "FAILED"}, 2000);
       printlnE("Firmware upgrade Fail");
       _firmwareUpdateRunning = false;
-      return OTA_CANCEL;
+      return OTA_FAIL;
     }
     else if (otaStatus == HTTPS_OTA_UPDATING)
     {
@@ -127,17 +127,17 @@ int OtaService::onLoop()
         switch (updateTextCount)
         {
         case 0:
-          _textOutput->setText({"Firmware update", _newFirmwareVersion});
+          _textOutput->setText({"FW update", _newFirmwareVersion});
           break;
         case 1:
-          _textOutput->setText({"Firmware update.", _newFirmwareVersion});
+          _textOutput->setText({"FW update.", _newFirmwareVersion});
           break;
         case 2:
-          _textOutput->setText({"Firmware update..", _newFirmwareVersion});
+          _textOutput->setText({"FW update..", _newFirmwareVersion});
           break;
         case 3:
         default:
-          _textOutput->setText({"Firmware update...", _newFirmwareVersion});
+          _textOutput->setText({"FW update...", _newFirmwareVersion});
         }
         _lastWrite = millis();
         printlnA("*");
@@ -157,4 +157,22 @@ int OtaService::onLoop()
 bool OtaService::isFirmwareUpdating()
 {
   return _firmwareUpdateRunning;
+}
+
+bool OtaService::failCallback()
+{
+  int fail = _memoryProvider->loadInt("FW_FAIL_COUNT", 0);
+  if (fail < 5)
+  {
+    _memoryProvider->saveInt("FW_FAIL_COUNT", ++fail);
+    return false;
+  }
+  else
+  {
+    _memoryProvider->saveInt("FW_FAIL_COUNT", 0);
+    _memoryProvider->saveString(FIRMWARE_VERSION_KEY, "0");
+    _memoryProvider->saveString(FIRMWARE_NEW_VERSION_KEY, "0");
+    _memoryProvider->saveString(FIRMWARE_DOWNLOAD_URL_KEY, "");
+    return true;
+  }
 }

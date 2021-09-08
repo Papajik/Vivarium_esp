@@ -200,8 +200,15 @@ void Vivarium::otaLoop()
         switch (otaResponse)
         {
         case OTA_COMPLETED:
-            moduleControl->beforeShutdown();
-            ESP.restart();
+        restart();
+        break;
+    case OTA_FAIL:
+        if (otaService->failCallback())
+        {
+            firebaseService->clearVersion();
+        }
+        printlnA("OTA failed, ESP restart");
+        restart();
             break;
         case OTA_CANCEL:
             printlnA("OTA cancelled, finalizing");
