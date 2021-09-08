@@ -18,7 +18,9 @@
 
 #include "../state/state_values.h"
 
+#include "../modules/moduleType.h"
 #include "../utils/taskHealth/taskHealth.h"
+
 /*!
 * \def DEVICE_ID
 * Description
@@ -27,7 +29,6 @@
 
 class IModule;
 class IBluetooth;
-class LcdDisplay;
 class IFirebaseModule;
 class MemoryProvider;
 class Auth;
@@ -40,27 +41,32 @@ class Vivarium : public TaskHealth
 {
 public:
     Vivarium();
-    void setup(String);
+    void setup(int, String);
     void finalize();
-    void addModule(IModule *m);
 
     void onLoop();
+
+    void createModule(ModuleType type, int position, int outlet = -1);
+
+    void restart();
 
     void addBLEModule(IBluetooth *m);
     void addFirebaseModule(IFirebaseModule *m);
     void addTextModule(TextModule *m);
 
+    MemoryProvider *memoryProvider;
+
 private:
+    void addModule(IModule *m);
     void mainLoop();
     void otaLoop();
 
-    MemoryProvider *memoryProvider;
     MessagingService *messagingService;
     ModuleControl *moduleControl;
     Auth *auth;
     LedControl *ledControl;
     int otaResponse;
-    unsigned long last = 0;
+    unsigned long _lastWifiRetry = 0;
 };
 
 #endif
