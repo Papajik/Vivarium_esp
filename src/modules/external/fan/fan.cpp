@@ -7,6 +7,7 @@
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
 #define CONNECTED_KEY "fan/c"
+#define FIREBASE_FAN_SPEED "/fan/speed"
 
 #define FAN_RESOLUTION 8
 #define FAN_FREQUENCY 40
@@ -67,9 +68,6 @@ void FanController::onLoop()
         float temp;
         if (stateStorage.getValue(STATE_WATER_TEMPERATURE, &temp))
         {
-            printlnV("Reading success");
-            printlnV("FAN - on loop");
-            printlnV("Temperature = " + String(temp));
             parseFanSpeed(temp);
         }
     }
@@ -96,12 +94,15 @@ void FanController::parseFanSpeed(float temp)
     setSpeed(speed);
 }
 
+float FanController::getPercantage(int speed)
+{
+    return speed / FAN_MAX_SPEED * 100;
+}
+
 void FanController::setSpeed(int speed)
 {
     if (_currentSpeed != speed)
     {
-        printlnA("Fan Changing speed");
-        printlnA(speed);
         ledcWrite(FAN_CHANNEL, speed);
         _currentSpeed = speed;
         stateStorage.setValue(FAN_SPEED, (uint32_t)speed);
@@ -110,19 +111,18 @@ void FanController::setSpeed(int speed)
             _currentSpeedCharacteristic->setValue(_currentSpeed);
             _currentSpeedCharacteristic->notify();
         }
+        if (firebaseService != nullptr)
+            firebaseService->uploadState(FIREBASE_FAN_SPEED, getPercantage(_currentSpeed));
     }
 }
 
 void FanController::saveSettings()
 {
-    printlnA("Fan - save settings");
-
     _memoryProvider->saveStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
     _settingsChanged = false;
 }
 bool FanController::loadSettings()
 {
-    printlnA("Fan - save settings");
     return _memoryProvider->loadStruct(SETTINGS_FAN_KEY, &_settings, sizeof(FanSettings));
 }
 
@@ -152,6 +152,6 @@ std::vector<String> FanController::getText()
     }
     else
     {
-        return {"Fan: " + String(_currentSpeed) + " %", "Start:" + String(_settings.setStartAt, 1) + "Max: " + String(_settings.setMaxAt, 1)};
+        return {"Fan: " + String(_currentSpeed / 255 * 100) + " %", "S:" + String(_settings.setStartAt, 1) + "M: " + String(_settings.setMaxAt, 1)};
     }
 }

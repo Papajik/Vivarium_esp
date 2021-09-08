@@ -102,11 +102,13 @@ void PhModule::parseValue(String key, String value)
     }
 }
 
-void PhModule::updateSensorData(FirebaseJson *json)
+bool PhModule::updateSensorData(FirebaseJson *json)
 {
     if (_lastPhValue != PH_INVALID_VALUE)
     {
         json->set(KEY_CURRENT_PH, _lastPhValue);
         _lastPhValue = PH_INVALID_VALUE;
+        return true;
     }
+    return false;
 }

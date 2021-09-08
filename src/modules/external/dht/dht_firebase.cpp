@@ -82,18 +82,22 @@ void DhtModule::parseValue(String key, String value)
         setConnected(value == "true", false);
     }
 }
-void DhtModule::updateSensorData(FirebaseJson *json)
+bool DhtModule::updateSensorData(FirebaseJson *json)
 {
+    bool r = false;
     if (isConnected())
     {
         if (_temp != DHT_INVALID_VALUE)
         {
             json->set(KEY_SENSOR_DATA_DHT_TEMP, _temp);
+            r = true;
         }
 
         if (_humidity != DHT_INVALID_VALUE)
         {
             json->set(KEY_SENSOR_DATA_DHT_HUM, _humidity);
+            r = true;
         }
     }
+    return r;
 }

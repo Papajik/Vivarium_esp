@@ -13,7 +13,10 @@
 #define CONNECTED_KEY "temp/c"
 #define FIREBASE_STATE_TEMP "/sensorData/waterTemp/temp"
 
-#define WATER_TEMP_READ_DELAY 500
+#define WATER_TEMP_READ_DELAY 2000
+#define WATER_TEMP_MAX_INVALID_READINGS_IN_ROW 3
+
+#define OK_MESSAGE_DELAY
 
 WaterTempModule::WaterTempModule(int position, int pin)
     : IModule(CONNECTED_KEY, position),
@@ -75,7 +78,7 @@ void WaterTempModule::onLoop()
         if (_delay->justFinished())
         {
             readTemperature();
-            _delay->restart();
+            _delay->repeat();
         }
     }
 }
@@ -137,12 +140,24 @@ void WaterTempModule::readTemperature()
     printlnV("\n");
     printlnV("READ TEMPERATURE");
     _dallas->requestTemperatures();
-    float old = _currentTemp;
-    _currentTemp = _dallas->getTempCByIndex(0);
-    stateStorage.setValue(STATE_WATER_TEMPERATURE, _currentTemp);
-    if (old != _currentTemp)
+    float temp = _dallas->getTempCByIndex(0);
+    /// Skip first x invalid temperatures
+    if (temp == WATER_TEMP_INVALID_VALUE && _invalidReadingInRow < WATER_TEMP_MAX_INVALID_READINGS_IN_ROW)
+    {
+        _invalidReadingInRow++;
+        return;
+    }
+
+    if (temp != WATER_TEMP_INVALID_VALUE)
+    {
+        _invalidReadingInRow = 0;
+    }
+
+    stateStorage.setValue(STATE_WATER_TEMPERATURE, temp);
+    if (temp != _currentTemp)
     {
 
+        _currentTemp = temp;
         printlnD("Uploading new temperature");
         firebaseService->uploadCustomData("devices/", FIREBASE_STATE_TEMP, _currentTemp);
         if (isBluetoothRunning())
@@ -158,16 +173,37 @@ void WaterTempModule::readTemperature()
 
 void WaterTempModule::checkBoundaries()
 {
-    if (_currentTemp != WATER_TEMP_INVALID_VALUE)
+    if (_currentTemp != WATER_TEMP_INVALID_VALUE && messagingService != nullptr)
     {
         if (_currentTemp > _settings.max_temp)
         {
-            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
+            char buffer[80];
+            sprintf(buffer, "Water temperature (%.2f °C) is over maximum alowed value (%.2f °C)", _currentTemp, _settings.max_temp);
+            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_WATER_TEMP_KEY) + "b");
+            _lastMessage = 1;
+            _messageCount = 0;
+            return;
         }
 
         if (_currentTemp < _settings.min_temp)
         {
-            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, "Temperature is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_WATER_TEMP_KEY);
+            char buffer[80];
+            sprintf(buffer, "Water temperature (%.2f °C) is below minimum alowed value (%.2f °C)", _currentTemp, _settings.min_temp);
+            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_WATER_TEMP_KEY) + "b");
+            _lastMessage = -1;
+            _messageCount = 0;
+            return;
+        }
+
+        /// If boundaries are ok:
+        if (_lastMessage != 0 || (_lastMessage == 0 && _messageCount < 10))
+        {
+            char buffer[50];
+            sprintf(buffer, "Water temperature (%.2f °C) is OK", _currentTemp);
+            messagingService->sendFCM(SETTINGS_WATER_TEMP_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_WATER_TEMP_KEY) + "b");
+            _lastMessage = 0;
+            _messageCount++;
+            _lastMessageTime = millis();
         }
     }
 }

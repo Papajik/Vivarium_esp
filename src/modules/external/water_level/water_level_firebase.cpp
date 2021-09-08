@@ -6,14 +6,16 @@
 #define KEY_MAX_LEVEL "/wl/maxL"
 #define KEY_MIN_LEVEL "/wl/minL"
 
-String WaterLevel::getSettingKey() {return SETTINGS_WL_KEY; }
+String WaterLevel::getSettingKey() { return SETTINGS_WL_KEY; }
 
-void WaterLevel::updateSensorData(FirebaseJson *json)
+bool WaterLevel::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
         json->set(KEY_SENSOR_DATA_W_LEVEL, _waterLevel);
+        return true;
     }
+    return false;
 }
 
 void WaterLevel::parseJson(FirebaseJson *data, String path)

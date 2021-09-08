@@ -4,36 +4,61 @@
 #define CONNECTED_KEY "pump/c"
 #define SETTINGS_PUMP_GOAL_KEY "pumpG"
 #define FIREBASE_IS_ON_STATE "/pump/isOn"
+#define FCM_KEY "Water Pump"
 
 WaterPump::WaterPump(int position, int pin)
     : IModule(CONNECTED_KEY, position),
       _pin(pin)
 {
+    pinMode(_pin, OUTPUT);
 }
 
 void WaterPump::startPump()
 {
-    _running = true;
-    digitalWrite(_pin, HIGH);
-
-    firebaseService->uploadState(FIREBASE_IS_ON_STATE, true);
-
-    if (isBluetoothRunning())
+    if (!_running)
     {
-        _pumpRunningCharacteristic->setValue("true");
-        _pumpRunningCharacteristic->notify();
+        printlnA("START PUMP");
+        _running = true;
+        digitalWrite(_pin, HIGH);
+
+        firebaseService->uploadState(FIREBASE_IS_ON_STATE, true);
+
+        if (isBluetoothRunning())
+        {
+            _pumpRunningCharacteristic->setValue("true");
+            _pumpRunningCharacteristic->notify();
+        }
+
+        if (messagingService != nullptr)
+        {
+            messagingService->sendFCM(FCM_KEY, "Start", FCM_TYPE::TRIGGER, FCM_KEY);
+        }
     }
 }
 void WaterPump::stopPump()
 {
-    _running = false;
-    digitalWrite(_pin, LOW);
-    firebaseService->uploadState(FIREBASE_IS_ON_STATE, false);
-    if (isBluetoothRunning())
+    if (_running)
     {
-        _pumpRunningCharacteristic->setValue("false");
-        _pumpRunningCharacteristic->notify();
+        printlnA("STOP PUMP");
+        _running = false;
+        digitalWrite(_pin, LOW);
+        firebaseService->uploadState(FIREBASE_IS_ON_STATE, false);
+        if (isBluetoothRunning())
+        {
+            _pumpRunningCharacteristic->setValue("false");
+            _pumpRunningCharacteristic->notify();
+        }
+
+        if (messagingService != nullptr)
+        {
+            messagingService->sendFCM(FCM_KEY, "Stop", FCM_TYPE::TRIGGER, FCM_KEY);
+        }
     }
+}
+
+void WaterPump::beforeShutdown()
+{
+    digitalWrite(_pin, LOW);
 }
 
 bool WaterPump::isRunning()
@@ -56,11 +81,11 @@ void WaterPump::onLoop()
         stateStorage.getValue(STATE_WATER_LEVEL_CONNECTED, &wlConnected);
         if (!wlConnected)
         {
+            stopPump();
             setConnected(false, true);
             return;
         }
 
-        //
         uint32_t level;
         if (stateStorage.getValue(STATE_WATER_LEVEL, &level))
         {
@@ -130,6 +155,6 @@ std::vector<String> WaterPump::getText()
     {
         return {
             "Water Pump" + _running ? "ON" : "OFF",
-            "Goal: " + String(_levelGoal, 2) + " cm"};
+            "Goal: " + String(_levelGoal) + " cm"};
     }
 }

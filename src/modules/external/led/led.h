@@ -9,6 +9,9 @@
 #include <memory>
 #include <TimeAlarms.h>
 
+#include <FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #define FIREBASE_LED_CONNECTED_KEY "/led/connected"
 
 #define LED_PIN 25
@@ -56,7 +59,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     bool getTriggerColor(uint8_t, uint32_t *color);
 
@@ -83,6 +86,11 @@ public:
     bool isStripConnected();
 
 private:
+    SemaphoreHandle_t triggersMutex;
+    void lockSemaphore(String owner);
+    void unlockSemaphore();
+    String _owner = "";
+
     bool _stripConnected = false;
 
     NimBLECharacteristic *_currentColorCharacteristic;
@@ -102,7 +110,7 @@ private:
     std::map<String, std::shared_ptr<LedTrigger>> _triggers;
 
     Freenove_ESP32_WS2812 *_strip;
-    void showColor();
+    void showColor(bool force = false);
     void uploadColorChange();
     void printTrigger(std::shared_ptr<LedTrigger>);
     void printTriggers();

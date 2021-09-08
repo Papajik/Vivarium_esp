@@ -4,10 +4,11 @@
 #define KEY_TRIGGERS "/feeder/triggers"
 #define KEY_MODE "/feeder/mode"
 
-String Feeder::getSettingKey() {return SETTINGS_FEEDER_KEY; }
+String Feeder::getSettingKey() { return SETTINGS_FEEDER_KEY; }
 
-void Feeder::updateSensorData(FirebaseJson *)
+bool Feeder::updateSensorData(FirebaseJson *)
 {
+    return false;
 }
 
 void Feeder::parseJson(FirebaseJson *json, String path)
@@ -65,9 +66,11 @@ void Feeder::parseTriggerJson(FirebaseJson *json, String path)
 
     printlnV("Parse 1 trigger json callback");
     printlnV("TriggerKey = " + triggerKey);
-    if (_triggers.find(triggerKey) == _triggers.end())
+    lockSemaphore("parseTriggerJson");
+    auto it = _triggers.find(triggerKey);
+    unlockSemaphore();
+    if (it == _triggers.end())
     {
-        auto t = std::make_shared<FeedTrigger>();
         if (json->get(jsonData, "/time", false))
         {
             createTrigger(jsonData.intValue, triggerKey);
@@ -111,7 +114,9 @@ void Feeder::parseTriggerValue(String key, String value)
     }
     else
     {
+        lockSemaphore("parseTriggerValue");
         auto it = _triggers.find(triggerKey);
+        unlockSemaphore();
         if (it != _triggers.end())
         {
 
@@ -143,6 +148,7 @@ void Feeder::parseTriggersJson(FirebaseJson *json)
     printlnA("FeederParsing triggers json");
 
     // 1. check all existing triggers;
+    lockSemaphore("parseTriggersJson1");
     for (auto &&it : _triggers)
     {
         printlnA("Checking key = " + it.first);
@@ -159,7 +165,6 @@ void Feeder::parseTriggersJson(FirebaseJson *json)
                 int time = innerData.intValue;
                 triggerChanged = parseTime(it.second, time);
 
-
                 // Reset timer if needed
                 if (triggerChanged)
                 {
@@ -172,10 +177,11 @@ void Feeder::parseTriggersJson(FirebaseJson *json)
         }
         else
         {
-             printlnA("Deleting trigger " + it.second->firebaseKey);
+            printlnA("Deleting trigger " + it.second->firebaseKey);
             toDelete.push_back(it.second->firebaseKey);
         }
     }
+    unlockSemaphore();
 
     // Delete all marked triggers
     for (String s : toDelete)
@@ -192,7 +198,9 @@ void Feeder::parseTriggersJson(FirebaseJson *json)
         {
             String key;
             json->iteratorGet(i, type, key, value);
+            lockSemaphore("parseTriggersJson2");
             auto it = _triggers.find(key);
+            unlockSemaphore();
 
             // If key doesn't exists
             if (it == _triggers.end())
@@ -204,7 +212,6 @@ void Feeder::parseTriggersJson(FirebaseJson *json)
                 // Get time
                 if (innerJson.get(innerData, "/time"))
                 {
-
                     createTrigger(innerData.intValue, key);
                 }
             }

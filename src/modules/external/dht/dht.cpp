@@ -49,7 +49,7 @@ void DhtModule::setHumidity(float h)
 {
     if (h != _humidity)
     {
-        
+
         _humidity = h;
         firebaseService->uploadCustomData("devices/", FIREBASE_STATE_HUM, _humidity);
         stateStorage.setValue(STATE_DHT_HUMIDITY, _humidity);
@@ -58,6 +58,7 @@ void DhtModule::setHumidity(float h)
             _humidityCharacteristic->setValue(_humidity);
             _humidityCharacteristic->notify();
         }
+        checkBoundaries();
     }
 }
 void DhtModule::setTemp(float t)
@@ -84,7 +85,6 @@ void DhtModule::onLoop()
     if (isConnected() && millis() - _lastRead > DHT_READ_DELAY)
     {
         readDht();
-        checkBounds();
     }
 
     if (_settingsChanged)
@@ -165,18 +165,23 @@ void DhtModule::setMinTemp(float h)
     }
 }
 
-void DhtModule::checkBounds()
+void DhtModule::checkBoundaries()
 {
-    if (_temp != DHT_INVALID_VALUE)
+    if (_temp != DHT_INVALID_VALUE && messagingService != nullptr)
     {
+
         // upper
         if (_temp > _maxTemp)
         {
-            messagingService->sendFCM(FCM_KEY, "Temperature is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            char buffer[100];
+            sprintf(buffer, "Temperature (%.2f °C) is over maximum allowed value (%.2f °C)", _temp, _maxTemp);
+            messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_DHT_KEY) + "tm");
         }
         if (_temp < _minTemp)
         {
-            messagingService->sendFCM(FCM_KEY, "Temperature is below minimum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            char buffer[100];
+            sprintf(buffer, "Temperature (%.2f °C) is over below minimum allowed value (%.2f °C)", _temp, _minTemp);
+            messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_DHT_KEY) + "tl");
         }
     }
 
@@ -185,11 +190,15 @@ void DhtModule::checkBounds()
         // upper
         if (_humidity > _maxHum)
         {
-            messagingService->sendFCM(FCM_KEY, "Humidity is  over maximum alowed value", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            char buffer[100];
+            sprintf(buffer, "Humidity (%.2f %%) is over maximum allowed value (%.2f %%)", _humidity, _maxHum);
+            messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_DHT_KEY) + "hm");
         }
         if (_humidity < _minHum)
         {
-            messagingService->sendFCM(FCM_KEY, "Humidity is below minimum alowed", FCM_TYPE::CROSS_LIMIT, SETTINGS_DHT_KEY);
+            char buffer[100];
+            sprintf(buffer, "Humidity (%.2f %%) is over below minimum allowed value (%.2f %%)", _humidity, _maxHum);
+            messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(SETTINGS_DHT_KEY) + "hl");
         }
     }
 }

@@ -10,6 +10,9 @@
 #include <map>
 #include <memory>
 
+#include <FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #define FEEDER_MODE_1_RPM 15
 #define FEEDER_MODE_2_RPM 15
 #define FEEDER_STEPS_PER_REVOLUTION 2048
@@ -68,7 +71,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String key, String value);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     FeederMode getMode();
     void setMode(FeederMode);
@@ -98,6 +101,11 @@ public:
     std::vector<String> getText();
 
 private:
+    SemaphoreHandle_t triggersMutex;
+    void lockSemaphore(String owner);
+    void unlockSemaphore();
+    String _owner = "";
+
     void clearAllTriggers();
     std::shared_ptr<FeedTrigger> getNextTrigger();
     int _lastFeededTime = 0;

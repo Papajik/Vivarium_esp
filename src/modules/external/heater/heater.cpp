@@ -12,10 +12,9 @@
 
 #define HEATER_OUTPUT_MIN 0
 #define HEATER_OUTPUT_MAX 100
-#define HEATER_KP 13
-#define HEATER_KI 0.2
-#define HEATER_KD 4
-#define HEATER_STEP_TIME 4000
+
+#define HEATER_STEP_TIME 5000
+#define HEATER_BANG_BANG 1
 
 #define HEATER_FAILSAFE_DELAY 10000
 
@@ -29,6 +28,8 @@ String modeToString(Mode m)
         return "PID";
     case AUTO:
         return "AUTO";
+    case THERMO:
+        return "THERMO";
     default:
         return "UNKNOWN";
     }
@@ -43,15 +44,15 @@ Heater::Heater(int position, int pwm, int sync) : IModule(CONNECTED_KEY, positio
     _dimmer = new dimmerLamp(pwm, sync);
     _dimmer->begin(NORMAL_MODE, OFF);
     _pid = new AutoPID(&_currentTemperature, &_settings.tempGoal, &_currentPower, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, HEATER_KP, HEATER_KI, HEATER_KD);
-    _pid->setBangBang(3);
-    _pid->setTimeStep(5000);
+    _pid->setBangBang(HEATER_BANG_BANG);
+    _pid->setTimeStep(HEATER_STEP_TIME);
     setGoal(_settings.tempGoal);
 }
 
 void Heater::beforeShutdown()
 {
-    printlnA("Heater - shutting down saving integral");
-    _memoryProvider->saveDouble(INTEGRAL_KEY, _pid->getIntegral());
+    // printlnA("Heater - shutting down saving integral");
+    // _memoryProvider->saveDouble(INTEGRAL_KEY, _pid->getIntegral());
 }
 
 void Heater::onLoop()
@@ -63,25 +64,24 @@ void Heater::onLoop()
 
     if (isConnected())
     {
+        //Failsafe
+        if (!checkTemperatureConnected())
+            return;
+
         if (_settings.mode == PID)
         {
             runPID();
         }
+
+        if (_settings.mode == THERMO)
+        {
+            runThermo();
+        }
     }
 }
 
-void Heater::runPID()
+bool Heater::loadTemp()
 {
-    //Failsafe
-    bool tempConnected;
-    stateStorage.getValue(STATE_WATER_TEMP_CONNECTED, &tempConnected);
-    if (!tempConnected)
-    {
-        setConnected(false, true);
-        return;
-    }
-
-    //update temp
     float tmp;
     if (stateStorage.getValue(STATE_WATER_TEMPERATURE, &tmp))
     {
@@ -92,27 +92,62 @@ void Heater::runPID()
             _currentTemperature = tmp;
             printD("CurrentTemp = ");
             printlnD(_currentTemperature);
+            return true;
         }
         else
         {
             printlnA("Water temp is invalid");
-            failSafeCheck();
+            return failSafeCheck();
         }
     }
     else
     {
         printlnA("Reading water temp failed");
+        return false;
     }
+}
 
-    _pid->run();
-    printD("At setpoint =");
-    printlnD(_pid->atSetPoint(0.5));
-    printD("Power = ");
-    printlnD(_currentPower);
-    printD("Goal = ");
-    printlnD(_settings.tempGoal);
-    _pid->printSettings();
+void Heater::runThermo()
+{
+    if (loadTemp())
+    {
+        if (_currentTemperature >= _settings.tempGoal)
+        {
+            _currentPower = 0;
+        }
+        else
+        {
+            _currentPower = 100;
+        }
+        setPower();
+    }
+}
+
+bool Heater::checkTemperatureConnected()
+{
+    bool tempConnected;
+    stateStorage.getValue(STATE_WATER_TEMP_CONNECTED, &tempConnected);
+    if (!tempConnected)
+    {
+        setConnected(false, true);
+        return false;
+    }
+    return true;
+}
+
+void Heater::stop()
+{
+    _currentPower = 0;
     setPower();
+}
+
+void Heater::runPID()
+{
+    if (loadTemp())
+    {
+        _pid->run();
+        setPower();
+    }
 }
 void Heater::setPower()
 {
@@ -147,6 +182,7 @@ bool Heater::loadSettings()
 
     if (integral != -1)
     {
+        printlnA("Loaded integral = " + String(integral));
         _pid->setIntegral(integral);
         _memoryProvider->removeKey(INTEGRAL_KEY);
     }
@@ -198,6 +234,7 @@ void Heater::setMode(Mode m)
         stateStorage.setValue(HEATER_MODE, (uint32_t)m);
         _settings.mode = m;
         _settingsChanged = true;
+        _pid->reset();
     }
 }
 
@@ -215,15 +252,6 @@ void Heater::setGoal(double g)
         _pid->reset();
         firebaseService->uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
     }
-
-    // if (g != _tempGoal)
-    // {
-    //     _tempGoal = g;
-    //     _settings.tempGoal = g;
-    //     _settingsChanged = true;
-    //     stateStorage.setValue(TEMP_GOAL, (float)g);
-    //     _pid->reset();
-    // }
 }
 
 double Heater::getCurrentPower()
@@ -236,14 +264,17 @@ double Heater::getGoal()
     return _settings.tempGoal;
 }
 
-void Heater::failSafeCheck()
+bool Heater::failSafeCheck()
 {
     if (millis() > _lastValidTemp + HEATER_FAILSAFE_DELAY)
     {
         printlnA("Heater disconnected");
         printlnE("Heater failsafe");
+        stop();
         setConnected(false, true);
+        return false;
     }
+    return true;
 }
 
 std::vector<String> Heater::getText()
@@ -254,6 +285,11 @@ std::vector<String> Heater::getText()
     }
     else
     {
-        return {"Heater: " + modeToString(_settings.mode), "G: " + String(_settings.tempGoal, 1) + ", Power: " + String(_currentPower, 1)};
+        String secondRow = "";
+        if (_settings.mode == Mode::PID || _settings.mode == Mode::THERMO)
+        {
+            secondRow = "G: " + String(_settings.tempGoal, 1) + ", PWR: " + String(_currentPower, 1);
+        }
+        return {"Heater: " + modeToString(_settings.mode), secondRow};
     }
 }

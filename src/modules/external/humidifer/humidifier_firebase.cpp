@@ -45,11 +45,16 @@ void Humidifier::parseValue(String key, String value)
     }
 }
 
-void Humidifier::updateSensorData(FirebaseJson *json)
+bool Humidifier::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
         printlnA("upading sensor data");
         json->set(KEY_SENSOR_DATA_HUMIDIFIER, _isOn);
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }

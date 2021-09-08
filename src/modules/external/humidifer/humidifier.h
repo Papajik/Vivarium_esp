@@ -26,7 +26,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
@@ -43,8 +43,6 @@ public:
 
     /// LCD
     std::vector<String> getText();
-
- 
 
 private:
     unsigned long _lastValidTemp = 0;

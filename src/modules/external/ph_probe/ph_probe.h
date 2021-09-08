@@ -9,14 +9,11 @@
 class millisDelay;
 #include <NimBLEDevice.h>
 
-
-
 #define PH_PIN 39
 #define PH_INVALID_VALUE -1
 #define PH_READING_COUNT 10
 
 // Default values for settings
-
 
 // Key to store settings
 #define SETTINGS_PH_KEY "ph"
@@ -95,7 +92,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String key, String value);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
 private:
     int _pin;

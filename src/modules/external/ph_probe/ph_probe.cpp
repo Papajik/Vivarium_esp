@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "../../../state/state.h"
+#include "../../../utils/compare.h"
 
 #include "state_values.h"
 #define KEYWORD_WATER_PH "waterPh"
@@ -32,17 +33,6 @@
 #define PH_TIMER_ONCE_DELAY 15
 #define PH_TIMER_CONTINUOUS_DELAY 20
 #define PH_DEFAULT_CONTINUOUS_DELAY 60000 // 1 minute
-
-int _comparePh(const void *arg1, const void *arg2)
-{
-    int *a = (int *)arg1;
-    int *b = (int *)arg2;
-    if (*a < *b)
-        return -1;
-    if (*a > *b)
-        return 1;
-    return 0;
-}
 
 PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position), _pin(pin)
 {
@@ -66,7 +56,7 @@ float PhModule::_readPh()
         delay(30);
     }
 
-    qsort(_phReadBuffer, PH_READING_COUNT, sizeof(float), _comparePh);
+    qsort(_phReadBuffer, PH_READING_COUNT, sizeof(float), compareFloat);
 
     float phAvgValue = 0;
     for (int i = PH_VALUES_CUT; i < PH_READING_COUNT - PH_VALUES_CUT; i++)
@@ -74,7 +64,7 @@ float PhModule::_readPh()
         phAvgValue += _phReadBuffer[i];
     }
 
-    phAvgValue /= PH_READING_COUNT + 2 * PH_VALUES_CUT;
+    phAvgValue /= PH_READING_COUNT + (2 * PH_VALUES_CUT);
 
     printA("pH Value = ");
     printlnA(phAvgValue);
@@ -282,14 +272,20 @@ float PhModule::getPhValue()
 
 void PhModule::checkBoundaries()
 {
+    if (messagingService == nullptr)
+        return;
     if (_lastPhValue > _settings.max_ph)
     {
-        messagingService->sendFCM(FCM_KEY, "pH is over maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        char buffer[50];
+        sprintf(buffer, "pH (%.2f) is over maximum alowed value (%.2f)", _lastPhValue, _settings.max_ph);
+        messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(FCM_KEY) + "h");
     }
 
     if (_lastPhValue < _settings.min_ph)
     {
-        messagingService->sendFCM(FCM_KEY, "pH is below maximum alowed value", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        char buffer[50];
+        sprintf(buffer, "pH (%.2f) is below minimum alowed value (%.2f)", _lastPhValue, _settings.min_ph);
+        messagingService->sendFCM(FCM_KEY, String(buffer), FCM_TYPE::CROSS_LIMIT, String(FCM_KEY) + "l");
     }
 }
 

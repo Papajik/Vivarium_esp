@@ -19,6 +19,9 @@ void Heater::parseJson(FirebaseJson *json, String path)
         case AUTO:
             setMode(AUTO);
             break;
+        case THERMO:
+            setMode(THERMO);
+            break;
         default:
             printlnW("UNKNOWN HEATER MODE - " + jsonData.intValue);
         }
@@ -41,7 +44,7 @@ void Heater::parseJson(FirebaseJson *json, String path)
     }
 }
 
-String Heater::getSettingKey() {return SETTINGS_HEATER_KEY; }
+String Heater::getSettingKey() { return SETTINGS_HEATER_KEY; }
 void Heater::parseValue(String key, String value)
 {
     printlnA("Heater parse value");
@@ -60,6 +63,9 @@ void Heater::parseValue(String key, String value)
         case AUTO:
             setMode(AUTO);
             break;
+        case THERMO:
+            setMode(THERMO);
+            break;
         default:
             printlnW("UNKNOWN HEATER MODE - " + value.toInt());
         }
@@ -76,11 +82,19 @@ void Heater::parseValue(String key, String value)
         setConnected(value == "true", false);
     }
 }
-void Heater::updateSensorData(FirebaseJson *json)
+bool Heater::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
         json->set(KEY_SENSOR_DATA_HEATER_POWER, _currentPower);
         json->set(KEY_SENSOR_DATA_HEATER_TEMP_GOAL, _settings.tempGoal);
+        json->set("heater/ki", HEATER_KI);
+        json->set("heater/kp", HEATER_KP);
+        json->set("heater/kd", HEATER_KD);
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }

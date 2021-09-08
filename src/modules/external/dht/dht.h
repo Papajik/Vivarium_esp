@@ -32,7 +32,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
@@ -82,7 +82,7 @@ private:
     float _humidity = DHT_INVALID_VALUE;
     NimBLECharacteristic *_tempCharacteristic;
 
-    void checkBounds();
+    void checkBoundaries();
 
     /// Module
     virtual void onLoop();

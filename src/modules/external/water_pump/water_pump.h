@@ -20,11 +20,13 @@ class WaterPump
 {
 public:
     WaterPump(int, int pin = WATER_PUMP_PIN);
+    virtual void beforeShutdown();
+
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);

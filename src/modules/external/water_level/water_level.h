@@ -8,10 +8,13 @@
 
 #define SETTINGS_WL_KEY "wl"
 #define FIREBASE_WL_CONNECTED_KEY "/wl/connected"
+// #define READ_CUT 1
 
 #define W_LEVEL_ECHO_PIN 33
 #define W_LEVEL_TRIG_PIN 32
 
+#define READ_COUNT 6
+#define READ_CUT 2
 class millisDelay;
 
 class NewPing;
@@ -51,7 +54,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
 
@@ -63,6 +66,12 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
+    int _levelBuffer[READ_COUNT];
+    unsigned long _lastValueChange = 0;
+
+    int _lastMessage = 0;
+    int _messageCount = 0;
+    std::vector<int> _levels;
     NimBLECharacteristic *_waterLevelCharacteristic = nullptr;
     int _waterLevel = 0;
     millisDelay *_delay = nullptr;

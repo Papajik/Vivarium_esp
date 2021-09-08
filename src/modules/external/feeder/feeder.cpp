@@ -13,7 +13,9 @@
 Feeder *feederPtr = nullptr;
 Feeder::Feeder(int position, int in_1, int in_2, int in_3, int in_4) : IModule(CONNECTED_KEY, position)
 {
-    printlnA("Feeder created");
+    triggersMutex = xSemaphoreCreateMutex();
+    xSemaphoreGive(triggersMutex);
+
     _stepper = std::make_shared<Stepper>(FEEDER_STEPS_PER_REVOLUTION, in_1, in_3, in_2, in_4);
 }
 
@@ -26,11 +28,13 @@ void Feeder::clearAllTriggers()
 {
     if (_triggers.empty())
         return;
+    lockSemaphore("clearAllTriggers");
     for (auto p : _triggers)
     {
         Alarm.free(p.second->id);
     }
     _triggers.clear();
+    unlockSemaphore();
 }
 
 int Feeder::asignAvailableMemoryId()
@@ -95,8 +99,9 @@ bool Feeder::loadSettings()
 
 void Feeder::removeTrigger(String key)
 {
-    printlnA("Trying to remove trigger " + key);
+    lockSemaphore("removeTrigger");
     auto it = _triggers.find(key);
+
     if (it != _triggers.end())
     {
         printlnA("Removing trigger");
@@ -107,6 +112,7 @@ void Feeder::removeTrigger(String key)
             availableIds[it->second->storageId] = true; // id is available again
         _triggers.erase(it);                            // remove record from map
     }
+    unlockSemaphore();
 }
 
 void Feeder::loadTriggersFromNVS()
@@ -128,7 +134,6 @@ void Feeder::loadTriggerFromNVS(int index)
     FeedTriggerMem enc;
     if (_memoryProvider->loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(FeedTriggerMem)))
     {
-        printlnA("Loading feed trigger from memory");
         auto t = std::make_shared<FeedTrigger>();
         t->storageId = index;
         t->minute = enc.minute;
@@ -136,7 +141,9 @@ void Feeder::loadTriggerFromNVS(int index)
         t->firebaseKey = String(enc.key);
 
         t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, feederCallback);
+        lockSemaphore("loadTriggerFromNVS");
         _triggers.insert({t->firebaseKey, t});
+        unlockSemaphore();
         printTrigger(t);
     }
 }
@@ -189,6 +196,8 @@ void Feeder::feed()
     {
         _lastFeededTime = getTime(timeinfo.tm_hour, timeinfo.tm_min);
     }
+    if (messagingService != nullptr)
+        messagingService->sendFCM("Feeder", "Feeder triggered", FCM_TYPE::TRIGGER, SETTINGS_FEEDER_KEY);
 }
 
 int Feeder::getLastFeeded()
@@ -292,7 +301,9 @@ bool Feeder::parseTime(std::shared_ptr<FeedTrigger> trigger, int time)
 
 std::shared_ptr<FeedTrigger> Feeder::findTrigger(String key)
 {
+    lockSemaphore("findTrigger");
     auto it = _triggers.find(key);
+    unlockSemaphore();
     if (it != _triggers.end())
     {
         return it->second;
@@ -311,7 +322,9 @@ void Feeder::createTrigger(int time, String key)
     t->minute = time % 256;
     t->firebaseKey = key;
     t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, feederCallback);
+    lockSemaphore("createTrigger");
     _triggers.insert({key, t});
+    unlockSemaphore();
     saveTriggerToNVS(t);
 }
 
@@ -339,7 +352,7 @@ std::shared_ptr<FeedTrigger> Feeder::getNextTrigger()
     if (getLocalTime(&timeinfo, 100))
     {
         int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
-
+        lockSemaphore("getNextTrigger");
         for (auto p : _triggers)
         {
             int ttc = getTime(p.second->hour, p.second->minute);
@@ -380,6 +393,7 @@ std::shared_ptr<FeedTrigger> Feeder::getNextTrigger()
                 }
             }
         }
+        unlockSemaphore();
     }
     return h != nullptr ? h : l;
 }
@@ -402,4 +416,16 @@ std::vector<String> Feeder::getText()
             return {"Feeder", "No trigger"};
         }
     }
+}
+
+void Feeder::lockSemaphore(String owner)
+{
+    printlnD("Lock semaphore by " + owner);
+    _owner = owner;
+    xSemaphoreTake(triggersMutex, portMAX_DELAY);
+}
+void Feeder::unlockSemaphore()
+{
+    xSemaphoreGive(triggersMutex);
+    printlnD("Unlock semaphore from " + _owner);
 }

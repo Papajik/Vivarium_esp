@@ -58,10 +58,14 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
     void readTemperature();
 
 private:
+    int _invalidReadingInRow = 0;
+    int _lastMessage = 0;
+    int _messageCount = 0;
+    unsigned long _lastMessageTime = 0;
     float _currentTemp = WATER_TEMP_INVALID_VALUE;
     NimBLECharacteristic *_currentTempCharacteristic;
     OneWire *_oneWire;

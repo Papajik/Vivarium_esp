@@ -58,20 +58,22 @@ void FanController::parseValue(String key, String value)
     }
 }
 
-void FanController::updateSensorData(FirebaseJson *json)
+bool FanController::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
         printlnD("Current speed = ");
         printlnD(_currentSpeed);
-        float tmp = float(_currentSpeed)/float(FAN_MAX_SPEED)*100;
+        float tmp = float(_currentSpeed) / float(FAN_MAX_SPEED) * 100;
         printlnD(tmp);
         int percentage = int(tmp);
 
         printD("Percentage = ");
         printlnD(percentage);
         json->set(KEY_SPEED, percentage);
+        return true;
     }
+    return false;
 }
 
 String FanController::getSettingKey() { return SETTINGS_FAN_KEY; }

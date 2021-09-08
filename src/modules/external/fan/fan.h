@@ -17,6 +17,7 @@
 #define FAN_MAX_SPEED 255
 #define FAN_MIN_SPEED 100
 
+
 struct FanSettings
 {
     float setStartAt;
@@ -45,7 +46,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
@@ -59,12 +60,13 @@ public:
     std::vector<String> getText();
 
 private:
+    float getPercantage(int i);
     NimBLECharacteristic *_currentSpeedCharacteristic = nullptr;
     FanSettings _settings;
     bool _settingsChanged = false;
     void parseFanSpeed(float temperature);
     void setSpeed(int speed);
-    int _currentSpeed = FAN_STOP_SPEED;
+    int _currentSpeed = FAN_STOP_SPEED -1; // so the value is change on every start
 
     /// Module
     virtual void onLoop();

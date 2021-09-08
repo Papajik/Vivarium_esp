@@ -11,6 +11,10 @@
 Humidifier::Humidifier(int outlet, int position) : IModule(CONNECTED_KEY, position), _outlet(outlet)
 {
     loadSettings();
+    if (outletController != nullptr)
+    {
+        outletController->reserveOutlet(outlet);
+    }
 }
 
 /// Module
@@ -121,7 +125,8 @@ void Humidifier::failSafeCheck()
         printlnA("Humidifier disconnected");
         printlnE("Humidifier failsafe");
         setConnected(false, true);
-        messagingService->sendFCM(FCM_KEY, "Temperature was invalid for too long - turning off humidifier", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
+        if (messagingService != nullptr)
+            messagingService->sendFCM(FCM_KEY, "Temperature was invalid for too long - turning humidifier off", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
     }
 }
 
@@ -130,7 +135,8 @@ void Humidifier::setOn(bool b)
     if (_isOn == b)
         return;
     _isOn = b;
-    outletController->setOutlet(_outlet, b);
+    if (outletController != nullptr)
+        outletController->setOutlet(_outlet, b);
     firebaseService->uploadState(FIREBASE_IS_ON_STATE, b);
 
     if (isBluetoothRunning())

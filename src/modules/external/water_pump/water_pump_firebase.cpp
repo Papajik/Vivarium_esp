@@ -22,7 +22,7 @@ void WaterPump::parseJson(FirebaseJson *data, String path)
     }
 }
 
-String WaterPump::getSettingKey() {return SETTINGS_PUMP_KEY; }
+String WaterPump::getSettingKey() { return SETTINGS_PUMP_KEY; }
 
 void WaterPump::parseValue(String key, String value)
 {
@@ -43,11 +43,13 @@ void WaterPump::parseValue(String key, String value)
     }
 }
 
-void WaterPump::updateSensorData(FirebaseJson *json)
+bool WaterPump::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
         printlnA("upading sensor data");
         json->set(KEY_SENSOR_DATA_PUMP_ON, isRunning());
+        return true;
     }
+    return false;
 }

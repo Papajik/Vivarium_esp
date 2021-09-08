@@ -12,6 +12,21 @@
 #define HEATER_PIN 2
 #define HEATER_SYNC_PIN 15
 #define GOAL_INVALID -1
+
+// #define HEATER_KP 38.81978
+// #define HEATER_KI 0.467478
+// #define HEATER_KD 80.59064
+
+///Works relatively fine
+// #define HEATER_KP 38.81978
+// #define HEATER_KI 0.23
+// #define HEATER_KD 80.59064
+
+#define HEATER_KP 80
+#define HEATER_KI 0.2
+#define HEATER_KD 80
+
+
 class AutoPID;
 class dimmerLamp;
 
@@ -19,6 +34,7 @@ enum Mode
 {
     PID = 0,
     AUTO = 1,
+    THERMO = 2,
     UNKNWON = -1
 };
 
@@ -41,7 +57,7 @@ public:
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
     virtual void parseValue(String, String);
-    virtual void updateSensorData(FirebaseJson *);
+    virtual bool updateSensorData(FirebaseJson *);
 
     /// Bluetooth
     virtual void setupBLESettings(NimBLEService *settings);
@@ -55,6 +71,8 @@ public:
     Mode getMode();
 
     void runPID();
+
+    void runThermo();
     void setPower();
 
     double getGoal();
@@ -66,6 +84,10 @@ public:
     std::vector<String> getText();
 
 private:
+    bool checkTemperatureConnected();
+
+    void stop();
+
     double _oldPower = 0;
 
     NimBLECharacteristic *_currentPowerCharacteristic;
@@ -78,7 +100,8 @@ private:
     double _currentPower = 0;
     unsigned long _lastValidTemp = 0;
 
-    void failSafeCheck();
+    bool failSafeCheck();
+    bool loadTemp();
 
     /// Module
     virtual void onLoop();

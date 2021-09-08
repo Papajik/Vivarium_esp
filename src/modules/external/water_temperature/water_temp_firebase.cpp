@@ -65,11 +65,13 @@ void WaterTempModule::parseValue(String key, String value)
         saveSettings();
     }
 }
-void WaterTempModule::updateSensorData(FirebaseJson *json)
+bool WaterTempModule::updateSensorData(FirebaseJson *json)
 {
     // printlnV("update temp data");
     if (isConnected() && _currentTemp != WATER_TEMP_INVALID_VALUE)
     {
         json->set(KEY_CUR_TEMP, _currentTemp);
+        return true;
     }
+    return false;
 }
