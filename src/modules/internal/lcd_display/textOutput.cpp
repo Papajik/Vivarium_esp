@@ -13,10 +13,9 @@ void TextOutput::checkLockedTextDelay()
         return;
     if (millis() > _time_of_show + _delay)
     {
-        _textLocked = false;
         _delay = 0;
         _time_of_show = 0;
-        onTextUnlocked();
+        unlockText();
     }
 }
 
@@ -30,7 +29,6 @@ void TextOutput::setText(const std::vector<String> &texts)
 void TextOutput::unlockText()
 {
     _textLocked = false;
-    printlnA("unlock text");
     onTextUnlocked();
 }
 
