@@ -6,14 +6,33 @@
 
 OutletController *outletController;
 
+#define OUTLET_MAX 4
+
 #define OUTLET_KEY "o"
 
-OutletController::OutletController(MemoryProvider *provider) : _memoryProvider(provider)
+OutletController::OutletController(MemoryProvider *provider, int outletCount) : _memoryProvider(provider)
 {
-    expander.pinMode(P0, OUTPUT, LOW);
-    expander.pinMode(P1, OUTPUT, LOW);
-    expander.pinMode(P2, OUTPUT, HIGH);
-    expander.pinMode(P3, OUTPUT, HIGH);
+
+    _outletCount = outletCount > OUTLET_MAX ? OUTLET_MAX : outletCount;
+
+    _reserved.reserve(_outletCount);
+    _outletChanged.reserve(_outletCount);
+    _outlets.reserve(_outletCount);
+
+    for (int i = 0; i < _outletCount; i++)
+    {
+        expander.pinMode(i, OUTPUT, LOW);
+        expander.pinMode(i + _outletCount, OUTPUT, HIGH);
+
+        _reserved.push_back(false);
+        _outletChanged.push_back(false);
+        _outlets.push_back(false);
+    }
+
+    // expander.pinMode(P0, OUTPUT, LOW);
+    // expander.pinMode(P1, OUTPUT, LOW);
+    // expander.pinMode(P2, OUTPUT, HIGH);
+    // expander.pinMode(P3, OUTPUT, HIGH);
 
     if (expander.begin())
     {
@@ -23,34 +42,34 @@ OutletController::OutletController(MemoryProvider *provider) : _memoryProvider(p
     {
         printlnA("Expander not OK");
     }
-
-    for (int i = 0; i < OUTLET_COUNT; i++)
-    {
-        setOutlet(i, _memoryProvider->loadBool(OUTLET_KEY + String(i), false));
-    }
-    onLoop();
 }
 
-void OutletController::setOutlet(int socket, bool on)
+void OutletController::setOutlet(int outlet, bool on)
 {
+    if (outlet < 0 || outlet >= _outletCount || _reserved[outlet])
+    {
+        printlnA("Outlet is reserved or out of bounds");
+        return;
+    }
+
     printlnA("Outlet controll");
     printA("Socket ");
-    printA(socket);
+    printA(outlet);
     printA(" is ");
     printlnA(on ? "ON" : "OFF");
     printA("Outlet pin: ");
-    printlnA(OUTLET_COUNT - socket - 1);
+    printlnA(_outletCount - outlet - 1);
     printA("LED pin: ");
-    printlnA(OUTLET_COUNT * 2 - socket - 1);
+    printlnA(_outletCount * 2 - outlet - 1);
 
-    _outlets[socket] = on;
-    _outletChanged[socket] = true;
-    _memoryProvider->saveBool(OUTLET_KEY + String(socket), on);
+    _outlets[outlet] = on;
+    _outletChanged[outlet] = true;
+    _memoryProvider->saveBool(OUTLET_KEY + String(outlet), on);
 }
 
-bool OutletController::isOutletOn(int socket)
+bool OutletController::isOutletOn(int outlet)
 {
-    return _outlets[socket];
+    return _outlets[outlet];
 }
 
 void OutletController::onLoop()
@@ -60,17 +79,40 @@ void OutletController::onLoop()
 
 void OutletController::updateOutletState()
 {
-    for (int i = 0; i < OUTLET_COUNT; i++)
+    for (int i = 0; i < _outletCount; i++)
     {
         if (_outletChanged[i])
         {
+            Serial.print("outlet changed = ");
+            Serial.println(_outletChanged[i]);
             _outletChanged[i] = false;
+
             // Outlet
-            expander.digitalWrite(OUTLET_COUNT - i - 1, _outlets[i] ? HIGH : LOW);
+            Serial.println("Outlet " + String(i) + " ( " + String(_outletCount - i - 1) + ") is set to " + String(_outlets[i] ? HIGH : LOW));
+            expander.digitalWrite(_outletCount - i - 1, _outlets[i] ? HIGH : LOW);
 
             // LED
-            expander.digitalWrite(OUTLET_COUNT * 2 - i - 1, _outlets[i] ? LOW : HIGH);
+            Serial.println("LED " + String(i) + " ( " + String(_outletCount * 2 - i - 1) + ") is set to " + String(_outlets[i] ? LOW : HIGH));
+            expander.digitalWrite(_outletCount * 2 - i - 1, _outlets[i] ? LOW : HIGH);
 
+            Serial.println("writing done");
         }
     }
+}
+
+bool OutletController::reserveOutlet(int outlet)
+{
+    if (outlet >= 0 && outlet < _outletCount)
+    {
+        if (_reserved[outlet])
+        {
+            return false;
+        }
+        else
+        {
+            _reserved[outlet] = true;
+            return true;
+        }
+    }
+    return false;
 }

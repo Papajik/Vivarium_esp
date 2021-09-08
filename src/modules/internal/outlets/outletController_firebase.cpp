@@ -1,7 +1,7 @@
 #include "outletController.h"
 
 #define SETTINGS_OUTLET_KEY "outlet"
-#define KEY_OUTLET_1 "/outlet/o1"
+#define KEY_OUTLET "/outlet/o"
 
 void OutletController::parseJson(FirebaseJson *json, String path)
 {
@@ -9,15 +9,18 @@ void OutletController::parseJson(FirebaseJson *json, String path)
     printlnV("Path: " + path);
 
     FirebaseJsonData jsonData;
-    if (json->get(jsonData, KEY_OUTLET_1, false))
+    for (int i = 0; i < _outletCount; i++)
     {
-        setOutlet(1, jsonData.boolValue);
+
+        if (json->get(jsonData, KEY_OUTLET + String(i), false))
+        {
+            setOutlet(i, jsonData.boolValue);
+        }
     }
 }
 
 String OutletController::getSettingKey()
 {
-    printlnA("outletCOntroller - returning key");
     return SETTINGS_OUTLET_KEY;
 }
 
@@ -29,17 +32,23 @@ void OutletController::parseValue(String key, String value)
     printV("value = ");
     printlnV(value);
 
-    if (key.equals(PREFIX_SETTINGS + String(KEY_OUTLET_1)))
+    for (int i = 0; i < _outletCount; i++)
     {
-        if (value == "true")
+        if (key.equals(PREFIX_STATE + String(KEY_OUTLET) + String(i)))
         {
-            setOutlet(1, true);
-        }
-        else
-        {
-            setOutlet(1, false);
+            if (value == "true")
+            {
+                setOutlet(i, true);
+            }
+            else
+            {
+                setOutlet(i, false);
+            }
         }
     }
 }
 
-void OutletController::updateSensorData(FirebaseJson *) {}
+bool OutletController::updateSensorData(FirebaseJson *json)
+{
+    return false;
+}
