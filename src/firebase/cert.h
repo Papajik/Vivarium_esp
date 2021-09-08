@@ -3,6 +3,8 @@
 
 #include <pgmspace.h>
 
-extern const char *cert;
-
+extern const char *rtdb_cert;
+extern const char *storage_cert;
+extern const char *https_cert;
+extern const char *service_account_key;
 #endif

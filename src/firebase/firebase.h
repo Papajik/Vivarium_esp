@@ -20,11 +20,6 @@ class MemoryProvider;
 class Auth;
 class MessagingService;
 
-// enum FCM_TYPE
-// {
-//     CONNECTION,
-//     VALUE
-// };
 
 enum ChildPath
 {
@@ -34,8 +29,6 @@ enum ChildPath
     ACTIVE_STATUS = 3,
     BLE_NAME = 4
 };
-
-void testFirebase();
 
 
 class FirebaseService : public IBluetooth
@@ -65,13 +58,11 @@ public:
     void checkSSLConnected();
 
     void factoryReset();
+    void clearVersion();
 
     void onLoop();
 
     // Messaging
-    void refreshFCMTokens();
-    void getFCMSettings();
-    void parseFCMTokens(FirebaseJson *);
 
     void uploadState(String, bool);
     void uploadState(String, float);
@@ -100,21 +91,13 @@ private:
     bool _toStart = false;
     bool _toStop = false;
 
-    unsigned long _lastValidUpdate = 0;
+    int _errorCount = 0;
 
     unsigned long _lastTokenRefresh = 0;
     unsigned long _lastUploadTime = 0;
     unsigned long _lastCleanTime = 0; // clear firebaseObject every 2:50 to provide enough heap for SSL hanshake
     unsigned long _lastFCMTokenCheck = 0;
 
-    // int _delayFCMNotification = 0;
-    // bool _notificationConnectionOn = false;
-    // bool _notificationCrossLimit = false;
-
-    std::map<String, unsigned long> _lastValueSendTimeMap;
-
-    std::vector<String>
-        _firebaseMessagingTokens;
 
     void startStream();
     void stopStream();
@@ -124,7 +107,6 @@ private:
 
     bool _running = false;
     bool _initialized = false;
-    FirebaseData *firebaseStreamBdo;
 };
 
 extern FirebaseService *firebaseService;

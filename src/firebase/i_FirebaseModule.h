@@ -21,7 +21,7 @@ public:
     virtual void parseJson(FirebaseJson *, String) = 0;
     virtual String getSettingKey() = 0;
     virtual void parseValue(String key, String value) = 0;
-    virtual void updateSensorData(FirebaseJson *) = 0;
+    virtual bool updateSensorData(FirebaseJson *) = 0;
     void addFirebaseService(FirebaseService *service) { firebaseService = service; };
     void addMessagingService(MessagingService *service) { messagingService = service; };
 
@@ -32,8 +32,8 @@ protected:
     void sendConnectionChangeNotification(String module, bool connected)
     {
         String title = "Module " + module;
-
-        messagingService->sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
+        if (messagingService != nullptr)
+            messagingService->sendFCM(title, connected ? "Module connected " : "Module disconnected ", FCM_TYPE::CONNECTION, module);
     }
 };
 
