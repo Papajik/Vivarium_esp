@@ -3,9 +3,11 @@
 
 #include "wifiProvider.h"
 #include "../memory/memory_provider.h"
+#include "../utils/timeHelper.h"
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+#include <TimeAlarms.h>
 
 WiFiProvider *wifiProvider;
 
@@ -37,6 +39,11 @@ void WiFiProvider::setupWiFi()
     loadFromNVS();
     if (connect() == WL_CONNECTED)
     {
+        Serial.print("Connected with IP: ");
+        Serial.println(WiFi.localIP());
+        Serial.println();
+
+        printText({"WiFi", "Connected"});
         syncTime();
     }
 }
@@ -46,9 +53,10 @@ bool WiFiProvider::isConnected()
     return WiFi.status() == WL_CONNECTED;
 }
 
-int WiFiProvider::connect()
+int WiFiProvider::connect(int timeout)
 {
     printlnA("Wifi connect");
+    printText({"WiFi", "Connecting"});
     int status = WL_IDLE_STATUS;
     char passphrase[PASS_LENGTH];
     char ssid[SSID_LENGTH];
@@ -60,8 +68,20 @@ int WiFiProvider::connect()
         unsigned long start = millis();
         bool connecting = true;
         status = WiFi.begin(ssid, passphrase);
+        bool c = true;
         while (connecting)
         {
+            if (c)
+            {
+                printText({"WiFi", "Connecting."});
+            }
+            else
+            {
+                printText({"WiFi", "Connecting.."});
+            }
+
+            c = !c;
+
             status = WiFi.status();
             if (status == WL_CONNECTED)
             {
@@ -69,10 +89,12 @@ int WiFiProvider::connect()
             }
             printA("Status = ");
             printlnA(status);
+
             delay(500);
-            if (millis() - start > CONNECTING_TIMEOUT)
+            if (millis() - start > timeout)
             {
                 connecting = false;
+                printText({"WiFi", "Timeout.."});
                 printlnE("Connection timeout");
             }
         }
@@ -80,6 +102,7 @@ int WiFiProvider::connect()
     else
     {
         printlnA("No ssid set");
+        printText({"WiFi", "No SSID"});
     }
     return status;
 }
@@ -105,6 +128,8 @@ void WiFiProvider::syncTime()
 {
     printlnA("Sync time with NTP server");
     configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC, NTP_SERVER_EUROPE, NTP_SERVER, NTP_SERVER_BACKUP);
+    Alarm.configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC);
+
     tm timeinfo;
     if (!getLocalTime(&timeinfo))
     {
@@ -171,4 +196,9 @@ void WiFiProvider::saveToNVS()
 bool WiFiProvider::hasCredentials()
 {
     return _ssid != "";
+}
+
+std::vector<String> WiFiProvider::getText()
+{
+    return {};
 }

@@ -10,12 +10,12 @@
 * 
 */
 
-
 #ifndef _WIFI_PROVIDER_H_
 #define _WIFI_PROVIDER_H_
 
 /*! Importation of librairies*/
 #include "../bluetooth/i_bluetooth.h"
+#include "../modules/internal/lcd_display/textModule.h"
 
 #include <WString.h>
 
@@ -34,9 +34,6 @@
 * Description
 */
 #define WIFI_DELAY_KEY "wifi_delay"
-
-
-
 
 /*!
 * \def NTP_SERVER
@@ -69,7 +66,6 @@
 */
 #define CONNECTING_TIMEOUT 10000
 
-
 /*!
 * \def SSID_LENGTH
 * Description
@@ -83,24 +79,21 @@
 
 class MemoryProvider;
 
-
-class WiFiProvider : public IBluetooth
+class WiFiProvider : public IBluetooth, public TextModule
 {
 public:
-    WiFiProvider(MemoryProvider*);
+    WiFiProvider(MemoryProvider *);
     void setupWiFi();
     bool isConnected();
-    int connect();
+    int connect(int timetout = CONNECTING_TIMEOUT);
     void disconnect();
     void restart();
     void onLoop();
-
 
     void syncTime();
 
     String getPassphrase();
     void setPassphrase(String passphrase);
-
 
     String getSsid();
     void setSsid(String ssid);
@@ -108,13 +101,14 @@ public:
     void loadFromNVS();
     void saveToNVS();
 
-
     //bluetooth
     virtual void setupBLECredentials(NimBLEService *credentials);
     virtual void onBLEDisconnect();
     virtual void onBLEConnect();
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
     bool hasCredentials();
+
+    virtual std::vector<String> getText();
 
 private:
     MemoryProvider *memoryProvider;
@@ -124,9 +118,6 @@ private:
     bool _settingsChanged = false;
 
     int count = 0;
-      
-
-
 };
 
 extern WiFiProvider *wifiProvider;
