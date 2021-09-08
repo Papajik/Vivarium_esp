@@ -153,27 +153,19 @@ void BLEController::init()
     // Create the BLE Server
     pServer = NimBLEDevice::createServer();
     pServer->setCallbacks(new VivariumServerCallbacks());
+    
 
-    // if (secure)
-    // {
-    // BLESecurity *pSecurity = new NimBLESecurity();
-    // pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_ONLY);
-    // pSecurity->setCapability(ESP_IO_CAP_OUT);
-    // pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
-    // }
     _textOutput->setText({"Bluetooth", "Initializing."});
     setupModuleServices();
-    _textOutput->setText({"Bluetooth", "Initializing.."});
+    _textOutput->setText({"Bluetooth", "Starting.."});
     pServer->getAdvertising()->start();
-    printlnA("Server started");
 
     _running = true;
     _initialized = true;
 
     _ledControl->setLedOn(BLUETOOTH_BUTTON);
 
-    _textOutput->setText({"Bluetooth ON", "Waiting..."});
-    printMemory();
+    _textOutput->setText({"Bluetooth ON", "Ready..."});
 }
 
 void BLEController::setConnectionHandle(uint16_t h)
@@ -198,6 +190,7 @@ void BLEController::setupModuleServices()
         debugA("State handles = %i", state_handles);
         debugA("Credentials handles = %i", credential_handles);
         printlnA("")
+        yield();
     }
     printlnA("Final size");
     debugA("Settings handles = %i", settings_handles);
