@@ -29,14 +29,6 @@ void IModule::setConnected(bool connected, bool fromButton)
 
     _connected = connected;
     _sourceIsButton = fromButton;
-    if (_memoryProvider != nullptr)
-        _memoryProvider->saveBool(_connectionKey, connected);
-
-    if (_ledControl != nullptr)
-    {
-        connected ? _ledControl->setLedOn(_position) : _ledControl->setLedOff(_position);
-    }
-    // _ledControl->updateLedStatus(_position, connected);
 }
 
 void IModule::checkConnectionChange()
@@ -44,6 +36,8 @@ void IModule::checkConnectionChange()
     if (_connected != _lastConnected)
     {
         _lastConnected = _connected;
+        if (_memoryProvider != nullptr)
+            _memoryProvider->saveBool(_connectionKey, _connected);
         if (_ledControl != nullptr)
         {
             _connected ? _ledControl->setLedOn(_position) : _ledControl->setLedOff(_position);
