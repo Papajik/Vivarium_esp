@@ -14,9 +14,6 @@ ButtonControl *buttonControl;
 
 #define DEBOUNCE_INTERVAL 200
 
-void readAnalogTask(void *parameter)
-{
-    printlnA("readAnalogTask");
 
     int buttonCount = MODULE_COUNT + 1;
     float avg = ADC_RESOLUTION / float(buttonCount);
@@ -24,7 +21,7 @@ void readAnalogTask(void *parameter)
     int n;
     int lastButton = BUTTON_RELEASED;
 
-    for (;;)
+void buttonControlCallback()
     {
         val = analogRead(M_BUTTONS_PIN); // ADC1 - channel 6 on GPIO2
         for (n = 1; n < 16; n++)
@@ -66,9 +63,11 @@ void readAnalogTask(void *parameter)
                 }
             }
         }
-        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
-    vTaskDelete(NULL);
+
+callback ButtonControl::getCallback()
+{
+    return buttonControlCallback;
 }
 
 ButtonControl::ButtonControl(FirebaseService *firebaseService, ModuleControl *moduleControl)
@@ -108,15 +107,4 @@ void ButtonControl::buttonPressed(int button)
     {
         _moduleControl->buttonPressed(button);
     }
-}
-
-void ButtonControl::start()
-{
-    xTaskCreate(
-        readAnalogTask,   /* Task function. */
-        "readAnalogTask", /* String with name of task. */
-        5000,             /* Stack size in bytes this task takes 2696 bytes */
-        NULL,             /* Parameter passed as input of the task */
-        1,                /* Priority of the task.  */
-        NULL);            /* Task handle. */
 }

@@ -21,12 +21,15 @@
 #include "../modules/module.h"
 #include "../firebase/firebase.h"
 #include "../modules/external/water_temperature/water_temp.h"
+#include "../runner/runner.h"
 
 #include "../expander/expander.h"
 #include "../modules/internal/outlets/outletController.h"
 
 #include <soc/sens_reg.h>
 #include "../debug/memory.h"
+#include "../monitor/monitor.h"
+#include "../watchdog/watchdog.h"
 
 Vivarium::Vivarium() {}
 
@@ -101,11 +104,16 @@ void Vivarium::finalize()
         }
 
         printHeapInfo();
-        buttonControl->start();
+        runner.addCallback(buttonControl->getCallback());
 
         expander.begin();
     }
     printMemory();
+    // monitor.addVivarium(this);
+    // runner.addCallback(monitor.getCallback());
+    watchdog.addVivarium(this);
+    runner.addCallback(watchdog.getCallback());
+    runner.startRunner();
 }
 
 void Vivarium::addModule(IModule *m)

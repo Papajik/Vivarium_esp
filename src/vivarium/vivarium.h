@@ -18,6 +18,7 @@
 
 #include "../state/state_values.h"
 
+#include "../utils/taskHealth/taskHealth.h"
 /*!
 * \def DEVICE_ID
 * Description
@@ -35,7 +36,7 @@ class ModuleControl;
 class MessagingService;
 class TextModule;
 
-class Vivarium
+class Vivarium : public TaskHealth
 {
 public:
     Vivarium();

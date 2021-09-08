@@ -7,12 +7,14 @@ class ModuleControl;
 
 #define BUTTON_RELEASED -1
 
+typedef void (*callback)(void);
+
 class ButtonControl
 {
 public:
     ButtonControl(FirebaseService *, ModuleControl *);
     void buttonPressed(int);
-    void start();
+    callback getCallback();
 
 private:
     unsigned long _lastPressedTime = 0;
