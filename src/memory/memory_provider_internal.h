@@ -24,8 +24,8 @@ class MemoryProviderInternal : public MemoryProvider
 public:
     MemoryProviderInternal();
     ~MemoryProviderInternal();
-    void begin(String name);
-    void end();
+    void init(String name);
+    
 
     // Extern modules settings
     void saveStruct(String key, const void *, size_t);
@@ -52,12 +52,16 @@ public:
     void factoryReset();
 
 private:
-    
+    String name;
+
+    void end();
+    void begin();
+
     void lockSemaphore(String owner);
     void unlockSemaphore();
 
     SemaphoreHandle_t preferencesMutex;
-    String _mutexOwner = ""; 
+    String _mutexOwner = "";
     Preferences *_preferences = nullptr;
     void _incrementWrites();
     void _incrementBytes(int bytes);

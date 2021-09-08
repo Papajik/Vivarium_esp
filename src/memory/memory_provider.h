@@ -8,8 +8,7 @@ class MemoryProvider
 public:
     MemoryProvider(){};
     virtual ~MemoryProvider(){};
-    virtual void begin(String name = "vivarium") = 0;
-    virtual void end() = 0;
+    virtual void init(String name = "vivarium") = 0;
 
     // Extern modules settings
     virtual void saveStruct(String key, const void *, size_t) = 0;
@@ -38,6 +37,8 @@ public:
     int getBytesWritten() { return _bytesWritten; }
 
 protected:
+    virtual void begin() = 0;
+    virtual void end() = 0;
     unsigned int _writeCount = 0;
     unsigned int _bytesWritten = 0;
     virtual void _incrementWrites();

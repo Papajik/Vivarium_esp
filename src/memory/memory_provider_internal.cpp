@@ -17,20 +17,27 @@ MemoryProviderInternal::~MemoryProviderInternal()
     delete _preferences;
 }
 
-void MemoryProviderInternal::begin(String name = "vivarium")
+void MemoryProviderInternal::begin()
 {
-
-    // printlnA("Initializing memory");
+    // lockSemaphore("begin");
     _preferences->begin(name.c_str(), false);
+    // unlockSemaphore();
+}
+
+void MemoryProviderInternal::init(String n = "vivarium")
+{
+    name = n;
+
     nvs_stats_t nvs_stats;
     nvs_get_stats(NULL, &nvs_stats);
-    // printA("Count: UsedEntries = ");
-    // printlnA(nvs_stats.used_entries);
-    // printA("FreeEntries = ");
-    // printlnA(nvs_stats.free_entries);
-    // printA("AllEntries = ");
-    // printlnA(nvs_stats.total_entries);
-    lockSemaphore("begin");
+    printA("Count: UsedEntries = ");
+    printlnA(nvs_stats.used_entries);
+    printA("FreeEntries = ");
+    printlnA(nvs_stats.free_entries);
+    printA("AllEntries = ");
+    printlnA(nvs_stats.total_entries);
+
+    lockSemaphore("init");
     if (_preferences->isKey(NUMBER_OF_WRITES_KEY))
     {
         _writeCount = _preferences->getUInt(NUMBER_OF_WRITES_KEY, 0);
@@ -53,13 +60,14 @@ void MemoryProviderInternal::begin(String name = "vivarium")
 
 void MemoryProviderInternal::end()
 {
-    lockSemaphore("end");
+    // lockSemaphore("end");
     _preferences->end();
-    unlockSemaphore();
+    // unlockSemaphore();
 }
 
 bool MemoryProviderInternal::loadStruct(String key, void *value, size_t len)
 {
+    // begin();
     lockSemaphore("loadStruct_" + key);
     if (_preferences->isKey(key.c_str()))
     {
@@ -74,14 +82,14 @@ bool MemoryProviderInternal::loadStruct(String key, void *value, size_t len)
         else
         {
             _preferences->getBytes(key.c_str(), value, len);
-            debugA("Loaded struct under '%s' key", key.c_str());
+            // debugA("Loaded struct under '%s' key", key.c_str());
             unlockSemaphore();
             return true;
         }
     }
     else
     {
-        debugA("No struct saved under '%s' key", key.c_str());
+        // debugA("No struct saved under '%s' key", key.c_str());
         unlockSemaphore();
         return false;
     }
@@ -170,8 +178,8 @@ String MemoryProviderInternal::loadString(String key, String defaultValue)
 
 void MemoryProviderInternal::saveBool(String key, bool value)
 {
-    printD("MP: Saving bool ");
-    printD(value ? "true" : "false");
+    printA("MP: Saving bool ");
+    printA(value ? "true" : "false");
     lockSemaphore("saveBool_" + key);
     if (!_preferences->isKey(key.c_str()))
     {
@@ -367,19 +375,21 @@ void MemoryProviderInternal::lockSemaphore(String owner)
     // Serial.printf("Count: UsedEntries = %d \n", nvs_stats.used_entries);
     // Serial.printf("Count: FreeEntries = %d \n", nvs_stats.free_entries);
     // Serial.printf("Count: AllEntries = %d \n", nvs_stats.total_entries);
-    Serial.println("Lock memory semaphore by " + owner);
+    // Serial.println("Lock memory semaphore by " + owner);
     if (_mutexOwner != "")
         Serial.println("Already locked from " + _mutexOwner);
 
     xSemaphoreTake(preferencesMutex, portMAX_DELAY);
     _mutexOwner = owner;
-    Serial.println("...locked (" + owner + ")");
+    Serial.println("Memory locked succesfully by " + owner);
+    begin();
 }
 
 void MemoryProviderInternal::unlockSemaphore()
 {
     Serial.println("Unlock memory semaphore from " + _mutexOwner);
     _mutexOwner = "";
+    end();
     xSemaphoreGive(preferencesMutex);
-    Serial.println("...unlocked");
+    // Serial.println("...unlocked");
 }
