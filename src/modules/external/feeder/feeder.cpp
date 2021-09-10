@@ -164,6 +164,9 @@ void Feeder::setMode(FeederMode m)
 
 void Feeder::feed()
 {
+    if (!isConnected())
+        return;
+        
     int speed;
     int steps;
     switch (getMode())
