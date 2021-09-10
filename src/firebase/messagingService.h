@@ -41,7 +41,7 @@ public:
     void setTriggerNotifications(bool);
 
 private:
-    void sendMessage(String title, String body, String tag, String token, bool timePrefix, bool silent, bool legacy = true);
+    void sendMessage(String title, String body, String tag, String token, bool silent, bool timePrefix = true, bool legacy = false);
 
     Auth *_auth;
     //settings

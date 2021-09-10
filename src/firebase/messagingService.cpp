@@ -103,7 +103,7 @@ void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String 
     printlnI("All sent");
 }
 
-void MessagingService::sendMessage(String title, String body, String tag, String token, bool timePrefix, bool silent, bool legacy)
+void MessagingService::sendMessage(String title, String body, String tag, String token, bool silent, bool timePrefix, bool legacy)
 {
     // Add time preffix
     if (timePrefix)
