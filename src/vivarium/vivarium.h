@@ -62,6 +62,9 @@ private:
     void mainLoop();
     void otaLoop();
 
+    void checkResetFirebase();
+    void checkWiFiConenction();
+
     MessagingService *messagingService;
     ModuleControl *moduleControl;
     Auth *auth;

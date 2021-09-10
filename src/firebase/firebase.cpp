@@ -45,7 +45,7 @@ FirebaseConfig firebaseConfig;
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h"
 
-void _initializeFB(bool serviceAccount = true)
+bool _initializeFB(bool serviceAccount = true)
 {
     Serial.printf("Firebase Client v%s\n\n", FIREBASE_CLIENT_VERSION);
 
@@ -71,6 +71,7 @@ void _initializeFB(bool serviceAccount = true)
 
     Serial.println("Firebase begin");
     Firebase.begin(&firebaseConfig, &firebaseAuth);
+    
     Serial.println("Firebase begin done");
     Firebase.reconnectWiFi(true);
 
@@ -83,10 +84,11 @@ void _initializeFB(bool serviceAccount = true)
         if (millis() - start > 10000)
         {
             Serial.println("Token init failed");
-            return;
+            return false;
         }
     }
     Serial.println("Token OK");
+    return true;
 }
 
 FirebaseService::FirebaseService(Auth *auth, MemoryProvider *provider, MessagingService *service) : _auth(auth), _memoryProvider(provider), _messagingService(service)
@@ -126,22 +128,11 @@ void FirebaseService::setupFirebase()
     printlnA("Setup FIREBASE");
     if (!_initialized)
     {
-        _initializeFB();
+        _initialized = _initializeFB();
     }
-    unsigned long start = millis();
-    printlnA("Waiting for token");
 
-    while (!Firebase.ready())
-    {
-        delay(1000);
-        printA(".");
-        if (millis() - start > FIREBASE_READY_DELAY)
-        {
-            printlnE("Token init failed");
+    if (!_initialized)
             return;
-        }
-    }
-    printlnA("Token init success - Firebase ready");
 
     checkActiveStatus();
     if (_messagingService != nullptr)
@@ -270,7 +261,7 @@ void FirebaseService::setRunning(bool r)
 
 void FirebaseService::uploadSensorData()
 {
-    if (_running)
+    if (_running && Firebase.ready())
     {
         printlnA("Upload sensor data");
         time_t now;
@@ -429,7 +420,7 @@ void FirebaseService::valueCallback(MultiPathStream *data)
 
 void FirebaseService::uploadState(String key, bool value)
 {
-    if (_running)
+    if (_running && Firebase.ready())
     {
         printlnA("FB: Uploading state: " + key);
 
@@ -453,7 +444,7 @@ void FirebaseService::uploadState(String key, bool value)
 
 void FirebaseService::uploadState(String key, float value)
 {
-    if (_running)
+    if (_running && Firebase.ready())
     {
         printlnA("FB: Uploading state: " + key);
         String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
@@ -475,7 +466,7 @@ void FirebaseService::uploadState(String key, float value)
 }
 void FirebaseService::uploadState(String key, int value)
 {
-    if (_running)
+    if (_running && Firebase.ready())
     {
         printlnA("FB: Uploading state: " + key);
         String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
@@ -628,7 +619,7 @@ int FirebaseService::checkFirebase()
 
 void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
 {
-    if (_running)
+    if (_running && Firebase.ready())
     {
         heap_caps_check_integrity_all(true);
         printlnA("uploadCustomData: " + prefix + " - " + suffix);

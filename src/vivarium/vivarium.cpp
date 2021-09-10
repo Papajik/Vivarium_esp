@@ -240,28 +240,9 @@ void Vivarium::mainLoop()
 
     setStep(3);
 
-    // If wifi is running
-
-
-
     // Check wifi and try to restart if necessary
-    // TODO Check if working when sudden change of network connection occurs
-
-    if (_lastWifiRetry < WIFI_RECONNECT_DELAY + millis() &&
-        !wifiProvider->isConnected() &&
-        wifiProvider->hasCredentials() &&
-        auth->isClaimed() &&
-        !bleController->isDeviceConnected())
-    {
-
-        printlnA("Wifi connect retry ");
-        _lastWifiRetry = millis();
-        if (wifiProvider->connect(5000) == WL_CONNECTED)
-        {
-            bleController->stop();
-            firebaseService->setupFirebase();
-        }
-    }
+    checkWiFiConenction();
+    checkResetFirebase();
 
     setStep(4);
 
@@ -276,6 +257,35 @@ void Vivarium::mainLoop()
     Alarm.delay(0);
 
     setStep(7);
+}
+
+void Vivarium::checkWiFiConenction()
+{
+    if (!wifiProvider->isConnected() &&
+        wifiProvider->hasCredentials() &&
+        auth->isClaimed() &&
+        !bleController->isRunning() &&
+        _lastWifiRetry < WIFI_RECONNECT_DELAY + millis())
+    {
+
+        printlnA("Wifi connect retry ");
+        _lastWifiRetry = millis();
+        if (wifiProvider->connect(3000) == WL_CONNECTED)
+        {
+            bleController->stop();
+            firebaseService->setupFirebase();
+        }
+    }
+}
+
+void Vivarium::checkResetFirebase()
+{
+    if (wifiProvider->isConnected() &&
+        !bleController->isRunning() &&
+        !firebaseService->isRunning())
+    {
+        firebaseService->setupFirebase();
+    }
 }
 
 void Vivarium::createModule(ModuleType type, int position, int outlet)
