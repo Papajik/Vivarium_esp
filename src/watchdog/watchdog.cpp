@@ -29,13 +29,15 @@ void Watchdog::checkDeadlock()
     if (_vivarium == nullptr)
         return;
 
-    if (millis() > lastDelayTime + LOOP_DELAY)
+    unsigned long now = millis();
+    if (now > lastDelayTime + LOOP_DELAY)
     {
 
         if (!_vivarium->isAlive())
         {
-            Serial.println("DEADLOCK DETECTED");
-            // _vivarium->restart();
+            Serial.printf(" DEADLOCK DETECTED, now: %lu, Last ping alive: %lu\n", now, _vivarium->getLastAlive());
+            _vivarium->printState();
+            _vivarium->restart();
         }
     }
 }
