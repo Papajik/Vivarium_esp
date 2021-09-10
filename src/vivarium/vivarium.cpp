@@ -48,7 +48,7 @@
 
 #define WIFI_RECONNECT_DELAY 60000
 
-Vivarium::Vivarium() {}
+Vivarium::Vivarium() : ClassState("vivarium") {}
 
 void Vivarium::setup(int outletCount, String deviceId)
 {
@@ -176,6 +176,7 @@ void Vivarium::addFirebaseModule(IFirebaseModule *m)
 void Vivarium::onLoop()
 {
     pingAlive();
+    setMillis();
     if (!otaService->isFirmwareUpdating())
     {
         mainLoop();
@@ -221,14 +222,28 @@ void Vivarium::otaLoop()
 
 void Vivarium::mainLoop()
 {
+    setStateString("Main loop");
     if (firebaseService->checkFirebase() != 0)
     {
         restart();
 }
+
+    setStep(1);
+
     clockDisplay.refreshDisplay();
+
+    setStep(2);
+
     // Check if Firebase/BLE should stop
     firebaseService->checkStop();
     bleController->checkStop();
+
+    setStep(3);
+
+    // If wifi is running
+
+
+
     // Check wifi and try to restart if necessary
     // TODO Check if working when sudden change of network connection occurs
 
@@ -248,13 +263,21 @@ void Vivarium::mainLoop()
         }
     }
 
+    setStep(4);
+
     outletController->onLoop();
     bleController->checkBluetooth();
     lcdDisplay.onLoop();
+    setStep(5);
     moduleControl->onLoop();
+    setStep(6);
     wifiProvider->onLoop();
     firebaseService->onLoop();
     Alarm.delay(0);
+
+    setStep(7);
+}
+
 void Vivarium::createModule(ModuleType type, int position, int outlet)
 {
 
