@@ -110,7 +110,7 @@ private:
     std::map<String, std::shared_ptr<LedTrigger>> _triggers;
 
     Freenove_ESP32_WS2812 *_strip;
-    void showColor(bool force = false);
+    void showColor(bool force = false, bool triggered = true);
     void uploadColorChange();
     void printTrigger(std::shared_ptr<LedTrigger>);
     void printTriggers();

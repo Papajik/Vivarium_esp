@@ -96,7 +96,7 @@ void LedModule::onLoop()
     }
 }
 
-void LedModule::showColor(bool force)
+void LedModule::showColor(bool force, bool triggered)
 {
     if (_currentColor != _lastColor || force)
     {
@@ -114,8 +114,9 @@ void LedModule::showColor(bool force)
         }
         if (firebaseService != nullptr)
             firebaseService->uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
+
         if (messagingService != nullptr)
-            messagingService->sendFCM("LED", "LED triggered, new color = #" + String(_currentColor, 16), FCM_TYPE::TRIGGER, SETTINGS_LED_KEY);
+            messagingService->sendFCM("LED", triggered ? "LED triggered! Color = #" : "Current color=#" + String(_currentColor, 16), FCM_TYPE::TRIGGER, SETTINGS_LED_KEY);
     }
 }
 
@@ -140,7 +141,7 @@ bool LedModule::loadSettings()
 {
     _currentColor = _memoryProvider->loadInt(SETTINGS_LED_KEY, ((((uint32_t)255 << 0) | ((uint32_t)255 << 8) | ((uint32_t)255 << 16))));
 
-    showColor();
+    showColor(false, false);
 
     //TODO check if time is available instead of checking wifi connection
 
@@ -375,12 +376,11 @@ void LedModule::removeTrigger(String key)
 
 void LedModule::onConnectionChange()
 {
-
     sendConnectionChangeNotification("LED", isConnected());
     if (isConnected())
     {
         // Reinit color on new connection + upload data to RTDB
-        showColor(true);
+        showColor(true, false);
         uploadColorChange();
     }
 
