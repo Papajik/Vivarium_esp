@@ -13,20 +13,31 @@ TaskHealth::~TaskHealth()
 {
 }
 
+unsigned long TaskHealth::getLastAlive()
+{
+    return _lastAlive;
+}
+
+
 void TaskHealth::pingAlive()
 {
     xSemaphoreTake(mutex, portMAX_DELAY);
     _lastAlive = millis();
-    Serial.println("Alive: " + String(_lastAlive));
     xSemaphoreGive(mutex);
 }
 
+
 bool TaskHealth::isAlive()
 {
-    unsigned long tm = millis();
-
     xSemaphoreTake(mutex, portMAX_DELAY);
+    unsigned long tm = millis();
+    if (_lastAlive > tm) _lastAlive = tm; // fix when lastAlive is in the future (concurency)
     bool alive = tm - _lastAlive < ALIVE_TTL;
     xSemaphoreGive(mutex);
+
+    if (alive == false)
+    {
+        Serial.printf("Is Alive = false on %lu, lastAlive = %lu", tm, _lastAlive);
+    }
     return alive;
 }

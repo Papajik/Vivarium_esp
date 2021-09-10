@@ -7,6 +7,7 @@ public:
     TaskHealth();
     ~TaskHealth();
     bool isAlive();
+    unsigned long getLastAlive();
 
 protected:
     void pingAlive();
