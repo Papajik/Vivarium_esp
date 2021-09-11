@@ -250,7 +250,9 @@ void Vivarium::mainLoop()
     bleController->checkBluetooth();
     lcdDisplay.onLoop();
     setStep(5);
+    pingAlive();
     moduleControl->onLoop();
+    pingAlive();
     setStep(6);
     wifiProvider->onLoop();
     firebaseService->onLoop();

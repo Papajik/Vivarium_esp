@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "taskHealth.h"
 
-#define ALIVE_TTL 15000
+#define ALIVE_TTL 30000
 
 TaskHealth::TaskHealth()
 {
