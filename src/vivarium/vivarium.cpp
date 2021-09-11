@@ -47,6 +47,7 @@
 #include "esp_log.h"
 
 #define WIFI_RECONNECT_DELAY 60000
+#define FIREBASE_RETRY_DELAY 60000
 
 Vivarium::Vivarium() : ClassState("vivarium") {}
 
@@ -284,8 +285,10 @@ void Vivarium::checkResetFirebase()
 {
     if (wifiProvider->isConnected() &&
         !bleController->isRunning() &&
-        !firebaseService->isRunning())
+        !firebaseService->isRunning() &&
+        _lastFirebaseRetry < FIREBASE_RETRY_DELAY + millis())
     {
+        _lastFirebaseRetry = millis();
         firebaseService->setupFirebase();
     }
 }

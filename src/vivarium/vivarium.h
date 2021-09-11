@@ -71,6 +71,7 @@ private:
     LedControl *ledControl;
     int otaResponse;
     unsigned long _lastWifiRetry = 0;
+    unsigned long _lastFirebaseRetry = 0;
 };
 
 #endif
