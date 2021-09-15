@@ -31,6 +31,8 @@
 #include "../utils/monitor/monitor.h"
 #include "../watchdog/watchdog.h"
 
+#include "../firebase/sender/sender.h"
+
 // External modules
 #include "../modules/external/ph_probe/ph_probe.h"
 #include "../modules/external/water_temperature/water_temp.h"
@@ -144,6 +146,7 @@ void Vivarium::finalize()
     watchdog.addVivarium(this);
     runner.addCallback(watchdog.getCallback());
     runner.startRunner();
+    firebaseSender.start();
     lcdDisplay.setText({"Smart Vivarium", "Ready"});
     delay(2000);
     lcdDisplay.unlockText();

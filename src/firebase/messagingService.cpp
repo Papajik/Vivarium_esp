@@ -12,13 +12,13 @@
 
 #include "../auth/auth.h"
 
+#include "sender/sender.h"
+
 #define FCM_SERVER_KEY "AAAA2l0CYos:APA91bHTNr_Xf2_aW6-NYot7tamMXBt9Q7jkjFpJzTKPAW8oJ7GzDtpHGEwM7GRPTHwasiQD9UXOKuxloTxNuAxBcHFrEtft1gGHDwCZPEWcz9Tiv8GxHpadJRUXpnB5Bol8QLhHzJRi"
-#define FCM_SILENT_CHANNEL "vivarium_silent"
 
 MessagingService::MessagingService(Auth *auth) : _auth(auth)
 {
-    _tokens.reserve(5);
-    // Legacy FCM
+    // Legacy FCM //TODO test and remove legacy server key
     Firebase.FCM.setServerKey(FCM_SERVER_KEY);
 }
 
@@ -44,18 +44,16 @@ void MessagingService::setNotifyOnCrossLimit(bool b)
     _notifyOnCrossLimit = b;
 }
 
-void MessagingService::addToken(String s)
-{
-    _tokens.push_back(s);
-}
-
 void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String moduleTag, bool silent)
 {
     printlnA("SendFCM");
     printlnA(title);
     printlnA(body);
-    printlnD((int)_tokens.size());
-
+    if (!Firebase.ready())
+    {
+        printlnW("Firebase is not ready, FCM can't be sent");
+        return;
+    }
     // Check rules for value notification
 
     if (type == FCM_TYPE::CROSS_LIMIT)
@@ -92,18 +90,10 @@ void MessagingService::sendFCM(String title, String body, FCM_TYPE type, String 
         printlnI("FCM Trigger notifications prohibited");
         return;
     }
-
-    printlnI("Proceed to send");
-
-    for (String token : _tokens)
-    {
-        printlnA("Proceed to send a token");
-        sendMessage(title, body, moduleTag, token, silent, true);
-    }
-    printlnI("All sent");
+    parseMessage(title, body, moduleTag, silent, true);
 }
 
-void MessagingService::sendMessage(String title, String body, String tag, String token, bool silent, bool timePrefix, bool legacy)
+void MessagingService::parseMessage(String title, String body, String tag, bool silent, bool timePrefix)
 {
     // Add time preffix
     if (timePrefix)
@@ -117,68 +107,7 @@ void MessagingService::sendMessage(String title, String body, String tag, String
 
     printlnA("Proceed to send a token");
     printlnA(body);
-    if (legacy)
-    {
-        FCM_Legacy_HTTP_Message msg;
-
-        msg.payloads.notification.title = title.c_str();
-        msg.payloads.notification.body = body.c_str();
-        msg.payloads.notification.tag = tag.c_str();
-        msg.targets.to = token.c_str();
-        if (silent)
-        {
-            msg.payloads.notification.android_channel_id = FCM_SILENT_CHANNEL;
-        }
-        firebaseSemaphore.lockSemaphore("sendFCM");
-        if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
-        {
-            printlnA("PASSED");
-            printlnA(Firebase.FCM.payload(firebaseBdo));
-            printlnA("------------------------------------");
-            printlnA();
-        }
-        else
-        {
-            printlnA("FAILED");
-            printlnA("REASON: " + firebaseBdo->errorReason());
-            printlnA("------------------------------------");
-            printlnA();
-        }
-        firebaseSemaphore.unlockSemaphore();
-    }
-    else
-    {
-        FCM_HTTPv1_JSON_Message msg;
-        msg.notification.title = title.c_str();
-        msg.notification.body = body.c_str();
-        msg.android.notification.tag = tag.c_str();
-        if (silent)
-        {
-            msg.android.notification.channel_id = FCM_SILENT_CHANNEL;
-        }
-        msg.token = token.c_str();
-        firebaseSemaphore.lockSemaphore("sendFCM");
-        if (Firebase.FCM.send(firebaseBdo, &msg)) //send message to recipient
-        {
-            printlnA("PASSED");
-            printlnA(Firebase.FCM.payload(firebaseBdo));
-            printlnA("------------------------------------");
-            printlnA();
-        }
-        else
-        {
-            printlnA("FAILED");
-            printlnA("REASON: " + firebaseBdo->errorReason());
-            printlnA("------------------------------------");
-            printlnA();
-        }
-        firebaseSemaphore.unlockSemaphore();
-    }
-}
-
-void MessagingService::clearTokens()
-{
-    _tokens.clear();
+    firebaseSender.addMessage(std::make_shared<Message>(Message(title.c_str(), body.c_str(), tag.c_str(), silent)));
 }
 
 void MessagingService::init()
@@ -240,9 +169,11 @@ void MessagingService::getTokens()
     firebaseSemaphore.lockSemaphore("getTokens");
     if (Firebase.RTDB.getJSON(firebaseBdo, path.c_str()))
     {
-        clearTokens();
+        firebaseSender.clearTokens();
+        firebaseSender.pauseMessages();
         FirebaseJson tokenJson = firebaseBdo->jsonObject();
         parseTokens(&tokenJson);
+        firebaseSender.continueMessages();
     }
     else
     {
@@ -269,7 +200,7 @@ void MessagingService::parseTokens(FirebaseJson *json)
         printlnA(value);
         if (value == "true")
         { //If key is valid then add token
-            addToken(key);
+            firebaseSender.addFCMToken(key);
         }
     }
     json->iteratorEnd();

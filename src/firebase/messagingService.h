@@ -31,9 +31,9 @@ public:
     void getTokens();
     void parseTokens(FirebaseJson *);
 
-    void clearTokens();
+    // void clearTokens();
     void sendFCM(String, String, FCM_TYPE, String, bool silent = false);
-    void addToken(String);
+    // void addToken(String);
 
     void setDelayFCM(int);
     void setNotifyOnConnectionChange(bool);
@@ -41,13 +41,13 @@ public:
     void setTriggerNotifications(bool);
 
 private:
-    void sendMessage(String title, String body, String tag, String token, bool silent, bool timePrefix = true, bool legacy = false);
+    void parseMessage(String title, String body, String tag, bool silent, bool timePrefix = true);
 
     Auth *_auth;
     //settings
 
     std::map<String, unsigned long> _lastValueSendTimeMap;
-    std::vector<String> _tokens;
+    // std::vector<String> _tokens;
 };
 
 #endif
