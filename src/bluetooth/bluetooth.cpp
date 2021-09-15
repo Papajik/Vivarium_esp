@@ -7,7 +7,7 @@
 #include "i_bluetooth.h"
 #include "esp32-hal-bt.h"
 
-#include "../debug/memory.h"
+#include "../utils/debug/memory.h"
 
 #include "../memory/memory_provider.h"
 #include "../wifi/wifiProvider.h"

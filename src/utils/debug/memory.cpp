@@ -15,21 +15,20 @@
 void printMemory()
 {
 
-    // printlnA("\n*** *** *** *** *** ***");
-    // // int freestack = uxTaskGetStackHighWaterMark(NULL);
-    // // uint32_t h = xPortGetFreeHeapSize();
-    // // printlnA("xPortGetFreeHeapSize = " + String(h));
-    // // printA("Free stack = ");
-    // // printlnA(freestack);
-
-    // printlnA("ESP heapSize: " + String(ESP.getHeapSize()));
-    // printlnA("ESP freeHeap: " + String(ESP.getFreeHeap()));
-    // printlnA("ESP minFreeHeap:" + String(ESP.getMinFreeHeap()));
-    // printlnA("ESP maxAllocHeap:" + String(ESP.getMaxAllocHeap()));
+    Serial.println("\n*** *** *** *** *** ***");
+    // int freestack = uxTaskGetStackHighWaterMark(NULL);
+    // uint32_t h = xPortGetFreeHeapSize();
+    // printlnA("xPortGetFreeHeapSize = " + String(h));
+    // printA("Free stack = ");
+    // printlnA(freestack);
+    Serial.println("ESP heapSize: " + String(ESP.getHeapSize()));
+    Serial.println("ESP freeHeap: " + String(ESP.getFreeHeap()));
+    Serial.println("ESP minFreeHeap:" + String(ESP.getMinFreeHeap()));
+    Serial.println("ESP maxAllocHeap:" + String(ESP.getMaxAllocHeap()));
     // heap_caps_check_integrity_all(true);
-    // // debugA("Total PSRAM: %d", ESP.getPsramSize());
-    // // debugA("Free PSRAM: %d", ESP.getFreePsram());
-    // printlnA("*** *** *** *** *** ***\n\n");
+    // debugA("Total PSRAM: %d", ESP.getPsramSize());
+    // debugA("Free PSRAM: %d", ESP.getFreePsram());
+    Serial.println("*** *** *** *** *** ***\n\n");
 }
 
 void printHeapInfo()
@@ -40,7 +39,10 @@ void printHeapInfo()
     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
     printlnA("Check integrity");
-    heap_caps_check_integrity_all(true);
+    if (heap_caps_check_integrity_all(true))
+    {
+        printlnA(".. OK");
+    }
 
     printlnA("Largest free block");
     printlnA("Largest free block - " + String(heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT)));

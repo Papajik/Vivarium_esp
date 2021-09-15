@@ -3,7 +3,7 @@ Monitor monitor;
 #include <HardwareSerial.h>
 #include "../debug/memory.h"
 #include "SPIFFS.h"
-#include "../vivarium/vivarium.h"
+#include "../../vivarium/vivarium.h"
 
 #define CALLBACK_DELAY 10000
 

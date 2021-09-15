@@ -1,7 +1,96 @@
+#include "debug.h"
+#include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+#include "../../memory/memory_provider.h"
+#include "memory.h"
+
+#include <time.h>
+
+MemoryProvider *provider;
+void restart()
+{
+    ESP.restart();
+}
+
+void factoryReset()
+{
+    if (provider != nullptr)
+    {
+        provider->factoryReset();
+        ESP.restart();
+    }
+}
+
+void getTime()
+{
+    printA("Time = ");
+    printlnA(time(nullptr));
+}
+
+void Debugger::addProvider(MemoryProvider *p)
+{
+    provider = p;
+}
+struct Test
+{
+    uint32_t t;
+};
+
+void testMemory()
+{
+    Serial.println("Testing bool");
+    provider->saveBool("blabla", true);
+    bool b = provider->loadBool("blabla", false);
+    Serial.println(b);
+    Test t;
+    t.t = 12312;
+    provider->saveStruct("str", &t, sizeof(Test));
+    provider->factoryReset();
+}
+
+void printState()
+{
+    char ptrTaskList[550];
+    vTaskList(ptrTaskList);
+    Serial.println("****************************************************");
+    Serial.println("Task          State   Prio    Stack    Num    Core");
+    Serial.println("****************************************************");
+    Serial.println(ptrTaskList);
+    Serial.println("****************************************************");
+    printMemory();
+}
+
+void Debugger::setupDebug()
+{
+    if (debugAddFunctionVoid("Restart", &restart) >= 0)
+    {
+        debugSetLastFunctionDescription("Restart ESP");
+    }
+
+    if (debugAddFunctionVoid("Factory reset", &factoryReset) >= 0)
+    {
+        debugSetLastFunctionDescription("Factory Reset");
+    }
+
+    if (debugAddFunctionVoid("Test memory", &testMemory) >= 0)
+    {
+        debugSetLastFunctionDescription("Test memory");
+    }
+
+    if (debugAddFunctionVoid("Get time", &getTime) >= 0)
+    {
+        debugSetLastFunctionDescription("Get current time");
+    }
+
+    if (debugAddFunctionVoid("Print state", &printState) >= 0)
+    {
+        debugSetLastFunctionDescription("Print current state");
+    }
+}
+
 // #include "debug.h"
 // #include "../buttonControl/moduleControl/moduleControl.h"
 // #include "../buttonControl/bluetooth/bluetoothControl.h"
-// #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
+
 // #include <HardwareSerial.h>
 
 // #include "../memory/memory_provider.h"
@@ -68,7 +157,6 @@
 //     printlnD("****************");
 //     debugD("Number of writes = %d", memoryProvider.writeCount);
 
-
 //     //Settings
 //     printSettings(settingsStruct);
 
@@ -81,14 +169,8 @@
 // void printTest(item_value value)
 // {
 //     printD("Value = ");
-//     printlnD(value.i);  
+//     printlnD(value.i);
 //     printlnD("Test test test");
-// }
-
-// void factoryReset()
-// {
-//     memoryProvider.factoryReset();
-//     ESP.restart();
 // }
 
 // void testBluetooth(int v)
@@ -98,17 +180,8 @@
 //     printlnA(f);
 //     dhtDebugPointer->_humidityCharacteristic->setValue(f);
 //     dhtDebugPointer->_humidityCharacteristic->notify();
-   
+
 // }
-
-
-
-// void restart()
-// {
-//    ESP.restart();
-   
-// }
-
 
 // void setupDebug()
 // {

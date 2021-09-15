@@ -5,7 +5,7 @@
 
 #include <TimeAlarms.h>
 
-#include "../debug/debug.h"
+#include "../utils/debug/debug.h"
 #include "../analog/analog.h"
 #include "../memory/memory_provider_internal.h"
 #include "../auth/auth.h"
@@ -27,8 +27,8 @@
 #include "../modules/internal/outlets/outletController.h"
 
 #include <soc/sens_reg.h>
-#include "../debug/memory.h"
-#include "../monitor/monitor.h"
+#include "../utils/debug/memory.h"
+#include "../utils/monitor/monitor.h"
 #include "../watchdog/watchdog.h"
 
 // External modules
@@ -139,8 +139,8 @@ void Vivarium::finalize()
         expander.begin();
     }
     printMemory();
-    // monitor.addVivarium(this);
-    // runner.addCallback(monitor.getCallback());
+    monitor.addVivarium(this);
+    runner.addCallback(monitor.getCallback());
     watchdog.addVivarium(this);
     runner.addCallback(watchdog.getCallback());
     runner.startRunner();

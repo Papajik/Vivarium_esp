@@ -9,8 +9,6 @@
 #include "../../../wifi/wifiProvider.h"
 #include <Freenove_WS2812_Lib_for_ESP32.h>
 
-#include "../../../debug/memory.h"
-
 #include "../../../utils/timeHelper.h"
 
 void ledTriggerCallback()
