@@ -2,6 +2,7 @@
 #define _MODULE_CONTROL_H_
 
 #include <HardwareSerial.h>
+#include "../utils/classState/classState.h"
 
 //http://www.ignorantofthings.com/2018/07/the-perfect-multi-button-input-resistor.html
 //http://www.openrtos.net/taskresumefromisr.html
@@ -16,7 +17,7 @@
 
 class IModule;
 
-class ModuleControl
+class ModuleControl: public ClassState
 {
 public:
     ModuleControl();

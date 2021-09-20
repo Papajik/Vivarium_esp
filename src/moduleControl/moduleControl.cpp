@@ -5,7 +5,7 @@
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 
-ModuleControl::ModuleControl()
+ModuleControl::ModuleControl() : ClassState("ModuleControl")
 {
 
     _modules.reserve(8);
@@ -35,6 +35,7 @@ void ModuleControl::onLoop()
 {
     for (IModule *m : _modules)
     {
+        setStep(m->getPosition());
         m->onLoop();
     }
 }

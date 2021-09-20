@@ -252,7 +252,9 @@ void Vivarium::mainLoop()
     lcdDisplay.onLoop();
     setStep(5);
     pingAlive();
+    setInnerState(moduleControl);
     moduleControl->onLoop();
+    setInnerState(nullptr);
     pingAlive();
     setStep(6);
     wifiProvider->onLoop();
