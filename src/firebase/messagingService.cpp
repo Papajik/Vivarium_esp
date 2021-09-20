@@ -177,7 +177,8 @@ void MessagingService::getTokens()
     }
     else
     {
-        printlnA("Couldnt receive tokens");
+        printlnE("Couldnt receive tokens");
+        printlnE(firebaseBdo->errorReason());
     }
     firebaseSemaphore.unlockSemaphore();
 }

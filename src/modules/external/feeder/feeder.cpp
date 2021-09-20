@@ -62,10 +62,10 @@ void Feeder::onLoop()
     {
         time_t now;
         time(&now);
-        char time[40];
-        ultoa(now, time, 10);
+        char timeArray[40];
+        ultoa(now, timeArray, 10);
 
-        firebaseService->uploadCustomData("feed/", "/" + String(time), "true");
+        firebaseService->uploadCustomData("feed/", "/" + std::string(timeArray), "true");
 
         _feeded = false;
     }
@@ -166,7 +166,7 @@ void Feeder::feed()
 {
     if (!isConnected())
         return;
-        
+
     int speed;
     int steps;
     switch (getMode())

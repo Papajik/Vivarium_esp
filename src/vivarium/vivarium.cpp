@@ -146,6 +146,7 @@ void Vivarium::finalize()
     watchdog.addVivarium(this);
     runner.addCallback(watchdog.getCallback());
     runner.startRunner();
+    firebaseSender.setAuth(auth);
     firebaseSender.start();
     lcdDisplay.setText({"Smart Vivarium", "Ready"});
     delay(2000);
@@ -227,10 +228,6 @@ void Vivarium::otaLoop()
 void Vivarium::mainLoop()
 {
     setStateString("Main loop");
-    if (firebaseService->checkFirebase() != 0)
-    {
-        restart();
-}
 
     setStep(1);
 

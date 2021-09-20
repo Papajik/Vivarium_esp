@@ -8,13 +8,14 @@
 #include "i_FirebaseModule.h"
 #include "../ota/ota.h"
 #include "../wifi/wifiProvider.h"
-#include "../debug/memory.h"
+#include "../utils/debug/memory.h"
 #include <Esp.h>
 #include "../memory/memory_provider.h"
 #include "messagingService.h"
 #include "../bluetooth/bluetooth.h"
 #include "firebaseBdo.h"
 #include "semaphore/firebaseSemaphore.h"
+#include "sender/sender.h"
 
 #define API_KEY "AIzaSyCrVwfunuauskErYhbScfK4rXh2RTG4v0o"
 
@@ -31,6 +32,7 @@
 #define REFRESH_FCM_TOKENS_INTERVAL 60 * 60 * 1000 // every 1 hour refresh FCM tokens
 #define FBDO_CLEAR_DELAY 170 * 1000
 #define FIREBASE_READY_DELAY 60000
+#define FIREBASE_TOKEN_DELAY 10000
 
 FirebaseService *firebaseService;
 FirebaseData *firebaseStreamBdo;
@@ -71,17 +73,16 @@ bool _initializeFB(bool serviceAccount = true)
 
     Serial.println("Firebase begin");
     Firebase.begin(&firebaseConfig, &firebaseAuth);
-    
+
     Serial.println("Firebase begin done");
     Firebase.reconnectWiFi(true);
 
     unsigned long start = millis();
-    Serial.println("Checking ready");
     while (!Firebase.ready())
     {
         delay(500);
         Serial.println("Firebase.ready()?");
-        if (millis() - start > 10000)
+        if (millis() - start > FIREBASE_TOKEN_DELAY)
         {
             Serial.println("Token init failed");
             return false;
@@ -132,7 +133,7 @@ void FirebaseService::setupFirebase()
     }
 
     if (!_initialized)
-            return;
+        return;
 
     checkActiveStatus();
     if (_messagingService != nullptr)
@@ -210,21 +211,6 @@ void FirebaseService::onLoop()
 
     if (_running)
     {
-
-        // Clear bdo object to clear heap memory for SSL hanshake
-        if (millis() - _lastCleanTime > FBDO_CLEAR_DELAY)
-        {
-            _lastCleanTime = millis();
-            firebaseSemaphore.lockSemaphore("FB onLoop");
-            if (firebaseBdo->httpConnected())
-            {
-
-                printlnA("Clearing object");
-                firebaseBdo->clear();
-            }
-            firebaseSemaphore.unlockSemaphore();
-        }
-
         if (millis() - _lastUploadTime > DEFAULT_UPLOAD_DELAY)
         {
             if (wifiProvider->isConnected())
@@ -270,39 +256,22 @@ void FirebaseService::uploadSensorData()
         char time[40];
         ultoa(now, time, 10);
 
-        String Path = String("/sensorData/") + _auth->getDeviceId() + String("/") + String(time);
-
-        FirebaseJson json;
         bool toUpdate = false;
 
         for (IFirebaseModule *m : _modules)
         {
-            toUpdate = m->updateSensorData(&json) || toUpdate;
+            toUpdate = m->updateSensorData(&firebaseSender.json) || toUpdate;
         }
         if (!toUpdate)
         {
+            firebaseSender.json.clear();
             printlnA("Nothing to update");
             return;
         }
-
-        String buffer;
-        json.toString(buffer, true);
-        // printlnD("Uploading sensor data");
-        // printlnD(buffer);
-
-        firebaseSemaphore.lockSemaphore("uploadSensorData");
-        if (Firebase.RTDB.set(firebaseBdo, Path.c_str(), &json))
-        {
-            _errorCount = 0;
-            printlnD("Sensor data uploaded");
-        }
         else
         {
-            _errorCount++;
-            printlnE("Sensor data upload FAILED");
-            printlnE(firebaseBdo->errorReason());
+            firebaseSender.sendJson = true;
         }
-        firebaseSemaphore.unlockSemaphore();
     }
 }
 
@@ -321,42 +290,18 @@ void FirebaseService::getHandlesCount(int *settings, int *state, int *credential
 
 void FirebaseService::logNewStart()
 {
-    if (!_running)
-    {
-        printlnA("Firebase is not running ");
-        return;
-    }
     printlnA("Log new start");
 
     time_t now;
     time(&now);
-    char time[40];
-    ultoa(now, time, 10);
+    char timeArray[40];
+    ultoa(now, timeArray, 10);
 
-    String Path = "/start/" + _auth->getDeviceId() + "/" + String(time);
-
-    firebaseSemaphore.lockSemaphore("logNewStart");
-    if (Firebase.RTDB.set(firebaseBdo, Path.c_str(), true))
-    {
-
-        printlnA("PASSED");
-        printlnA("PATH: " + firebaseBdo->dataPath());
-        printlnA("TYPE: " + firebaseBdo->dataType());
-        printlnA("ETag: " + firebaseBdo->ETag());
-        printlnA("------------------------------------");
-        printlnA();
-        // _lastValidUpdate = millis();
-        _errorCount = 0;
-    }
-    else
-    {
-        _errorCount++;
-        printlnA("FAILED");
-        printlnA("REASON: " + firebaseBdo->errorReason());
-        printlnA("------------------------------------");
-        printlnA();
-    }
-    firebaseSemaphore.unlockSemaphore();
+    std::shared_ptr<Data> data = std::make_shared<Data>();
+    data->path = "/start/" + std::string(_auth->getDeviceId().c_str()) + "/" + std::string(timeArray);
+    data->boolData = true;
+    data->type = DataType::BOOL;
+    firebaseSender.addData(data);
 }
 
 void FirebaseService::factoryReset()
@@ -418,72 +363,48 @@ void FirebaseService::valueCallback(MultiPathStream *data)
     }
 }
 
-void FirebaseService::uploadState(String key, bool value)
+void FirebaseService::uploadState(std::string key, bool value)
 {
     if (_running && Firebase.ready())
     {
-        printlnA("FB: Uploading state: " + key);
-
-        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
+        printA("FB: Async uplade state: ");
+        printlnA(key.c_str());
         checkSSLConnected();
-        firebaseSemaphore.lockSemaphore("upload state");
-        if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
-        {
-            printlnD("State uploaded");
-            _errorCount = 0;
-        }
-        else
-        {
-            _errorCount++;
-            printlnE("State upload FAILED");
-            printlnE(firebaseBdo->errorReason());
-        }
-        firebaseSemaphore.unlockSemaphore();
+        std::shared_ptr<Data> data = std::make_shared<Data>();
+        data->path = "devices/" + std::string(_auth->getDeviceId().c_str()) + "/state" + key;
+        data->boolData = value;
+        data->type = DataType::BOOL;
+        firebaseSender.addData(data);
     }
 }
 
-void FirebaseService::uploadState(String key, float value)
+void FirebaseService::uploadState(std::string key, float value)
 {
     if (_running && Firebase.ready())
     {
-        printlnA("FB: Uploading state: " + key);
-        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
+        printA("FB: Async uplade state: ");
+        printlnA(key.c_str());
         checkSSLConnected();
-        firebaseSemaphore.lockSemaphore("uploadState");
-        if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
-        {
-            printlnV("State uploaded");
-            _errorCount = 0;
-        }
-        else
-        {
-            _errorCount++;
-            printlnE("State upload FAILED");
-            printlnE(firebaseBdo->errorReason());
-        }
-        firebaseSemaphore.unlockSemaphore();
+        std::shared_ptr<Data> data = std::make_shared<Data>();
+        data->path = "devices/" + std::string(_auth->getDeviceId().c_str()) + "/state" + key;
+        data->floatData = value;
+        data->type = DataType::FLOAT;
+        firebaseSender.addData(data);
     }
 }
-void FirebaseService::uploadState(String key, int value)
+
+void FirebaseService::uploadState(std::string key, int value)
 {
     if (_running && Firebase.ready())
     {
-        printlnA("FB: Uploading state: " + key);
-        String path = String("devices/") + _auth->getDeviceId() + String("/state") + key;
+        printA("FB: Async uplade state: ");
+        printlnA(key.c_str());
         checkSSLConnected();
-        firebaseSemaphore.lockSemaphore("uploadState");
-        if (Firebase.RTDB.set(firebaseBdo, path.c_str(), value))
-        {
-            printlnV("State uploaded");
-            _errorCount = 0;
-        }
-        else
-        {
-            _errorCount++;
-            printlnE(firebaseBdo->errorReason());
-            printlnE("State upload FAILED");
-        }
-        firebaseSemaphore.unlockSemaphore();
+        std::shared_ptr<Data> data = std::make_shared<Data>();
+        data->path = "devices/" + std::string(_auth->getDeviceId().c_str()) + "/state" + key;
+        data->intData = value;
+        data->type = DataType::INT;
+        firebaseSender.addData(data);
     }
 }
 
@@ -573,73 +494,31 @@ String FirebaseService::getFirmwareDownloadUrl(String version)
     return url;
 }
 
-void FirebaseService::uploadCustomData(String prefix, String suffix, String data)
-{
-    if (_running)
-    {
-        printlnA("uploadCustomData: " + prefix + " - " + suffix);
-        String path = prefix + _auth->getDeviceId() + suffix;
-        printlnA("Before ssl check");
-        checkSSLConnected();
-        printlnA("after ssl check");
-        firebaseSemaphore.lockSemaphore("uploadCustomData");
-
-        if (Firebase.RTDB.set(firebaseBdo, path.c_str(), data))
-        {
-            printlnV("custom data uploaded");
-            _errorCount = 0;
-        }
-        else
-        {
-            _errorCount++;
-            printlnE("custom data upload FAILED");
-            printlnE(firebaseBdo->errorReason());
-        }
-        firebaseSemaphore.unlockSemaphore();
-    }
-}
-
-int FirebaseService::checkFirebase()
-{
-    if (_running)
-    {
-        //Fail safe - resets ESP when firebase token handshake hangs for too long
-        if (_errorCount > 5)
-        {
-            printlnE("FIREABSE ERROR");
-            printlnA("Firebase ERROR - RESTARTING");
-            firebaseSemaphore.lockSemaphore("checkFirebase");
-            firebaseBdo->pauseFirebase(true);
-            firebaseSemaphore.unlockSemaphore();
-            return -1;
-        }
-    }
-    return 0;
-}
-
-void FirebaseService::uploadCustomData(String prefix, String suffix, float data)
+void FirebaseService::uploadCustomData(std::string prefix, std::string suffix, std::string str)
 {
     if (_running && Firebase.ready())
     {
-        heap_caps_check_integrity_all(true);
-        printlnA("uploadCustomData: " + prefix + " - " + suffix);
-        String path = prefix + _auth->getDeviceId() + suffix;
-
+        printlnA(std::string("Async uploadCustomData: " + prefix + " - " + suffix).c_str());
         checkSSLConnected();
-        heap_caps_check_integrity_all(true);
-        firebaseSemaphore.lockSemaphore("uploadCustomData");
-        if (Firebase.RTDB.set(firebaseBdo, path.c_str(), data))
-        {
-            printlnA("custom data uploaded");
-            _errorCount = 0;
-        }
-        else
-        {
-            printlnE("custom data upload FAILED");
-            _errorCount++;
-            printlnE(firebaseBdo->errorReason());
-        }
-        firebaseSemaphore.unlockSemaphore();
+        std::shared_ptr<Data> data = std::make_shared<Data>();
+        data->path = prefix + std::string(_auth->getDeviceId().c_str()) + suffix;
+        data->stringData = str;
+        data->type = DataType::STRING;
+        firebaseSender.addData(data);
+    }
+}
+
+void FirebaseService::uploadCustomData(std::string prefix, std::string suffix, float fl)
+{
+    if (_running && Firebase.ready())
+    {
+        printlnA(std::string("Async uploadCustomData: " + prefix + " - " + suffix).c_str());
+        checkSSLConnected();
+        std::shared_ptr<Data> data = std::make_shared<Data>();
+        data->path = prefix + std::string(_auth->getDeviceId().c_str()) + suffix;
+        data->floatData = fl;
+        data->type = DataType::FLOAT;
+        firebaseSender.addData(data);
     }
 }
 
@@ -727,11 +606,9 @@ void FirebaseService::clearVersion()
     if (Firebase.RTDB.setString(firebaseBdo, path.c_str(), "0"))
     {
         printlnV("Version Cleared");
-        _errorCount = 0;
     }
     else
     {
-        _errorCount++;
         printlnE("Version clear FAILED");
         printlnE(firebaseBdo->errorReason());
     }

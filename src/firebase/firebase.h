@@ -20,7 +20,6 @@ class MemoryProvider;
 class Auth;
 class MessagingService;
 
-
 enum ChildPath
 {
     SETTINGS = 0,
@@ -29,7 +28,6 @@ enum ChildPath
     ACTIVE_STATUS = 3,
     BLE_NAME = 4
 };
-
 
 class FirebaseService : public IBluetooth
 {
@@ -64,12 +62,12 @@ public:
 
     // Messaging
 
-    void uploadState(String, bool);
-    void uploadState(String, float);
-    void uploadState(String, int);
+    void uploadState(std::string, bool);
+    void uploadState(std::string, float);
+    void uploadState(std::string, int);
 
-    void uploadCustomData(String, String, String);
-    void uploadCustomData(String, String, float);
+    void uploadCustomData(std::string, std::string, std::string);
+    void uploadCustomData(std::string, std::string, float);
 
     String childPaths[NUMBER_OF_PATHS] = {"/settings", "/state", "/info/firmware", "/info/active", "/info/name"};
 
@@ -77,7 +75,7 @@ public:
 
     String getFirmwareDownloadUrl(String);
 
-    int checkFirebase();
+    // int checkFirebase();
 
     virtual void onBLEDisconnect();
     virtual void onBLEConnect();
@@ -91,18 +89,12 @@ private:
     bool _toStart = false;
     bool _toStop = false;
 
-    int _errorCount = 0;
-
     unsigned long _lastTokenRefresh = 0;
     unsigned long _lastUploadTime = 0;
-    unsigned long _lastCleanTime = 0; // clear firebaseObject every 2:50 to provide enough heap for SSL hanshake
-    unsigned long _lastFCMTokenCheck = 0;
-
 
     void startStream();
     void stopStream();
 
-    int count = 2541;
     std::vector<IFirebaseModule *> _modules;
 
     bool _running = false;

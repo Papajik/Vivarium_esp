@@ -10,6 +10,8 @@
 #include <Freenove_WS2812_Lib_for_ESP32.h>
 
 #include "../../../utils/timeHelper.h"
+#include <string>
+
 
 void ledTriggerCallback()
 {
@@ -126,7 +128,7 @@ void LedModule::uploadColorChange()
     char time[40];
     ultoa(now, time, 10);
     if (firebaseService != nullptr)
-        firebaseService->uploadCustomData("led/", "/" + String(time), String(_currentColor));
+        firebaseService->uploadCustomData("led/", "/" + std::string(time), std::string(String(_currentColor).c_str()));
 }
 
 void LedModule::saveSettings()

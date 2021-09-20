@@ -31,8 +31,6 @@ WaterLevel::~WaterLevel()
 
 void WaterLevel::setMaxLevel(int l)
 {
-    Serial.println("Set max level");
-    Serial.println(l);
     if (_settings.maxLevel != l)
     {
         _settings.maxLevel = l;
@@ -41,8 +39,6 @@ void WaterLevel::setMaxLevel(int l)
 }
 void WaterLevel::setMinLevel(int l)
 {
-    Serial.println("Set min level");
-    Serial.println(l);
     if (_settings.minLevel != l)
     {
         _settings.minLevel = l;
