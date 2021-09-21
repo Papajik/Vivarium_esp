@@ -73,11 +73,11 @@ int WiFiProvider::connect(int timeout)
         {
             if (c)
             {
-                printText({"WiFi", "Connecting."});
+                printText({"WiFi", "Connecting."}, 3000);
             }
             else
             {
-                printText({"WiFi", "Connecting.."});
+                printText({"WiFi", "Connecting.."}, 3000);
             }
 
             c = !c;
@@ -94,7 +94,7 @@ int WiFiProvider::connect(int timeout)
             if (millis() - start > timeout)
             {
                 connecting = false;
-                printText({"WiFi", "Timeout.."});
+                printText({"WiFi", "Timeout.."}, 3000);
                 printlnE("Connection timeout");
             }
         }
@@ -102,7 +102,7 @@ int WiFiProvider::connect(int timeout)
     else
     {
         printlnA("No ssid set");
-        printText({"WiFi", "No SSID"});
+        printText({"WiFi", "No SSID"}, 3000);
     }
     return status;
 }
