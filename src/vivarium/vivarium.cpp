@@ -329,11 +329,11 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::HEATER:
     {
-        Heater *heater = new Heater(position);
-        addModule(heater);
-        addFirebaseModule(heater);
-        addBLEModule(heater);
-        addTextModule(heater);
+        heaterPtr = new Heater(position, memoryProvider);
+        addModule(heaterPtr);
+        addFirebaseModule(heaterPtr);
+        addBLEModule(heaterPtr);
+        addTextModule(heaterPtr);
     }
     break;
     case ModuleType::HUMIDIFIER:

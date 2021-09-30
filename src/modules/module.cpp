@@ -5,9 +5,10 @@
 
 #include "../led/ledControl.h"
 
-IModule::IModule(String connectionKey, int position)
+IModule::IModule(String connectionKey, int position, MemoryProvider *provider)
     : _position(position),
-      _connectionKey(connectionKey)
+      _connectionKey(connectionKey),
+      _memoryProvider(provider)
 {
 }
 
@@ -23,10 +24,7 @@ bool IModule::isConnected()
 
 void IModule::setConnected(bool connected, bool fromButton)
 {
-    printA("Module " + _connectionKey);
-    printD(" - set connected: ");
-    printlnD(connected ? "true" : "false");
-
+    debugA("Module %s - set connected %s", _connectionKey.c_str(), connected ? "true" : "false");
     _connected = connected;
     _sourceIsButton = fromButton;
 }

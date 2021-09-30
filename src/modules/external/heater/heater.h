@@ -5,9 +5,11 @@
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
 #include "../../../modules/internal/lcd_display/textModule.h"
+#include "../../../modules/alarm/payloadAlarm.h"
 
 #define SETTINGS_HEATER_KEY "heater"
 #define FIREBASE_HEATER_CONNECTED_KEY "/heater/connected"
+#define KEY_HEATER_GOAL "/heater/goal"
 
 #define HEATER_PIN 2
 #define HEATER_SYNC_PIN 15
@@ -25,7 +27,6 @@
 #define HEATER_KP 80
 #define HEATER_KI 0.2
 #define HEATER_KD 80
-
 
 class AutoPID;
 class dimmerLamp;
@@ -46,10 +47,14 @@ struct HeaterSettings
     double tempGoal; //temp goal
 };
 
-class Heater : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
+class Heater : public IModule,
+               public IFirebaseModule,
+               public IBluetooth,
+               public TextModule,
+               public PayloadAlarm<double>
 {
 public:
-    Heater(int, int pwm = HEATER_PIN, int sync = HEATER_SYNC_PIN);
+    Heater(int, MemoryProvider *provider, int pwm = HEATER_PIN, int sync = HEATER_SYNC_PIN);
 
     virtual void beforeShutdown();
 
@@ -73,23 +78,28 @@ public:
     void runPID();
 
     void runThermo();
-    void setPower();
+    void updatePower();
 
     double getGoal();
-    void setGoal(double);
+    void setGoal(double, bool forced = false);
+    void setFutureGoal(double);
 
     double getCurrentPower();
 
     /// LCD
     std::vector<String> getText();
 
+    void triggerCallback();
+
 private:
     bool checkTemperatureConnected();
+    void checkFutureGoal();
 
     void stop();
 
-    double _oldPower = 0;
-
+    double _oldPower = -1;
+    double _futureGoal = -1;
+    NimBLECharacteristic *_currentGoalCharacteristic;
     NimBLECharacteristic *_currentPowerCharacteristic;
     bool _settingsChanged = false;
     dimmerLamp *_dimmer = nullptr;
@@ -108,6 +118,10 @@ private:
     virtual void saveSettings();
     virtual bool loadSettings();
     virtual void onConnectionChange();
-};
 
+    // Alarm
+    virtual bool getPayloadFromJson(FirebaseJson *, double &);
+    virtual bool getPayloadFromValue(String key, String value, double &);
+};
+extern Heater *heaterPtr;
 #endif

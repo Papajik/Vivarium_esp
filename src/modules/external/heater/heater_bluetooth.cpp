@@ -100,7 +100,7 @@ private:
 
 void Heater::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_GOAL, new SettingsGoalCallbacks(this));
+    _currentGoalCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_GOAL, new SettingsGoalCallbacks(this));
     setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MODE, new SettingsModeCallbacks(this));
 }
 

@@ -7,7 +7,7 @@
 
 #define CONNECTED_KEY "heater/c"
 #define FIREBASE_CD_POWER "/sensorData/heater/power"
-#define FIREBASE_CD_TEMP_GOAL "/sensorData/heater/tempGoal"
+#define FIREBASE_CD_TEMP_GOAL "/sensorData/heater/goal"
 #define INTEGRAL_KEY "heat_t"
 
 #define HEATER_OUTPUT_MIN 0
@@ -19,6 +19,20 @@
 #define HEATER_FAILSAFE_DELAY 10000
 
 #define HEATER_TEMP_INVALID -127
+
+Heater *heaterPtr = nullptr;
+
+void heaterCallback()
+{
+    if (heaterPtr != nullptr)
+    {
+        heaterPtr->triggerCallback();
+    }
+    else
+    {
+        printlnE("Led Module is nullptr");
+    }
+}
 
 String modeToString(Mode m)
 {
@@ -35,7 +49,13 @@ String modeToString(Mode m)
     }
 }
 
-Heater::Heater(int position, int pwm, int sync) : IModule(CONNECTED_KEY, position)
+void Heater::setFutureGoal(double goal)
+{
+    _futureGoal = goal;
+}
+
+Heater::Heater(int position, MemoryProvider *provider, int pwm, int sync) : IModule(CONNECTED_KEY, position, provider),
+                                                                            PayloadAlarm<double>(&heaterCallback, provider, "heat.")
 {
     printlnA("Heater created");
 
@@ -46,7 +66,7 @@ Heater::Heater(int position, int pwm, int sync) : IModule(CONNECTED_KEY, positio
     _pid = new AutoPID(&_currentTemperature, &_settings.tempGoal, &_currentPower, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, HEATER_KP, HEATER_KI, HEATER_KD);
     _pid->setBangBang(HEATER_BANG_BANG);
     _pid->setTimeStep(HEATER_STEP_TIME);
-    setGoal(_settings.tempGoal);
+    // setGoal(_settings.tempGoal);
 }
 
 void Heater::beforeShutdown()
@@ -55,8 +75,35 @@ void Heater::beforeShutdown()
     // _memoryProvider->saveDouble(INTEGRAL_KEY, _pid->getIntegral());
 }
 
+void Heater::checkFutureGoal()
+{
+    if (_futureGoal != -1)
+    {
+
+        printlnA("Future goal changed");
+        printlnA(_futureGoal);
+        setGoal(_futureGoal);
+        _settings.tempGoal = _futureGoal;
+        _settingsChanged = true;
+
+        if (isBluetoothRunning())
+        {
+
+            _currentGoalCharacteristic->setValue(_futureGoal);
+            _currentGoalCharacteristic->notify();
+        }
+        if (firebaseService != nullptr)
+            firebaseService->uploadState(KEY_HEATER_GOAL, (float)_futureGoal);
+
+        if (messagingService != nullptr)
+            messagingService->sendFCM("Heater", "Heater triggered! Current goal= " + String(_futureGoal, 2) + "°C", FCM_TYPE::TRIGGER, SETTINGS_HEATER_KEY);
+        _futureGoal = -1;
+    }
+}
+
 void Heater::onLoop()
 {
+    checkFutureGoal();
     if (_settingsChanged)
         saveSettings();
 
@@ -90,8 +137,6 @@ bool Heater::loadTemp()
 
             _lastValidTemp = millis();
             _currentTemperature = tmp;
-            printD("CurrentTemp = ");
-            printlnD(_currentTemperature);
             return true;
         }
         else
@@ -119,7 +164,7 @@ void Heater::runThermo()
         {
             _currentPower = 100;
         }
-        setPower();
+        updatePower();
     }
 }
 
@@ -129,6 +174,7 @@ bool Heater::checkTemperatureConnected()
     stateStorage.getValue(STATE_WATER_TEMP_CONNECTED, &tempConnected);
     if (!tempConnected)
     {
+        printlnW("Temp is not connected, disconnecting heater");
         setConnected(false, true);
         return false;
     }
@@ -138,7 +184,7 @@ bool Heater::checkTemperatureConnected()
 void Heater::stop()
 {
     _currentPower = 0;
-    setPower();
+    updatePower();
 }
 
 void Heater::runPID()
@@ -146,10 +192,10 @@ void Heater::runPID()
     if (loadTemp())
     {
         _pid->run();
-        setPower();
+        updatePower();
     }
 }
-void Heater::setPower()
+void Heater::updatePower()
 {
     _dimmer->setPower(_currentPower);
     stateStorage.setValue(HEATER_POWER, (float)_currentPower);
@@ -163,7 +209,7 @@ void Heater::setPower()
     if (_oldPower != _currentPower)
     {
         _oldPower = _currentPower;
-        printlnD("Uploading new temperature");
+        debugA("Heater: New power = %f, uploading data", _currentPower);
         firebaseService->uploadCustomData("devices/", FIREBASE_CD_POWER, _currentPower);
     }
 }
@@ -192,8 +238,12 @@ bool Heater::loadSettings()
 
     if (loaded)
     {
-        setGoal(_settings.tempGoal);
+        setGoal(_settings.tempGoal, true);
     }
+
+    loadTriggersFromNVS();
+    printTriggers();
+
     return loaded;
 }
 
@@ -238,19 +288,21 @@ void Heater::setMode(Mode m)
     }
 }
 
-void Heater::setGoal(double g)
+void Heater::setGoal(double g, bool forced)
 {
-    if (g != _settings.tempGoal)
+    printlnA("Heater -  setGoal");
+    if (g != _settings.tempGoal || forced)
     {
-        printlnA("Heater - set goal");
-        printA("goal = ");
-        printlnA(_settings.tempGoal);
+        printlnA("Goal changed");
+        debugA("New goal = %.2f", g);
+        printlnA();
         //TODO check this one
         _settings.tempGoal = g;
         _settingsChanged = true;
         stateStorage.setValue(TEMP_GOAL, (float)g);
         _pid->reset();
-        firebaseService->uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
+        if (firebaseService != nullptr)
+            firebaseService->uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
     }
 }
 
@@ -291,5 +343,17 @@ std::vector<String> Heater::getText()
             secondRow = "G: " + String(_settings.tempGoal, 1) + ", PWR: " + String(_currentPower, 1);
         }
         return {"Heater: " + modeToString(_settings.mode), secondRow};
+    }
+}
+
+void Heater::triggerCallback()
+{
+    AlarmId id = Alarm.getTriggeredAlarmId();
+    double goal;
+    if (PayloadAlarm<double>::getTriggerPayload(id, &goal))
+    {
+        printA("Heater goal: ");
+        printlnA(String(goal));
+        setFutureGoal(goal);
     }
 }

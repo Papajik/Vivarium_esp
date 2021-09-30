@@ -10,7 +10,7 @@ class LedControl;
 class IModule
 {
 public:
-    IModule(String, int);
+    IModule(String, int, MemoryProvider * = nullptr);
     virtual ~IModule();
 
     bool isConnected();

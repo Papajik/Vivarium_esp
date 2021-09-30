@@ -1,8 +1,9 @@
 #include "heater.h"
 #define KEY_SENSOR_DATA_HEATER_POWER "heater/power"
-#define KEY_SENSOR_DATA_HEATER_TEMP_GOAL "heater/tempGoal"
+#define KEY_SENSOR_DATA_HEATER_TEMP_GOAL "heater/goal"
 #define KEY_HEATER_MODE "/heater/mode"
-#define KEY_HEATER_GOAL "/heater/tempGoal"
+
+#define KEY_TRIGGERS "/heater/triggers"
 
 void Heater::parseJson(FirebaseJson *json, String path)
 {
@@ -27,6 +28,24 @@ void Heater::parseJson(FirebaseJson *json, String path)
         }
     }
 
+    if (path.startsWith(PREFIX_SETTINGS + String(KEY_TRIGGERS)))
+    {
+        parseTriggerJson(json, path);
+        return;
+    }
+
+    if (json->get(jsonData, KEY_TRIGGERS, false))
+    {
+        printlnD("Parsing led triggers");
+        printlnV(jsonData.type);
+
+        FirebaseJson j;
+        if (jsonData.getJSON(j))
+        {
+            parseTriggersJson(&j);
+        }
+    }
+
     if (json->get(jsonData, KEY_HEATER_GOAL, false))
     {
         printlnA("SAVING goal");
@@ -45,13 +64,12 @@ void Heater::parseJson(FirebaseJson *json, String path)
 }
 
 String Heater::getSettingKey() { return SETTINGS_HEATER_KEY; }
+
 void Heater::parseValue(String key, String value)
 {
-    printlnA("Heater parse value");
-    printD("key = ");
-    printlnD(key);
-    printD("value = ");
-    printlnD(value);
+
+    debugA("--Heater parse value, key = %s, value = %s\n", key.c_str(), value.c_str());
+
 
     if (key == String(PREFIX_SETTINGS) + KEY_HEATER_MODE)
     {
@@ -71,7 +89,12 @@ void Heater::parseValue(String key, String value)
         }
     }
 
-    if (key == String(PREFIX_SETTINGS) + KEY_HEATER_GOAL)
+    if (key.startsWith(PREFIX_SETTINGS + String(KEY_TRIGGERS)))
+    {
+        parseTriggerValue(key, value);
+    }
+
+    if (key == String(PREFIX_STATE) + KEY_HEATER_GOAL)
     {
         printlnA("Saving goal");
         setGoal(value.toDouble());
@@ -82,6 +105,7 @@ void Heater::parseValue(String key, String value)
         setConnected(value == "true", false);
     }
 }
+
 bool Heater::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
@@ -97,4 +121,33 @@ bool Heater::updateSensorData(FirebaseJson *json)
     {
         return false;
     }
+}
+
+bool Heater::getPayloadFromJson(FirebaseJson *json, double &payload)
+{
+    printlnA("getPayloadFromJson");
+    FirebaseJsonData data;
+    if (json->get(data, "/goal", false))
+    {
+        printlnA("got goal");
+        payload = data.doubleValue;
+        return true;
+    }
+    else
+    {
+        printlnW("No heater goal in JSON");
+        return false;
+    }
+}
+
+bool Heater::getPayloadFromValue(String key, String value, double &payload)
+{
+    printlnA("getPayloadFromJson");
+    if (key == "goal")
+    {
+        printlnA("got goal");
+        payload = value.toDouble();
+        return true;
+    }
+    return false;
 }
