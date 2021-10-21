@@ -33,6 +33,7 @@
 #define FBDO_CLEAR_DELAY 170 * 1000
 #define FIREBASE_READY_DELAY 60000
 #define FIREBASE_TOKEN_DELAY 10000
+#define SERVICE_ACCOUNT_ENABLED false
 
 FirebaseService *firebaseService;
 FirebaseData *firebaseStreamBdo;
@@ -129,8 +130,10 @@ void FirebaseService::setupFirebase()
     printlnA("Setup FIREBASE");
     if (!_initialized)
     {
-        _initialized = _initializeFB();
+        _initialized = _initializeFB(SERVICE_ACCOUNT_ENABLED);
     }
+
+    firebaseSender.useLegacyAPI(!SERVICE_ACCOUNT_ENABLED);
 
     if (!_initialized)
         return;
