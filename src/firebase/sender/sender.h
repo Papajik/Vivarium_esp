@@ -53,6 +53,7 @@ public:
     void clearTokens();
     void pauseMessages();
     void continueMessages();
+    void useLegacyAPI(bool);
 
     // RTDB
     void addData(std::shared_ptr<Data>);
@@ -73,6 +74,7 @@ private:
     std::queue<std::shared_ptr<Message>> _messages;
     SemaphoreHandle_t _messageMutex;
     bool _sendMessages = true;
+    bool _useLegacyAPI = false;
 
     // RTDB
     void sendData(std::shared_ptr<Data>);
