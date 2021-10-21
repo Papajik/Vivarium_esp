@@ -478,21 +478,29 @@ String FirebaseService::getFirmwareDownloadUrl(String version)
     String filePath = "firmware/" + fileName;
     String url;
     firebaseSemaphore.lockSemaphore("getFirmwareDownloadUrl");
-    firebaseBdo->setCert(storage_cert);
+    bool retry = true;
+    int count = 0;
 
-    if (Firebase.Storage.getMetadata(firebaseBdo, STORAGE_BUCKET_ID, filePath.c_str()))
+    while (retry)
     {
-        url = firebaseBdo->downloadURL();
-        printA("GOT URL: ");
-        printlnA(url);
+        debugA("Try number %d", count);
+        if (Firebase.Storage.getMetadata(firebaseBdo, STORAGE_BUCKET_ID, filePath.c_str()))
+        {
+            url = firebaseBdo->downloadURL();
+            printA("GOT URL: ");
+            printlnA(url);
+            retry = false;
+        }
+        else
+        {
+            url = "";
+            debugE("getFirmwareDownloadUrl request failed: %s", firebaseBdo->errorReason().c_str());
+            count++;
+            delay(1500);
+        }
+        if (count > 6)
+            retry = false;
     }
-    else
-    {
-        url = "";
-        printE("getFirmwareDownloadUrl request failed:");
-        printlnE(firebaseBdo->errorReason());
-    }
-    firebaseBdo->setCert(rtdb_cert);
     firebaseSemaphore.unlockSemaphore();
     return url;
 }
@@ -574,8 +582,8 @@ void streamCallback(MultiPathStream stream)
         else if (stream.type != "")
         {
             firebaseService->valueCallback(&stream);
-        }
     }
+}
 
     Serial.printf("Received stream payload size: %d (Max. %d)\n\n", stream.payloadLength(), stream.maxPayloadLength());
 }
