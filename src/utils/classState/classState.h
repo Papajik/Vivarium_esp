@@ -23,6 +23,7 @@ private:
     String _stateString = "";
     int _stateStep = -1;
     unsigned long _lastMillis = 0;
+    unsigned long _previousMillis = 0;
     ClassState *_innerState = nullptr;
 };
 
