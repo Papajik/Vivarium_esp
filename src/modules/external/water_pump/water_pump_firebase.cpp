@@ -6,7 +6,7 @@
 
 void WaterPump::parseJson(FirebaseJson *data, String path)
 {
-    printlnA("water temp - parseJson");
+    printlnA("waterPump - parseJson");
 
     printlnV("Path: " + path);
     FirebaseJsonData jsonData;

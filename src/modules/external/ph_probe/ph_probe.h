@@ -32,7 +32,7 @@ class PhModule : public IModule, public IBluetooth, public IFirebaseModule, publ
 {
 
 public:
-    PhModule(int, int pin = PH_PIN);
+    PhModule(int, MemoryProvider *, int pin = PH_PIN);
 
     /*
     @brief Checks if continuous mode is on and if delay already passed. Reads water pH if both assumptions are met. Should be called from main loop.

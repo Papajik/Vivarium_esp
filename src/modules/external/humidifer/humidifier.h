@@ -21,7 +21,7 @@
 class Humidifier : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
-    Humidifier(int, int);
+    Humidifier(int,MemoryProvider *, int);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();

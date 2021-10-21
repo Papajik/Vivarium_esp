@@ -54,19 +54,18 @@ void Heater::setFutureGoal(double goal)
     _futureGoal = goal;
 }
 
-Heater::Heater(int position, MemoryProvider *provider, int pwm, int sync) : IModule(CONNECTED_KEY, position, provider),
-                                                                            PayloadAlarm<double>(&heaterCallback, provider, "heat.")
+Heater::Heater(int position, MemoryProvider *provider, int pwm, int sync)
+    : IModule(CONNECTED_KEY, position, provider),
+      PayloadAlarm<double>(&heaterCallback, provider, "heat.")
 {
     printlnA("Heater created");
-
     _settings = {AUTO, GOAL_INVALID};
-
-    _dimmer = new dimmerLamp(pwm, sync);
-    _dimmer->begin(NORMAL_MODE, OFF);
     _pid = new AutoPID(&_currentTemperature, &_settings.tempGoal, &_currentPower, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, HEATER_KP, HEATER_KI, HEATER_KD);
     _pid->setBangBang(HEATER_BANG_BANG);
     _pid->setTimeStep(HEATER_STEP_TIME);
-    // setGoal(_settings.tempGoal);
+    _dimmer = new dimmerLamp(pwm, sync);
+    _dimmer->begin(NORMAL_MODE, OFF);
+    loadSettings();
 }
 
 void Heater::beforeShutdown()
@@ -223,6 +222,14 @@ void Heater::saveSettings()
 bool Heater::loadSettings()
 {
 
+    /// Load settings struct
+    bool loaded = _memoryProvider->loadStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
+
+    if (loaded)
+    {
+        setGoal(_settings.tempGoal, true);
+    }
+
     /// Check if integral is saved and set it to pid regulator if so
     double integral = _memoryProvider->loadDouble(INTEGRAL_KEY, -1);
 
@@ -231,14 +238,6 @@ bool Heater::loadSettings()
         printlnA("Loaded integral = " + String(integral));
         _pid->setIntegral(integral);
         _memoryProvider->removeKey(INTEGRAL_KEY);
-    }
-
-    /// Load settings struct
-    bool loaded = _memoryProvider->loadStruct(SETTINGS_HEATER_KEY, &_settings, sizeof(HeaterSettings));
-
-    if (loaded)
-    {
-        setGoal(_settings.tempGoal, true);
     }
 
     loadTriggersFromNVS();

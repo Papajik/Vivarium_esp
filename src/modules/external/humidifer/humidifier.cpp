@@ -8,7 +8,7 @@
 
 #define FCM_KEY "Humidifier"
 
-Humidifier::Humidifier(int outlet, int position) : IModule(CONNECTED_KEY, position), _outlet(outlet)
+Humidifier::Humidifier(int outlet, MemoryProvider *m, int position) : IModule(CONNECTED_KEY, position, m), _outlet(outlet)
 {
     loadSettings();
     if (outletController != nullptr)
@@ -81,7 +81,8 @@ void Humidifier::saveSettings()
 }
 bool Humidifier::loadSettings()
 {
-    _humGoal = _memoryProvider->loadFloat(SETTINGS_HUMIDIFIER_GOAL, HUMIDIFIER_INVALID_GOAL);
+    if (_memoryProvider != nullptr)
+        _humGoal = _memoryProvider->loadFloat(SETTINGS_HUMIDIFIER_GOAL, HUMIDIFIER_INVALID_GOAL);
 
     return false;
 }

@@ -34,17 +34,18 @@
 #define PH_TIMER_CONTINUOUS_DELAY 20
 #define PH_DEFAULT_CONTINUOUS_DELAY 60000 // 1 minute
 
-PhModule::PhModule(int position, int pin) : IModule(CONNECTED_KEY, position), _pin(pin)
+PhModule::PhModule(int position, MemoryProvider *m, int pin) : IModule(CONNECTED_KEY, position, m), _pin(pin)
 {
 
     printlnA("PhModule created");
 
-    // settings is changed when memoryProvider is set
-    _settings = {false, PH_DEFAULT_CONTINUOUS_DELAY, 3, 4};
+    if (!loadSettings())
+    {
+        _settings = {false, PH_DEFAULT_CONTINUOUS_DELAY, 3, 4};
+    }
 
     pinMode(pin, INPUT);
     _delay = new millisDelay();
-    //stateStorage.setCallback(STATE_WATER_PH, new ChangePhCallback(this), type_float);
 }
 
 float PhModule::_readPh()

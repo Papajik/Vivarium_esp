@@ -31,7 +31,7 @@ class WaterTempModule
       public TextModule
 {
 public:
-    WaterTempModule(int, int pin = WATER_TEMP_PIN);
+    WaterTempModule(int, MemoryProvider *, int pin = WATER_TEMP_PIN);
     ~WaterTempModule();
     void setMinTemperature(float);
     void setMaxTemperature(float);

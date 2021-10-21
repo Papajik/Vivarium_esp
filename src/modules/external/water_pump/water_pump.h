@@ -19,7 +19,7 @@ class WaterPump
       public TextModule
 {
 public:
-    WaterPump(int, int pin = WATER_PUMP_PIN);
+    WaterPump(int, MemoryProvider *, int pin = WATER_PUMP_PIN);
     virtual void beforeShutdown();
 
     /// Firebase
@@ -49,7 +49,7 @@ public:
 
 private:
     int _pin;
-    int _levelGoal = 0;
+    int _levelGoal = -1;
     bool _running = false;
     bool _settingsChanged = false;
     NimBLECharacteristic *_pumpRunningCharacteristic = nullptr;

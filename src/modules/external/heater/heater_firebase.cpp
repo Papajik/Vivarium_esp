@@ -7,7 +7,7 @@
 
 void Heater::parseJson(FirebaseJson *json, String path)
 {
-    printlnA("Heater- parseJson");
+    printlnA("Heater - parseJson");
     FirebaseJsonData jsonData;
 
     if (json->get(jsonData, KEY_HEATER_MODE, false))

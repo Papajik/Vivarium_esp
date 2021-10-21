@@ -47,7 +47,9 @@ class BaseAlarm
 {
 public:
     BaseAlarm<T>(TriggerCallback callback, MemoryProvider *provider, std::string memoryPrefix);
+    ~BaseAlarm();
     std::shared_ptr<T> getNextTrigger();
+    bool getNextTriggerTime(int *);
     void clearTriggers();
     int getTriggersCount();
 

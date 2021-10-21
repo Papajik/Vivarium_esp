@@ -10,7 +10,7 @@ class LedControl;
 class IModule
 {
 public:
-    IModule(String, int, MemoryProvider * = nullptr);
+    IModule(String, int, MemoryProvider *);
     virtual ~IModule();
 
     bool isConnected();
@@ -27,7 +27,6 @@ public:
     virtual void saveSettings() = 0;
     virtual bool loadSettings() = 0;
 
-    void setMemoryProvider(MemoryProvider *provider);
 
     void setLedControl(LedControl *ledControl);
 

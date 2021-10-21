@@ -17,7 +17,6 @@
 #define FAN_MAX_SPEED 255
 #define FAN_MIN_SPEED 100
 
-
 struct FanSettings
 {
     float setStartAt;
@@ -27,7 +26,7 @@ struct FanSettings
 class FanController : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
-    FanController(int, int pin = FAN_PIN);
+    FanController(int, MemoryProvider *, int pin = FAN_PIN);
     void setStartAt(float);
     void setMaxAt(float);
     float getMaxAt();
@@ -66,7 +65,7 @@ private:
     bool _settingsChanged = false;
     void parseFanSpeed(float temperature);
     void setSpeed(int speed);
-    int _currentSpeed = FAN_STOP_SPEED -1; // so the value is change on every start
+    int _currentSpeed = FAN_STOP_SPEED - 1; // so the value is change on every start
 
     /// Module
     virtual void onLoop();

@@ -13,6 +13,26 @@ BaseAlarm<T>::BaseAlarm(TriggerCallback callback, MemoryProvider *provider, std:
 }
 
 template <typename T>
+BaseAlarm<T>::~BaseAlarm()
+{
+    clearTriggers();
+}
+
+template <typename T>
+bool BaseAlarm<T>::getNextTriggerTime(int *time)
+{
+
+    std::shared_ptr<T> t = getNextTrigger();
+    if (t != nullptr)
+    {
+        *time = getTime(t->hour, t->minute);
+        return true;
+    }
+
+    return false;
+}
+
+template <typename T>
 std::shared_ptr<T> BaseAlarm<T>::getNextTrigger()
 {
     if (_triggers.empty())
@@ -186,6 +206,7 @@ std::shared_ptr<T> BaseAlarm<T>::findTrigger(String key)
         return nullptr;
     }
 }
+
 template <typename T>
 void BaseAlarm<T>::parseTriggersJson(FirebaseJson *json)
 {
@@ -296,14 +317,11 @@ void BaseAlarm<T>::parseTriggerValue(String key, String value)
 template <typename T>
 void BaseAlarm<T>::printTriggers()
 {
-    printlnI("All feeder triggers: ");
     for (auto &&t : _triggers)
     {
         printI(t.first);
         printI(" >>>> ");
         printTrigger(t.second);
     }
-
-    Alarm.printAlarms();
     printlnI("");
 }

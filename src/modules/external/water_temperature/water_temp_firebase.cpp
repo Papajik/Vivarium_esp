@@ -10,7 +10,7 @@
 
 void WaterTempModule::parseJson(FirebaseJson *data, String path)
 {
-    printlnA("Water TEMP - parsing settings");
+    printlnA("WaterTemp - parseJson");
 
     FirebaseJsonData jsonData;
 

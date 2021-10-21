@@ -13,12 +13,13 @@
 #define FAN_FREQUENCY 40
 #define FAN_CHANNEL 0
 
-FanController::FanController(int position, int pin) : IModule(CONNECTED_KEY, position)
+FanController::FanController(int position, MemoryProvider *m, int pin) : IModule(CONNECTED_KEY, position, m)
 {
     printlnA("Fan controller created");
-
-    _settings = {20, 30};
-
+    if (!loadSettings())
+    {
+        _settings = {20, 30};
+    }
     ledcSetup(FAN_CHANNEL, FAN_FREQUENCY, FAN_RESOLUTION);
     ledcAttachPin(pin, FAN_CHANNEL);
 }

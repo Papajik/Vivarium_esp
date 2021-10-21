@@ -27,7 +27,7 @@ class DHT;
 class DhtModule : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
-    DhtModule(int, int pin = DHT_PIN);
+    DhtModule(int, MemoryProvider *, int pin = DHT_PIN);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();

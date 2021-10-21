@@ -156,7 +156,6 @@ void Vivarium::finalize()
 void Vivarium::addModule(IModule *m)
 {
     moduleControl->addModule(m);
-    m->setMemoryProvider(memoryProvider);
     m->setLedControl(ledControl);
 }
 
@@ -302,7 +301,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     {
     case ModuleType::DHT_MODULE:
     {
-        DhtModule *dht = new DhtModule(position);
+        DhtModule *dht = new DhtModule(position, memoryProvider);
         addModule(dht);
         addFirebaseModule(dht);
         addBLEModule(dht);
@@ -311,7 +310,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::FAN:
     {
-        FanController *fan = new FanController(position);
+        FanController *fan = new FanController(position, memoryProvider);
         addModule(fan);
         addFirebaseModule(fan);
         addBLEModule(fan);
@@ -320,7 +319,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::FEEDER:
     {
-        feederPtr = new Feeder(position);
+        feederPtr = new Feeder(position, memoryProvider);
         addModule(feederPtr);
         addFirebaseModule(feederPtr);
         addBLEModule(feederPtr);
@@ -340,7 +339,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
         if (outlet != -1)
         {
 
-            Humidifier *hum = new Humidifier(outlet, position);
+            Humidifier *hum = new Humidifier(outlet, memoryProvider, position);
             addModule(hum);
             addFirebaseModule(hum);
             addBLEModule(hum);
@@ -350,7 +349,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
         break;
     case ModuleType::LED:
     {
-        ledModulePtr = new LedModule(position);
+        ledModulePtr = new LedModule(position, memoryProvider);
         addModule(ledModulePtr);
         addFirebaseModule(ledModulePtr);
         addBLEModule(ledModulePtr);
@@ -359,7 +358,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::PH_PROBE:
     {
-        PhModule *ph = new PhModule(position);
+        PhModule *ph = new PhModule(position, memoryProvider);
         addModule(ph);
         addFirebaseModule(ph);
         addBLEModule(ph);
@@ -368,7 +367,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::WATER_LEVEL:
     {
-        WaterLevel *waterLevel = new WaterLevel(position);
+        WaterLevel *waterLevel = new WaterLevel(position, memoryProvider);
         addModule(waterLevel);
         addBLEModule(waterLevel);
         addFirebaseModule(waterLevel);
@@ -377,7 +376,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::WATER_PUMP:
     {
-        WaterPump *waterPump = new WaterPump(position);
+        WaterPump *waterPump = new WaterPump(position, memoryProvider);
         addModule(waterPump);
         addFirebaseModule(waterPump);
         addBLEModule(waterPump);
@@ -386,7 +385,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::WATER_TEMPERATURE:
     {
-        WaterTempModule *wt = new WaterTempModule(position);
+        WaterTempModule *wt = new WaterTempModule(position, memoryProvider);
         addModule(wt);
         addFirebaseModule(wt);
         addBLEModule(wt);

@@ -6,6 +6,7 @@
 #include "../../../firebase/i_FirebaseModule.h"
 #include "../../../bluetooth/i_bluetooth.h"
 #include "../../../modules/internal/lcd_display/textModule.h"
+#include "../../../modules/alarm/plainAlarm.h"
 #include <TimeAlarms.h>
 #include <map>
 #include <memory>
@@ -42,29 +43,14 @@ struct FeederSettings
     FeederMode mode;
 };
 
-struct FeedTrigger
-{
-    int storageId = INVALID_MEMORY_ID;
-    int hour;
-    int minute;
-    AlarmId id;
-    String firebaseKey;
-};
-
-struct FeedTriggerMem
-{
-    int hour;
-    int minute;
-    char key[25];
-};
-
 class Feeder : public IModule,
                public IFirebaseModule,
                public IBluetooth,
-               public TextModule
+               public TextModule,
+               public PlainAlarm
 {
 public:
-    Feeder(int, int in_1 = FEEDER_IN_1, int in_2 = FEEDER_IN_2, int in_3 = FEEDER_IN_3, int in_4 = FEEDER_IN_4);
+    Feeder(int, MemoryProvider *, int in_1 = FEEDER_IN_1, int in_2 = FEEDER_IN_2, int in_3 = FEEDER_IN_3, int in_4 = FEEDER_IN_4);
     ~Feeder();
 
     /// Firebase
@@ -89,25 +75,12 @@ public:
     void parseTriggerFromCharacteristics();
     void removeTriggerFromCharacteristic();
 
-    bool getNextTriggerTime(int *time);
-
-    int getTriggersCount();
     int getLastFeeded();
     bool feededRecently();
-
-    void printTriggers();
-
     /// LCD
     std::vector<String> getText();
 
 private:
-    SemaphoreHandle_t triggersMutex;
-    void lockSemaphore(String owner);
-    void unlockSemaphore();
-    String _owner = "";
-
-    void clearAllTriggers();
-    std::shared_ptr<FeedTrigger> getNextTrigger();
     int _lastFeededTime = 0;
 
     NimBLECharacteristic *_timeCharacteristic = nullptr;
@@ -115,13 +88,7 @@ private:
 
     bool _feeded = false;
     FeederSettings _settings;
-    /// FirebaseKEy -> FeedTrigger
-    std::map<String, std::shared_ptr<FeedTrigger>> _triggers;
     std::shared_ptr<Stepper> _stepper;
-    // Stepper *_stepper = nullptr;
-
-    bool availableIds[FEEDER_MAX_TRIGERS];
-    int asignAvailableMemoryId();
 
     /// Module
     virtual void onConnectionChange();
@@ -129,27 +96,9 @@ private:
     virtual void saveSettings();
     virtual bool loadSettings();
 
-    void printTrigger(std::shared_ptr<FeedTrigger>);
-
-    void parseTriggersJson(FirebaseJson *);
-    void parseTriggerJson(FirebaseJson *, String);
-    void parseTriggerValue(String, String);
-
-    void removeTrigger(String key);
-
-    void saveTriggerToNVS(std::shared_ptr<FeedTrigger>);
-    void loadTriggersFromNVS();
-    void loadTriggerFromNVS(int memoryId);
-
     bool _settingsChanged = false;
-
-    bool parseTime(std::shared_ptr<FeedTrigger>, int time);
-    std::shared_ptr<FeedTrigger> findTrigger(String key);
-    void createTrigger(int time, String key);
 };
 
 extern Feeder *feederPtr;
-
-void feederCallback();
 
 #endif

@@ -8,16 +8,11 @@
 
 #define SETTINGS_WL_KEY "wl"
 #define FIREBASE_WL_CONNECTED_KEY "/wl/connected"
-// #define READ_CUT 1
 
 #define W_LEVEL_ECHO_PIN 33
 #define W_LEVEL_TRIG_PIN 32
 
-#define READ_COUNT 6
-#define READ_CUT 2
 class millisDelay;
-
-class NewPing;
 
 struct WaterLevelSettings
 {
@@ -33,7 +28,7 @@ class WaterLevel
       public TextModule
 {
 public:
-    WaterLevel(int, int echo = W_LEVEL_ECHO_PIN, int trig = W_LEVEL_TRIG_PIN);
+    WaterLevel(int,MemoryProvider *, int echo = W_LEVEL_ECHO_PIN, int trig = W_LEVEL_TRIG_PIN);
     ~WaterLevel();
     void setMaxLevel(int);
     void setMinLevel(int);
@@ -66,9 +61,8 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
 private:
-    int _levelBuffer[READ_COUNT];
-    unsigned long _lastValueChange = 0;
-
+ 
+    int _differentWaterLevelCount = 0;
     int _lastMessage = 0;
     int _messageCount = 0;
     std::vector<int> _levels;
@@ -77,7 +71,6 @@ private:
     millisDelay *_delay = nullptr;
     WaterLevelSettings _settings;
     bool _settingsChanged = false;
-    NewPing *_sonar = nullptr;
 
     void readLevel();
 

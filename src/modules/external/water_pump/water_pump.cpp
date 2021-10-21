@@ -6,10 +6,11 @@
 #define FIREBASE_IS_ON_STATE "/pump/isOn"
 #define FCM_KEY "Water Pump"
 
-WaterPump::WaterPump(int position, int pin)
-    : IModule(CONNECTED_KEY, position),
+WaterPump::WaterPump(int position, MemoryProvider *m, int pin)
+    : IModule(CONNECTED_KEY, position, m),
       _pin(pin)
 {
+    loadSettings();
     pinMode(_pin, OUTPUT);
 }
 
@@ -89,7 +90,9 @@ void WaterPump::onLoop()
         uint32_t level;
         if (stateStorage.getValue(STATE_WATER_LEVEL, &level))
         {
-            if (level < _levelGoal)
+            if (level == -1)
+                return;
+            if (_levelGoal != -1 && level < _levelGoal)
             {
                 startPump();
             }

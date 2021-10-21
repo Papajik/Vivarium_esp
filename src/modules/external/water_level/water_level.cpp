@@ -1,5 +1,5 @@
 #include "water_level.h"
-#include <NewPing.h> //https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
+// #include <NewPing.h> //https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
 #include <millisDelay.h>
 #include "state_values.h"
 
@@ -7,26 +7,31 @@
 #define FIREBASE_CD_LEVEL "/sensorData/wl/level"
 #define FCM_KEY "Water Level"
 
-#define W_LEVEL_REPEAT_AFTER 3000
-#define W_LEVEL_DELAY_CHANGE 10000
-#define MAX_CM_DISTNCE 80
+#define W_LEVEL_REPEAT_AFTER 700
+#define W_LEVEL_DIFF_COUNT_MAX 7
 
+#include "HC_SR04/HC_SR04.h"
 #include "../../../utils/compare.h"
 
-WaterLevel::WaterLevel(int position, int echo, int trig)
-    : IModule(CONNECTED_KEY, position),
-      _delay(new millisDelay()),
-      _sonar(new NewPing(trig, echo, MAX_CM_DISTNCE))
+WaterLevel::WaterLevel(int position, MemoryProvider *m, int echo, int trig)
+    : IModule(CONNECTED_KEY, position, m),
+      _delay(new millisDelay())
 {
+    if (!loadSettings())
+    {
+        _settings = {0, 0, 0};
+    }
+    sensor = new HC_SR04(trig, echo);
+    sensor->init();
+    sensor->startReadings();
     printlnA("Water level created");
     _delay->start(W_LEVEL_REPEAT_AFTER);
-    _settings = {0, 0, 0};
 }
 
 WaterLevel::~WaterLevel()
 {
     delete _delay;
-    delete _sonar;
+    delete sensor;
 }
 
 void WaterLevel::setMaxLevel(int l)
@@ -77,6 +82,8 @@ int WaterLevel::getSensorHeight()
 
 void WaterLevel::onLoop()
 {
+    setMillis();
+    setStep(0);
     checkConnectionChange();
     if (_settingsChanged)
     {
@@ -84,37 +91,37 @@ void WaterLevel::onLoop()
         saveSettings();
         Serial.println("WL - settings change  - saved");
     }
+
+    setStep(1);
     if (isConnected())
     {
+        sensor->update();
+        if (sensor->justFinished())
+        {
+            setStep(2);
+            readLevel();
+        }
         if (_delay->justFinished())
         {
-
-            readLevel();
+            setStep(3);
+            sensor->startReadings();
             _delay->restart();
         }
     }
+    setStep(4);
 }
 
 void WaterLevel::readLevel()
 {
-    unsigned int _echoTime;
-    unsigned int _distance;
-    for (int i = 0; i < READ_COUNT; i++)
+    int range = sensor->getRange();
+    if (range == INVALID_VALUE)
     {
-        _echoTime = _sonar->ping_median(10);
-        _distance = _sonar->convert_cm(_echoTime);
-        _levelBuffer[i] = _settings.sensorHeight - _distance;
+        setLevel(INVALID_VALUE);
     }
-
-    qsort(_levelBuffer, READ_COUNT, sizeof(float), compareInt);
-
-    int average = 0;
-    for (int i = READ_CUT; i < READ_COUNT - READ_CUT; i++)
+    else
     {
-        average += _levelBuffer[i];
+        setLevel(_settings.sensorHeight - range);
     }
-
-    setLevel(average / (READ_COUNT - (2 * READ_CUT)));
 }
 
 void WaterLevel::setLevel(int level)
@@ -122,9 +129,11 @@ void WaterLevel::setLevel(int level)
 
     if (_waterLevel != level)
     {
-        if (_lastValueChange + W_LEVEL_DELAY_CHANGE < millis())
+        _differentWaterLevelCount++;
+
+        if (_differentWaterLevelCount > W_LEVEL_DIFF_COUNT_MAX)
         {
-            _lastValueChange = millis();
+            _differentWaterLevelCount = 0;
             _waterLevel = level;
             stateStorage.setValue(STATE_WATER_LEVEL, (uint32_t)_waterLevel);
             if (isBluetoothRunning())
@@ -135,6 +144,10 @@ void WaterLevel::setLevel(int level)
             firebaseService->uploadCustomData("devices/", FIREBASE_CD_LEVEL, _waterLevel);
             checkBoundaries();
         }
+    }
+    else
+    {
+        _differentWaterLevelCount = 0;
     }
 }
 
@@ -155,6 +168,15 @@ bool WaterLevel::loadSettings()
 
 void WaterLevel::onConnectionChange()
 {
+    if (isConnected())
+    {
+        sensor->startReadings();
+    }
+    else
+    {
+        sensor->stopReadings();
+    }
+
     if (_sourceIsButton)
     {
         firebaseService->uploadState(FIREBASE_WL_CONNECTED_KEY, isConnected());

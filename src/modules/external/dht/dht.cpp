@@ -9,10 +9,11 @@
 
 #define FCM_KEY "DHT"
 
-DhtModule::DhtModule(int position, int pin) : IModule(CONNECTED_KEY, position)
+DhtModule::DhtModule(int position, MemoryProvider *m, int pin) : IModule(CONNECTED_KEY, position, m)
 {
     dht = new DHT(pin, DHT11);
     dht->begin();
+    loadSettings();
 }
 
 void DhtModule::readDht()

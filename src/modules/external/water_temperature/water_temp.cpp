@@ -6,7 +6,7 @@
 #include "millisDelay.h"
 
 #include <OneWire.h>
-#include <DallasTemperature.h>
+#include "../../../lib/dallasTemperature/DallasTemperature.h"
 
 #include "state_values.h"
 
@@ -18,14 +18,19 @@
 
 #define OK_MESSAGE_DELAY
 
-WaterTempModule::WaterTempModule(int position, int pin)
-    : IModule(CONNECTED_KEY, position),
+WaterTempModule::WaterTempModule(int position, MemoryProvider *m, int pin)
+    : IModule(CONNECTED_KEY, position, m),
       _oneWire(new OneWire(pin)),
       _dallas(new DallasTemperature(_oneWire)),
       _delay(new millisDelay())
 {
     printlnA("Water temp module created");
-    _settings = {10, 20};
+    if (!loadSettings())
+    {
+        _settings = {10, 20};
+    }
+    setInnerState(_dallas);
+
     _dallas->begin();
 }
 
@@ -66,18 +71,25 @@ void WaterTempModule::onConnectionChange()
 }
 void WaterTempModule::onLoop()
 {
+
+    setStep(0);
     if (_settingsChanged)
     {
         saveSettings();
     }
+    setStep(1);
 
     checkConnectionChange();
 
+    setStep(2);
     if (isConnected())
     {
         if (_delay->justFinished())
         {
+            setStep(3);
+            setMillis();
             readTemperature();
+            setStep(10);
             _delay->repeat();
         }
     }
@@ -139,24 +151,29 @@ void WaterTempModule::readTemperature()
 {
     printlnV("\n");
     printlnV("READ TEMPERATURE");
+    setStep(4);
     _dallas->requestTemperatures();
+    setStep(5);
     float temp = _dallas->getTempCByIndex(0);
+    setStep(6);
     /// Skip first x invalid temperatures
     if (temp == WATER_TEMP_INVALID_VALUE && _invalidReadingInRow < WATER_TEMP_MAX_INVALID_READINGS_IN_ROW)
     {
         _invalidReadingInRow++;
         return;
     }
+    setStep(7);
 
     if (temp != WATER_TEMP_INVALID_VALUE)
     {
         _invalidReadingInRow = 0;
     }
+    setStep(8);
 
     stateStorage.setValue(STATE_WATER_TEMPERATURE, temp);
+    setStep(9);
     if (temp != _currentTemp)
     {
-
         _currentTemp = temp;
         printlnD("Uploading new temperature");
         firebaseService->uploadCustomData("devices/", FIREBASE_STATE_TEMP, _currentTemp);

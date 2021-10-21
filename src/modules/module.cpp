@@ -10,6 +10,7 @@ IModule::IModule(String connectionKey, int position, MemoryProvider *provider)
       _connectionKey(connectionKey),
       _memoryProvider(provider)
 {
+    loadConnectionState();
 }
 
 IModule::~IModule()
@@ -60,12 +61,6 @@ void IModule::loadConnectionState()
     }
 }
 
-void IModule::setMemoryProvider(MemoryProvider *provider)
-{
-    _memoryProvider = provider;
-    loadConnectionState();
-    loadSettings();
-}
 
 void IModule::setLedControl(LedControl *ledControl)
 {

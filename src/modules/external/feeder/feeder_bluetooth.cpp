@@ -57,7 +57,6 @@ private:
     }
 };
 
-
 class SettingsFeedTriggerCommandCallbacks : public BLECharacteristicCallbacks
 {
 public:
@@ -104,7 +103,6 @@ private:
     Feeder *f;
 };
 
-
 void Feeder::setupBLESettings(NimBLEService *settings)
 {
     setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_MODE, new SettingsModeCallbacks(this));
@@ -121,7 +119,6 @@ void Feeder::setupBLEState(NimBLEService *state)
 void Feeder::onBLEDisconnect() {}
 void Feeder::onBLEConnect() {}
 
-
 void Feeder::getHandlesCount(int *settings, int *state, int *credentials)
 {
     *settings = SETTINGS_HANDLES;
@@ -131,7 +128,7 @@ void Feeder::getHandlesCount(int *settings, int *state, int *credentials)
 
 void Feeder::uploadTriggerToCharacteristics()
 {
-    std::shared_ptr<FeedTrigger> trigger = findTrigger(String(_idCharacteristic->getValue().c_str()));
+    std::shared_ptr<Trigger> trigger = findTrigger(String(_idCharacteristic->getValue().c_str()));
     if (trigger != nullptr)
     {
         _timeCharacteristic->setValue(getTime(trigger->hour, trigger->minute));
@@ -140,13 +137,13 @@ void Feeder::uploadTriggerToCharacteristics()
 
 void Feeder::parseTriggerFromCharacteristics()
 {
-    std::shared_ptr<FeedTrigger> trigger = std::make_shared<FeedTrigger>();
     int time = atoi(_timeCharacteristic->getValue().c_str());
     String firebaseKey = String(_idCharacteristic->getValue().c_str());
     createTrigger(time, firebaseKey);
 }
 
-void Feeder::removeTriggerFromCharacteristic() {
+void Feeder::removeTriggerFromCharacteristic()
+{
     String id = String(_idCharacteristic->getValue().c_str());
     removeTrigger(id);
 }
