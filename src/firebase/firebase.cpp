@@ -329,19 +329,18 @@ void FirebaseService::jsonCallback(FirebaseJson *json, String path)
         module->parseJson(json, path);
     }
 }
-void FirebaseService::valueCallback(MultiPathStream *data)
+void FirebaseService::valueCallback(String path, String value, String type)
 {
     printlnD("Firebase valueCallback");
-    printlnV("FB Parse value");
-    printlnV("Data path = " + data->dataPath);
-    printlnV("Data type = " + data->type);
+    printlnV("Data path = " + path);
+    printlnV("Data type = " + type);
+    printlnV("Data value = " + value);
 
-    String dataPath = data->dataPath.substring(1);
+    String tmpPath = path.substring(1);
+    int index = tmpPath.indexOf("/");
+    int secondIndex = tmpPath.indexOf("/", index + 1);
+    String settingsKey = tmpPath.substring(index + 1, secondIndex);
 
-    int index = dataPath.indexOf("/");
-    int secondIndex = dataPath.indexOf("/", index + 1);
-
-    String settingsKey = dataPath.substring(index + 1, secondIndex);
     printlnV("key = " + settingsKey);
     printV("Modules ");
     printlnV((int)_modules.size());
@@ -356,7 +355,7 @@ void FirebaseService::valueCallback(MultiPathStream *data)
         if (s == settingsKey)
         {
             printlnV("Settings key equals");
-            module->parseValue(data->dataPath, data->value);
+            module->parseValue(path, value);
             printMemory();
         }
         else
@@ -533,19 +532,18 @@ void FirebaseService::uploadCustomData(std::string prefix, std::string suffix, f
     }
 }
 
-void streamCallback(MultiPathStream stream)
+void checkActiveStatus(MultiPathStream stream)
 {
-    printlnA("Stream callback");
-
-    // Check active status
     stream.get(firebaseService->childPaths[ChildPath::ACTIVE_STATUS]);
     if (stream.type == "boolean" && stream.value == "false")
     {
         printlnA("FactoryReset");
         firebaseService->factoryReset();
     }
+}
 
-    //Check firmware
+void checkFirmwareVersion(MultiPathStream stream)
+{
     stream.get(firebaseService->childPaths[ChildPath::FIRMWARE]);
 
     if (stream.type == "string" && stream.value != "" && otaService != nullptr && otaService->isNewVersion(stream.value))
@@ -562,14 +560,19 @@ void streamCallback(MultiPathStream stream)
             }
         }
     }
+}
 
-    // Check Bluetooth name
+void checkBluetoothName(MultiPathStream stream)
+{
     stream.get(firebaseService->childPaths[ChildPath::BLE_NAME]);
     if (stream.type == "string" && (stream.value != ""))
     {
         bleController->setBleName(stream.value);
     }
+}
 
+void checkModules(MultiPathStream stream)
+{
     for (int i = 0; i < 2; i++)
     {
         stream.get(firebaseService->childPaths[i]);
@@ -581,11 +584,19 @@ void streamCallback(MultiPathStream stream)
         }
         else if (stream.type != "")
         {
-            firebaseService->valueCallback(&stream);
+            firebaseService->valueCallback(stream.dataPath, stream.value, stream.type);
+        }
     }
 }
 
-    Serial.printf("Received stream payload size: %d (Max. %d)\n\n", stream.payloadLength(), stream.maxPayloadLength());
+void streamCallback(MultiPathStream stream)
+{
+    printlnA("Stream callback");
+    checkActiveStatus(stream);
+    checkFirmwareVersion(stream);
+    checkBluetoothName(stream);
+    checkModules(stream);
+    debugA("Received stream payload size: %d (Max. %d)\n\n", stream.payloadLength(), stream.maxPayloadLength());
 }
 
 void streamTimeoutCallback(bool timeout)

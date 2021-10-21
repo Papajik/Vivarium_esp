@@ -50,7 +50,7 @@ public:
     void logNewStart();
     void checkActiveStatus();
     void jsonCallback(FirebaseJson *, String);
-    void valueCallback(MultiPathStream *);
+    void valueCallback(String path, String value, String type);
     void addModule(IFirebaseModule *m);
 
     void checkSSLConnected();
