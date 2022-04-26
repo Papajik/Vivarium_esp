@@ -80,6 +80,9 @@ public:
     FirebaseJson json;
     bool sendJson = false;
 
+    // Alive
+    void pingAlive();
+
 private:
     Auth *_auth;
 
@@ -100,6 +103,9 @@ private:
     std::queue<std::shared_ptr<Data>> _dataQueue;
     std::shared_ptr<Data> _data;
     SemaphoreHandle_t _dataMutex;
+
+    // Alive
+    unsigned long _lastAlive = 0;
 };
 
 extern FirebaseSender firebaseSender;

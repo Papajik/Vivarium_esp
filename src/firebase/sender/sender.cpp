@@ -10,6 +10,7 @@
 #define FCM_SILENT_CHANNEL "vivarium_silent"
 
 #include <esp_task_wdt.h>
+#define PING_ALIVE_INTERVAL 60000 // 1 minute
 
 FirebaseSender firebaseSender;
 
@@ -25,10 +26,25 @@ void senderTask(void *parameter)
             firebaseSender.checkMessages();
             vTaskDelay(10 / portTICK_PERIOD_MS);
             firebaseSender.checkDataQueue();
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+            firebaseSender.pingAlive();
         }
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
+}
+
+void FirebaseSender::pingAlive()
+{
+
+    if (millis() > _lastAlive + PING_ALIVE_INTERVAL)
+    {
+        _lastAlive = millis();
+        time_t now;
+        time(&now);
+        uploadToDatabase("/devices/" + std::string(_auth->getDeviceId().c_str()) + "/info/lastAlive", (long long)now);
+        sendJson = false;
+    }
 }
 
 FirebaseSender::FirebaseSender()
