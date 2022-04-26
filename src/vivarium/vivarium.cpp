@@ -406,11 +406,11 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
     break;
     case ModuleType::WATER_PUMP:
     {
-        WaterPump *waterPump = new WaterPump(position, memoryProvider);
-        addModule(waterPump);
-        addFirebaseModule(waterPump);
-        addBLEModule(waterPump);
-        addTextModule(waterPump);
+        waterPumpPtr = new WaterPump(position, memoryProvider);
+        addModule(waterPumpPtr);
+        addFirebaseModule(waterPumpPtr);
+        addBLEModule(waterPumpPtr);
+        addTextModule(waterPumpPtr);
     }
     break;
     case ModuleType::WATER_TEMPERATURE:

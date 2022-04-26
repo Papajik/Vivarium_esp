@@ -30,6 +30,7 @@ class WaterPump
 {
 public:
     WaterPump(int, MemoryProvider *, int pin = WATER_PUMP_PIN);
+    virtual ~WaterPump();
     virtual void beforeShutdown();
 
     /// Firebase
@@ -48,6 +49,8 @@ public:
 
     void startPump();
     void stopPump();
+    void stopPumpFailSafe();
+    bool isFailSafeTriggered() { return _failSafeTriggered; }
 
     bool isRunning();
 
@@ -62,6 +65,7 @@ private:
     int _levelGoal = -1;
     bool _running = false;
     bool _settingsChanged = false;
+    volatile bool _failSafeTriggered = false;
     NimBLECharacteristic *_pumpRunningCharacteristic = nullptr;
 
     /// Module
@@ -70,5 +74,7 @@ private:
     virtual bool loadSettings();
     virtual void onConnectionChange();
 };
+
+extern WaterPump *waterPumpPtr;
 
 #endif
