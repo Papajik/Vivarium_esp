@@ -16,7 +16,8 @@
 #include "../led/ledControl.h"
 
 IModule::IModule(String connectionKey, int position, MemoryProvider *provider)
-    : _position(position),
+    : ClassState(connectionKey),
+      _position(position),
       _connectionKey(connectionKey),
       _memoryProvider(provider)
 {

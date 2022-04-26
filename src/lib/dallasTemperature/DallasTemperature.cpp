@@ -381,7 +381,10 @@ bool DallasTemperature::getCheckForConversion()
 
 bool DallasTemperature::isConversionComplete()
 {
+	setStep(6);
+	setMillis();
 	uint8_t b = _wire->read_bit();
+	setStep(7);
 	return (b == 1);
 }
 
@@ -441,14 +444,15 @@ void DallasTemperature::blockTillConversionComplete(uint8_t bitResolution)
 		unsigned long now = millis();
 		while (!isConversionComplete() && (millis() - delms < now))
 			;
+		setStep(8);
 	}
 	else
 	{
-		setStep(6);
+		setStep(9);
 		delay(delms);
-		setStep(7);
+		setStep(10);
 	}
-	setStep(8);
+	setStep(11);
 }
 
 // returns number of milliseconds to wait till conversion is complete (based on IC datasheet)

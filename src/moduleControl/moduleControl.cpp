@@ -35,9 +35,12 @@ void ModuleControl::onLoop()
 {
     for (IModule *m : _modules)
     {
+        setInnerState(m);
         setStep(m->getPosition());
+        setMillis();
         m->onLoop();
     }
+    setStep(-1);
 }
 
 int ModuleControl::moduleCount()

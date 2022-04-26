@@ -13,11 +13,11 @@
 
 #include "../state/state.h"
 #include "../memory/memory_provider.h"
+#include "../utils/classState/classState.h"
 
-class FirebaseService;
 class LedControl;
 
-class IModule
+class IModule : public ClassState
 {
 public:
     IModule(String, int, MemoryProvider *);
@@ -33,10 +33,6 @@ public:
     virtual void onConnectionChange() = 0;
 
     virtual void onLoop() = 0;
-
-    virtual void saveSettings() = 0;
-    virtual bool loadSettings() = 0;
-
 
     void setLedControl(LedControl *ledControl);
 

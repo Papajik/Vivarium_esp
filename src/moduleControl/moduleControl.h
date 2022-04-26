@@ -1,3 +1,14 @@
+/**
+* @file moduleControl.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _MODULE_CONTORL_H_
 #define _MODULE_CONTROL_H_
 
@@ -14,7 +25,7 @@
 
 class IModule;
 
-class ModuleControl: public ClassState
+class ModuleControl : public ClassState
 {
 public:
     ModuleControl();
@@ -24,7 +35,7 @@ public:
     @return Position in array
     */
     int addModule(IModule *);
-    void start();
+
     /*
     @brief 
     @param 
