@@ -22,7 +22,7 @@ public:
     TextModule();
     virtual ~TextModule();
     virtual std::vector<String> getText() = 0;
-    void printText(const std::vector<String> &texts, int delay = 0);
+    void printText(const std::vector<String> &texts, int duration = 0);
     void addTextOutput(TextOutput *);
 
 private:

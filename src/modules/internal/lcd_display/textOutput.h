@@ -29,7 +29,7 @@ public:
     void unlockText();
 
 protected:
-    unsigned long _time_of_show = 0;
+    unsigned long _time_of_display_start = 0;
     int _delay = 0;
     void lockText();
     virtual void onTextUnlocked() = 0;

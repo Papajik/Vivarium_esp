@@ -18,13 +18,13 @@ void TextModule::addTextOutput(TextOutput *t)
     _textOutput = t;
 }
 
-void TextModule::printText(const std::vector<String> &texts, int delay)
+void TextModule::printText(const std::vector<String> &texts, int duration)
 {
     if (_textOutput != nullptr)
     {
-        if (delay != 0)
+        if (duration != 0)
         {
-            _textOutput->setText(texts, delay);
+            _textOutput->setText(texts, duration);
         }
         else
         {
