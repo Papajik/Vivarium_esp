@@ -71,6 +71,8 @@ void OtaService::begin()
 
 bool OtaService::isNewVersion(String version)
 {
+  if (version == "0")
+    return false;
   return _firmwareVersion != version;
 }
 
@@ -91,7 +93,7 @@ void OtaService::startUpdate()
 {
   _textOutput->setText({"FW update", _newFirmwareVersion});
   _firmwareUpdateRunning = true;
-  HttpsOTA.begin(downloadUrl.c_str(), https_cert, false);
+  HttpsOTA.begin(downloadUrl.c_str(), rtdb_cert, false);
 }
 
 int OtaService::onLoop()
