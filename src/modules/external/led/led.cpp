@@ -38,7 +38,7 @@ LedModule::LedModule(int position, MemoryProvider *provider, int pin) : IModule(
 {
     _strip = new Freenove_ESP32_WS2812(LED_COUNT, pin, LED_CHANNEL, TYPE_GRB);
     _stripConnected = _strip->begin();
-    printlnA("Led module created");
+    loadSettings();
 }
 
 LedModule::~LedModule()
@@ -97,7 +97,7 @@ void LedModule::showColor(bool force, bool triggered)
             firebaseService->uploadState(FIREBASE_COLOR_STATE, (int)_currentColor);
 
         if (messagingService != nullptr)
-            messagingService->sendFCM("LED", triggered ? "LED triggered! Color = #" : "Current color=#" + String(_currentColor, 16), FCM_TYPE::TRIGGER, SETTINGS_LED_KEY);
+            messagingService->sendFCM("LED", (triggered ? "LED triggered! Color = #" : "Current color=#") + String(_currentColor, 16), FCM_TYPE::TRIGGER, SETTINGS_LED_KEY);
     }
 }
 
@@ -120,10 +120,14 @@ void LedModule::saveSettings()
 
 bool LedModule::loadSettings()
 {
-    _currentColor = _memoryProvider->loadInt(SETTINGS_LED_KEY, ((((uint32_t)255 << 0) | ((uint32_t)255 << 8) | ((uint32_t)255 << 16))));
+    if (_memoryProvider != nullptr)
+    {
+        _currentColor = _memoryProvider->loadInt(SETTINGS_LED_KEY, ((((uint32_t)255 << 0) | ((uint32_t)255 << 8) | ((uint32_t)255 << 16))));
+        if (isConnected()) // show color only when LED is connected
+            showColor(false, false);
+    }
 
-    showColor(false, false);
-
+    //Check whether Wi-Fi or RTC is running to ensure time is valid
     if (wifiProvider->isConnected() || rtc.isRunning())
     {
         loadTriggersFromNVS();
@@ -140,6 +144,13 @@ void LedModule::onConnectionChange()
         // Reinit color on new connection + upload data to RTDB
         showColor(true, false);
         uploadColorChange();
+    }
+    else
+    {
+        // Stop colors when LED is disconnected
+        // Without settings change
+        _currentColor = 0;
+        showColor(true, false);
     }
 
     if (_sourceIsButton)
