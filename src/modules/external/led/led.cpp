@@ -5,22 +5,19 @@
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
-#define MEMORY_TRIGGER_PREFIX "ledT."
 #include "../../../wifi/wifiProvider.h"
 #include <Freenove_WS2812_Lib_for_ESP32.h>
 
 #include "../../../utils/timeHelper.h"
 #include <string>
 
-
 void ledTriggerCallback()
 {
-    Serial.println("LED Trigger callback");
     AlarmId id = Alarm.getTriggeredAlarmId();
     if (ledModulePtr != nullptr)
     {
         uint32_t color;
-        if (ledModulePtr->getTriggerColor(id, &color))
+        if (ledModulePtr->getTriggerPayload(id, &color))
         {
             printD("Color: ");
             printlnD(String(color));
@@ -35,11 +32,9 @@ void ledTriggerCallback()
 
 LedModule *ledModulePtr = nullptr;
 
-LedModule::LedModule(int position, int pin) : IModule(CONNECTED_KEY, position)
+LedModule::LedModule(int position, MemoryProvider *provider, int pin) : IModule(CONNECTED_KEY, position, provider),
+                                                                        PayloadAlarm<uint32_t>(&ledTriggerCallback, provider, "led.")
 {
-    triggersMutex = xSemaphoreCreateMutex();
-    xSemaphoreGive(triggersMutex);
-
     _strip = new Freenove_ESP32_WS2812(LED_COUNT, pin, LED_CHANNEL, TYPE_GRB);
     _stripConnected = _strip->begin();
     printlnA("Led module created");
@@ -49,21 +44,6 @@ LedModule::~LedModule()
 {
     delete _strip;
     rmt_driver_uninstall((rmt_channel_t)LED_CHANNEL);
-    clearAllTriggers();
-}
-
-void LedModule::clearAllTriggers()
-{
-
-    if (_triggers.empty())
-        return;
-    lockSemaphore("clear led");
-    for (auto p : _triggers)
-    {
-        Alarm.free(p.second->id);
-    }
-    _triggers.clear();
-    unlockSemaphore();
 }
 
 void LedModule::setColor(uint32_t color)
@@ -153,227 +133,6 @@ bool LedModule::loadSettings()
     return true;
 }
 
-void LedModule::printTrigger(std::shared_ptr<LedTrigger> t)
-{
-    if (t != nullptr)
-    {
-        printI("ID: ");
-        printI(t->id);
-        printI("(fKey: ");
-        printI(t->firebaseKey);
-        printI(") --> ");
-        printI(t->hour);
-        printI(":");
-        printI(t->minute);
-        printI(" - ");
-        printI(t->color);
-    }
-}
-
-void LedModule::loadTriggersFromNVS()
-{
-    for (int i = 0; i < LED_TRIGGERS_MAX; i++)
-    {
-        loadTriggerFromNVS(i);
-    }
-}
-
-int LedModule::asignAvailableMemoryId()
-{
-    for (int i = 0; i < LED_TRIGGERS_MAX; i++)
-    {
-        if (availableIds[i])
-        {
-            availableIds[i] = false;
-            return i;
-        }
-    }
-    return INVALID_MEMORY_ID;
-}
-
-bool LedModule::getNextTriggerColor(uint32_t *color)
-{
-
-    std::shared_ptr<LedTrigger> t = getNextTrigger();
-    if (t != nullptr)
-    {
-        *color = t->color;
-        return true;
-    }
-    return false;
-}
-
-std::shared_ptr<LedTrigger> LedModule::getNextTrigger()
-{
-    tm timeinfo;
-    std::shared_ptr<LedTrigger> h = nullptr;
-    std::shared_ptr<LedTrigger> l = nullptr;
-
-    if (_triggers.empty())
-        return nullptr;
-
-    if (getLocalTime(&timeinfo, 100))
-    {
-        int time = getTime(timeinfo.tm_hour, timeinfo.tm_min);
-        lockSemaphore("getNextTrigger");
-        for (auto p : _triggers)
-        {
-            int ttc = getTime(p.second->hour, p.second->minute);
-
-            //Lookup for the lowest time
-            if (ttc < time) // assign only triggers with lower time than current value
-            {
-                if (h == nullptr)
-                {
-                    if (l == nullptr)
-                    {
-
-                        l = p.second;
-                    }
-                    else
-                    {
-                        if (getTime(l->hour, l->minute) > ttc)
-                        {
-                            l = p.second;
-                        }
-                    }
-                }
-            }
-
-            //Lookup for the lowest of higher times
-            if (ttc > time)
-            {
-                if (h == nullptr)
-                {
-                    h = p.second;
-                }
-                else
-                {
-                    if (getTime(h->hour, h->minute) > ttc)
-                    {
-                        h = p.second;
-                    }
-                }
-            }
-        }
-        unlockSemaphore();
-    }
-    return h != nullptr ? h : l;
-}
-
-bool LedModule::getNextTriggerTime(int *time)
-{
-    std::shared_ptr<LedTrigger> t = getNextTrigger();
-    if (t != nullptr)
-    {
-        *time = getTime(t->hour, t->minute);
-        return true;
-    }
-
-    return false;
-}
-
-int LedModule::getTriggersCount()
-{
-    return _triggers.size();
-}
-
-void LedModule::saveTriggerToNVS(std::shared_ptr<LedTrigger> trigger)
-{
-    if (_memoryProvider == nullptr)
-        return;
-
-    if (trigger->storageId == INVALID_MEMORY_ID)
-    {
-        trigger->storageId = asignAvailableMemoryId();
-        if (trigger->storageId == INVALID_MEMORY_ID)
-        {
-            printlnE("Maximum of led triggers reached");
-            return;
-        }
-    }
-    LedTriggerMem m;
-    strcpy(m.key, trigger->firebaseKey.c_str());
-    m.color = trigger->color;
-    m.hour = trigger->hour;
-    m.minute = trigger->minute;
-    printA("Size of trigger = ");
-    printlnA((int)sizeof(LedTriggerMem));
-    _memoryProvider->saveStruct(String(MEMORY_TRIGGER_PREFIX) + String(trigger->storageId), &m, sizeof(LedTriggerMem));
-}
-
-void LedModule::loadTriggerFromNVS(int index)
-{
-    if (_memoryProvider == nullptr)
-        return;
-
-    LedTriggerMem enc;
-    if (_memoryProvider->loadStruct(String(MEMORY_TRIGGER_PREFIX) + String(index), &enc, sizeof(LedTriggerMem)))
-    {
-        printlnA("Loading LED trigger from memory");
-        auto t = std::make_shared<LedTrigger>();
-        t->storageId = index;
-        t->color = enc.color;
-        t->minute = enc.minute;
-        t->hour = enc.hour;
-        t->firebaseKey = String(enc.key);
-
-        t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, ledTriggerCallback);
-        lockSemaphore("loadTriggerFromNVS");
-        _triggers.insert({t->firebaseKey, t});
-        unlockSemaphore();
-        printTrigger(t);
-    }
-}
-
-bool LedModule::getTriggerColor(uint8_t id, uint32_t *color)
-{
-    lockSemaphore("getTriggerColor");
-    for (auto &&p : _triggers)
-    {
-        if (p.second->id == id)
-        {
-            *color = p.second->color;
-            unlockSemaphore();
-            return true;
-        }
-    }
-    unlockSemaphore();
-    return false;
-}
-
-void LedModule::printTriggers()
-{
-
-    printlnV("All led triggers: ");
-    lockSemaphore("printTriggers");
-    for (auto &&t : _triggers)
-    {
-        printV(t.first);
-        printV(" >>>> ");
-        printTrigger(t.second);
-    }
-    unlockSemaphore();
-    printlnV("");
-}
-
-void LedModule::removeTrigger(String key)
-{
-    lockSemaphore("removeTrigger");
-    auto it = _triggers.find(key);
-    if (it != _triggers.end())
-    {
-        printlnI("Removing trigger");
-        if (_memoryProvider != nullptr)
-            _memoryProvider->removeKey(String(MEMORY_TRIGGER_PREFIX) + String(it->second->storageId));
-        Alarm.free(it->second->id); // clear alarm
-        if (it->second->storageId != INVALID_MEMORY_ID)
-            availableIds[it->second->storageId] = true; // id is available again
-        _triggers.erase(it);                            // remove record from map
-    }
-    unlockSemaphore();
-}
-
 void LedModule::onConnectionChange()
 {
     sendConnectionChangeNotification("LED", isConnected());
@@ -396,36 +155,6 @@ void LedModule::onConnectionChange()
         std::string s = isConnected() ? "true" : "false";
         _connectedCharacteristic->setValue(s);
         _connectedCharacteristic->notify();
-    }
-}
-
-void LedModule::createTrigger(int time, int color, String key)
-{
-    std::shared_ptr<LedTrigger> t = std::make_shared<LedTrigger>();
-    t->color = color;
-    t->hour = time / 256;
-    t->minute = time % 256;
-    t->firebaseKey = key;
-    t->id = Alarm.alarmRepeat(t->hour, t->minute, 0, ledTriggerCallback);
-    lockSemaphore("createTrigger");
-    _triggers.insert({key, t});
-    unlockSemaphore();
-    saveTriggerToNVS(t);
-}
-
-std::shared_ptr<LedTrigger> LedModule::findTrigger(String key)
-{
-    lockSemaphore("findTrigger");
-    auto it = _triggers.find(key);
-    unlockSemaphore();
-    if (it != _triggers.end())
-    {
-
-        return it->second;
-    }
-    else
-    {
-        return nullptr;
     }
 }
 
@@ -452,16 +181,4 @@ std::vector<String> LedModule::getText()
             return {"LED", "No trigger"};
         }
     }
-}
-
-void LedModule::lockSemaphore(String owner)
-{
-    printlnD("Lock semaphore by " + owner);
-    _owner = owner;
-    xSemaphoreTake(triggersMutex, portMAX_DELAY);
-}
-void LedModule::unlockSemaphore()
-{
-    xSemaphoreGive(triggersMutex);
-    printlnD("Unlock semaphore from " + _owner);
 }

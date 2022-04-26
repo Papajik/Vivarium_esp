@@ -11,16 +11,10 @@
 #include "plainAlarm.h"
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include "../../memory/memory_provider_internal.h"
+#include "plainTriggerMemory.h"
 #include <Firebase_ESP_Client.h>
 
 #define JSON_STEP 2
-
-struct PlainTriggerMemory
-{
-    int hour;
-    int minute;
-    char key[25];
-};
 
 PlainAlarm::PlainAlarm(TriggerCallback callback, MemoryProvider *provider, std::string prefix) : BaseAlarm<Trigger>(callback, provider, prefix) {}
 
@@ -56,7 +50,7 @@ void PlainAlarm::saveTriggerToNVS(std::shared_ptr<Trigger> trigger)
     m.hour = trigger->hour;
     m.minute = trigger->minute;
     debugA("Size of trigger = %d", sizeof(PlainTriggerMemory));
-    _provider->saveStruct(String(MAX_TRIGGERS) + String(trigger->storageId), &m, sizeof(PlainTriggerMemory));
+    _provider->saveStruct(String(BaseAlarm<Trigger>::_memoryPrefix.c_str()) + String(trigger->storageId), &m, sizeof(PlainTriggerMemory));
 }
 
 void PlainAlarm::printTrigger(std::shared_ptr<Trigger> t)
@@ -74,13 +68,13 @@ void PlainAlarm::printTrigger(std::shared_ptr<Trigger> t)
     }
 }
 
-void PlainAlarm::loadTriggerFromNVS(int index)
+bool PlainAlarm::loadTriggerFromNVS(int index)
 {
     if (_provider == nullptr)
-        return;
+        return false;
 
     PlainTriggerMemory enc;
-    if (_provider->loadStruct(String(_memoryPrefix.c_str()) + String(index), &enc, sizeof(Trigger)))
+    if (_provider->loadStruct(String(_memoryPrefix.c_str()) + String(index), &enc, sizeof(PlainTriggerMemory)))
     {
         auto t = std::make_shared<Trigger>();
         t->storageId = index;
@@ -93,7 +87,9 @@ void PlainAlarm::loadTriggerFromNVS(int index)
         _triggers.insert({t->firebaseKey, t});
         unlockSemaphore();
         printTrigger(t);
+        return true;
     }
+    return false;
 }
 
 void PlainAlarm::createNewTriggersFromJson(FirebaseJson *json)

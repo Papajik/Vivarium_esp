@@ -99,215 +99,33 @@ bool LedModule::updateSensorData(FirebaseJson *json)
     return false;
 }
 
-void LedModule::parseTriggersJson(FirebaseJson *json)
+bool LedModule::getPayloadFromJson(FirebaseJson *json, uint32_t &payload)
 {
-    printlnV("Iterating through json");
-
-    int type;
-    String key;
-    String value;
-    String firebaseId;
-
-    FirebaseJsonData innerData;
-    FirebaseJson innerJson;
-    std::vector<String> toDelete;
-    // bool changed = false;
-
-    // 1. check all existing triggers;
-    lockSemaphore("parseTriggersJson1");
-    for (auto &&it : _triggers)
+    printlnD("getPayloadFromJson");
+    FirebaseJsonData data;
+    if (json->get(data, "/color", false))
     {
-        FirebaseJsonData triggerData;
-        bool triggerChanged = false;
-        // Edit existing trigger
-        triggerData.getJSON(innerJson);
-
-        if (json->get(triggerData, "/" + it.first, true))
-        {
-            int _oldColor = it.second->color;
-
-            if (innerJson.get(triggerData, "/color", false))
-            {
-                if (it.second->color != triggerData.intValue)
-                {
-                    it.second->color = triggerData.intValue;
-                    triggerChanged = true;
-                }
-            }
-            else
-            {
-                continue;
-            }
-
-            if (innerJson.get(innerData, "/time"))
-            {
-                //Check time
-                if (it.second->hour != innerData.intValue / 256)
-                {
-                    it.second->hour = innerData.intValue / 256;
-                    triggerChanged = true;
-                }
-                if (it.second->minute != innerData.intValue % 256)
-                {
-                    it.second->minute = innerData.intValue % 256;
-                    triggerChanged = true;
-                }
-            }
-            else
-            {
-                it.second->color = _oldColor;
-                continue;
-            }
-
-            if (triggerChanged)
-            {
-                printlnA("Trigger " + key + " changed, reseting timer");
-                Alarm.free(it.second->id);
-                it.second->id = Alarm.alarmRepeat(it.second->hour, it.second->minute, 0, ledTriggerCallback);
-                saveTriggerToNVS(it.second);
-            }
-        }
-        else
-        {
-            printlnA("Deleting trigger " + key);
-            toDelete.push_back(it.first);
-        }
-    }
-    unlockSemaphore();
-
-    // Delete all marked triggers
-    for (String s : toDelete)
-    {
-        removeTrigger(s);
-    }
-
-    //check for new triggers
-    int len = json->iteratorBegin();
-    if (len % 3 == 0)
-    {
-        printlnV("JSON Valid");
-        for (int i = 0; i < len; i += 3)
-        {
-
-            json->iteratorGet(i, type, key, value);
-            lockSemaphore("parseTriggersJson2");
-            auto it = _triggers.find(key);
-            unlockSemaphore();
-            if (it == _triggers.end()) // Check if map contain this key
-            {
-                if (type == FirebaseJson::JSON_OBJECT)
-                {
-                    auto trigger = std::make_shared<LedTrigger>();
-                    innerJson.setJsonData(value);
-                    int time, color;
-
-                    if (innerJson.get(innerData, "/time", false))
-                    {
-                        time = innerData.intValue;
-                    }
-                    else
-                    {
-                        printlnW("No time in json");
-                        continue;
-                    }
-
-                    if (innerJson.get(innerData, "/color", false))
-                    {
-                        color = innerData.intValue;
-                    }
-                    else
-                    {
-                        printlnW("no color in json");
-                        continue;
-                    }
-                    createTrigger(time, color, key);
-                }
-            }
-        }
-    }
-    printTriggers();
-}
-void LedModule::parseTriggerJson(FirebaseJson *json, String path)
-{
-    FirebaseJsonData jsonData;
-    printlnI("LED  parseTriggerJson");
-    int index = path.lastIndexOf("/");
-    String triggerKey = path.substring(index + 1);
-
-    printlnV("Parse 1 trigger json callback");
-    printlnV("TriggerKey = " + triggerKey);
-
-    // adding new trigger;¨
-    lockSemaphore("parseTriggerJson1");
-    auto it = _triggers.find(triggerKey);
-    unlockSemaphore();
-    if (it == _triggers.end())
-    {
-        printlnV("Adding new trigger");
-        int color, time;
-
-        // auto trigger = std::make_shared<LedTrigger>();
-        if (json->get(jsonData, "/color", false))
-        {
-            color = jsonData.intValue;
-        }
-        else
-        {
-            printlnV("No color in json");
-            return;
-        }
-        if (json->get(jsonData, "/time", false))
-        {
-            time = jsonData.intValue;
-        }
-        else
-        {
-            printlnW("NO time in json");
-            return;
-        }
-        createTrigger(time, color, triggerKey);
-    }
-    printTriggers();
-}
-
-void LedModule::parseTriggerValue(String key, String value)
-{
-    printlnV("Parsing trigger value");
-    int index = key.lastIndexOf("/");
-
-    String jsonKey = key.substring(index + 1);
-    String triggerKey = key.substring(0, index);
-    triggerKey = triggerKey.substring(triggerKey.lastIndexOf("/") + 1);
-
-    printlnV("jsonKey =" + jsonKey);
-    printlnV("triggerKey = " + triggerKey);
-
-    if (value == "null")
-    {
-        removeTrigger(jsonKey);
+        printD("got color: ");
+        payload = data.doubleValue;
+        printlnD(payload);
+        return true;
     }
     else
     {
-        lockSemaphore("parseTriggerValue");
-        auto it = _triggers.find(triggerKey);
-        unlockSemaphore();
-        if (it != _triggers.end())
-        {
-            printlnV("Editing " + triggerKey);
-            Alarm.free(it->second->id);
-            if (jsonKey == "color")
-            {
-                it->second->color = value.toInt();
-            }
-            if (jsonKey == "time")
-            {
-                it->second->hour = (int)value.toInt() / 256;
-                it->second->minute = (int)value.toInt() % 256;
-            }
-            it->second->id = Alarm.alarmRepeat(it->second->hour, it->second->minute, 0, ledTriggerCallback);
-
-            saveTriggerToNVS(it->second);
-        }
+        printlnW("No color in JSON");
+        return false;
     }
-    printTriggers();
+}
+
+bool LedModule::getPayloadFromValue(String key, String value, uint32_t &payload)
+{
+    printlnD("getPayloadFromJson");
+    if (key == "color")
+    {
+        printD("got color: ");
+        payload = value.toInt();
+        printlnD(payload);
+        return true;
+    }
+    return false;
 }

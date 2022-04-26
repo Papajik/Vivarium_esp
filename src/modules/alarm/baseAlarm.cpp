@@ -21,6 +21,10 @@ BaseAlarm<T>::BaseAlarm(TriggerCallback callback, MemoryProvider *provider, std:
 {
     BaseAlarm<T>::triggersMutex = xSemaphoreCreateMutex();
     xSemaphoreGive(BaseAlarm<T>::triggersMutex);
+    for (int i = 0; i < MAX_TRIGGERS; i++)
+    {
+        availableIds[i] = true;
+    }
 }
 
 template <typename T>
@@ -62,7 +66,7 @@ std::shared_ptr<T> BaseAlarm<T>::getNextTrigger()
             int ttc = getTime(p.second->hour, p.second->minute);
 
             //Lookup for the lowest time
-            if (ttc < time) // assign only triggers with lower time than current value
+            if (ttc <= time) // assign only triggers with lower time than current value
             {
                 if (h == nullptr)
                 {
@@ -99,6 +103,10 @@ std::shared_ptr<T> BaseAlarm<T>::getNextTrigger()
         }
         unlockSemaphore();
     }
+    else
+    {
+        printlnE("Local time not set!");
+    }
     return h != nullptr ? h : l;
 }
 
@@ -126,11 +134,10 @@ void BaseAlarm<T>::removeTrigger(String firebaseKey)
     {
         printlnD("Removing trigger");
         if (_provider != nullptr)
-            _provider->removeKey(String(MAX_TRIGGERS) + String(it->second->storageId));
+            _provider->removeKey(String(_memoryPrefix.c_str()) + String(it->second->storageId));
         Alarm.free(it->second->id); // clear alarm
-        if (it->second->storageId != INVALID_MEMORY_ID)
-            availableIds[it->second->storageId] = true; // id is available again
-        _triggers.erase(it);                            // remove record from map
+        freeMemoryId(it->second->storageId);
+        _triggers.erase(it); // remove record from map
     }
     unlockSemaphore();
 }
@@ -173,14 +180,34 @@ int BaseAlarm<T>::getAvailableMemoryId()
     }
     return INVALID_MEMORY_ID;
 }
+template <typename T>
+void BaseAlarm<T>::freeMemoryId(int id)
+{
+    if (id != INVALID_MEMORY_ID)
+        availableIds[id] = true; // id is available again
+}
 
 template <typename T>
 void BaseAlarm<T>::loadTriggersFromNVS()
 {
     printlnA("Load triggers from NVS");
-    for (int i = 0; i < MAX_TRIGGERS; i++)
+    if (_provider != nullptr)
     {
-        loadTriggerFromNVS(i);
+        for (int i = 0; i < MAX_TRIGGERS; i++)
+        {
+            if (loadTriggerFromNVS(i))
+            {
+                availableIds[i] = false;
+            }
+            else
+            {
+                availableIds[i] = true;
+            }
+        }
+    }
+    else
+    {
+        printlnE("NO memory provider set. Couln't load from NVS");
     }
 }
 

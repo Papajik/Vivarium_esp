@@ -11,3 +11,4 @@
 
 template class PayloadAlarm<double>;
 template class PayloadAlarm<uint32_t>;
+template class PayloadAlarm<int>;

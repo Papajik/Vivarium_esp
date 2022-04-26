@@ -29,7 +29,7 @@ public:
 protected:
     virtual void saveTriggerToNVS(std::shared_ptr<Trigger>);                                      // ok
     virtual void printTrigger(std::shared_ptr<Trigger>);                                          // ok
-    virtual void loadTriggerFromNVS(int index);                                                   // ok
+    virtual bool loadTriggerFromNVS(int index);                                                   // ok
     virtual void createNewTriggersFromJson(FirebaseJson *);                                       // ok
     virtual void parseTriggerCustomValue(std::shared_ptr<Trigger>, String jsonKey, String value); // ok
     virtual bool updateTriggerFromJson(std::shared_ptr<Trigger> trigger, FirebaseJson *json);     // ok

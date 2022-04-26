@@ -13,6 +13,7 @@
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include <Firebase_ESP_Client.h>
 #include "../../memory/memory_provider_internal.h"
+#include "payloadTriggerMemory.h"
 
 #define JSON_STEP 3
 
@@ -68,15 +69,6 @@ void PayloadAlarm<T>::createTrigger(int time, String key, T payload)
 }
 
 template <typename T>
-struct PayloadTriggerMemory
-{
-    int hour;
-    int minute;
-    T payload;
-    char key[25];
-};
-
-template <typename T>
 void PayloadAlarm<T>::saveTriggerToNVS(std::shared_ptr<PayloadTrigger<T>> trigger)
 {
     printlnD("saveTriggerToNVS");
@@ -102,10 +94,10 @@ void PayloadAlarm<T>::saveTriggerToNVS(std::shared_ptr<PayloadTrigger<T>> trigge
 }
 
 template <typename T>
-void PayloadAlarm<T>::loadTriggerFromNVS(int index)
+bool PayloadAlarm<T>::loadTriggerFromNVS(int index)
 {
     if (BaseAlarm<PayloadTrigger<T>>::_provider == nullptr)
-        return;
+        return false;
 
     PayloadTriggerMemory<T> enc;
     if (BaseAlarm<PayloadTrigger<T>>::_provider->loadStruct(String(BaseAlarm<PayloadTrigger<T>>::_memoryPrefix.c_str()) + String(index), &enc, sizeof(PayloadTriggerMemory<T>)))
@@ -121,8 +113,9 @@ void PayloadAlarm<T>::loadTriggerFromNVS(int index)
         BaseAlarm<PayloadTrigger<T>>::lockSemaphore("loadTriggerFromNVS");
         BaseAlarm<PayloadTrigger<T>>::_triggers.insert({t->firebaseKey, t});
         BaseAlarm<PayloadTrigger<T>>::unlockSemaphore();
-        printTrigger(t);
+        return true;
     }
+    return false;
 }
 
 template <typename T>
@@ -259,7 +252,7 @@ void PayloadAlarm<T>::parseTriggerCustomValue(std::shared_ptr<PayloadTrigger<T>>
 
     if (key == "time")
     {
-        
+
         trigger->hour = (int)value.toInt() / 256;
         trigger->minute = (int)value.toInt() % 256;
     }

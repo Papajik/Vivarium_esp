@@ -100,21 +100,20 @@ void LedModule::getHandlesCount(int *settings, int *state, int *credentials)
 
 void LedModule::uploadTriggerToCharacteristics()
 {
-    std::shared_ptr<LedTrigger> trigger = findTrigger(String(_idCharacteristic->getValue().c_str()));
+    std::shared_ptr<PayloadTrigger<uint32_t>> trigger = findTrigger(String(_idCharacteristic->getValue().c_str()));
     if (trigger != nullptr)
     {
         _timeCharacteristic->setValue(getTime(trigger->hour, trigger->minute));
-        _colorCharacteristic->setValue(trigger->color);
+        _colorCharacteristic->setValue(trigger->payload);
     }
 }
 
 void LedModule::parseTriggerFromCharacteristics()
 {
-
     int time = atoi(_timeCharacteristic->getValue().c_str());
-    int color = atoi(_colorCharacteristic->getValue().c_str());
-    String id = String(_idCharacteristic->getValue().c_str());
-    createTrigger(time, color, id);
+    uint32_t color = atoi(_colorCharacteristic->getValue().c_str());
+    String firebaseKey = String(_idCharacteristic->getValue().c_str());
+    createTrigger(time, firebaseKey, color);
 }
 
 void LedModule::removeTriggerFromCharacteristic()

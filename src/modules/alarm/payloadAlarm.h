@@ -29,7 +29,7 @@ public:
 
     // Memory
     virtual void saveTriggerToNVS(std::shared_ptr<PayloadTrigger<K>>); // ok
-    virtual void loadTriggerFromNVS(int index);                        // ok
+    virtual bool loadTriggerFromNVS(int index);                        // ok
     virtual void printTrigger(std::shared_ptr<PayloadTrigger<K>>);     // ok
 
     // Firebase
