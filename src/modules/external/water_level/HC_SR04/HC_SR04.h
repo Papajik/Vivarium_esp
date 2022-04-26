@@ -43,7 +43,7 @@ private:
     int _triggerPin, _echoPin, _max_distance;
     static void _echo_isr();
     unsigned long _readings[ITERATION_COUNT] = {};
-    unsigned long _start, _end, _iterationStart;
+    volatile unsigned long _start, _end, _iterationStart;
 };
 
 extern HC_SR04 *sensor;

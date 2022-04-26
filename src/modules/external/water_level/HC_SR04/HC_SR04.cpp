@@ -15,7 +15,7 @@ void HC_SR04::init()
 {
     pinMode(_triggerPin, OUTPUT);
     digitalWrite(_triggerPin, LOW);
-    pinMode(_echoPin, INPUT_PULLUP);
+    pinMode(_echoPin, INPUT);
     attachInterrupt(digitalPinToInterrupt(_echoPin), _echo_isr, CHANGE);
 }
 
