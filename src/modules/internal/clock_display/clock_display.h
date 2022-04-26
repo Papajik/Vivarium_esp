@@ -13,8 +13,8 @@
 
 #include <Arduino.h>
 
-#define DEFAULT_CLOCK_BRIGHTNESS 6
-#define DEFAULT_CLOCK_REFRESH_INTERVAL 5000 //refresh every 5 seconds to display more accurate time
+#define DEFAULT_CLOCK_BRIGHTNESS 8
+#define DEFAULT_CLOCK_REFRESH_INTERVAL 10000 //refresh every 10 seconds to display more accurate time
 
 #define MIN_INTERVAL_CONSTRAINT 1000
 #define MAX_INTERVAL_CONSTRAINT 60000

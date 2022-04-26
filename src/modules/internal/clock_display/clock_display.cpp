@@ -19,6 +19,7 @@ ClockDisplay::ClockDisplay(int clk, int dio)
 
 ClockDisplay::~ClockDisplay()
 {
+    _clock->end();
     delete _delay;
 }
 
