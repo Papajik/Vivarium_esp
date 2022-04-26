@@ -1,9 +1,25 @@
+/**
+* @file plainAlarm.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _V_ALARM_H
 #define _V_ALARM_H
 
 #include "baseAlarm.h"
 #include <string>
-// class MemoryProvider;
+
+
+/**
+* @brief Alarm without any value. Used when time action is needed 
+* 
+*/
 class PlainAlarm : public BaseAlarm<Trigger>
 {
 public:

@@ -1,4 +1,14 @@
 
+/**
+* @file baseAlarm-impl.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #include "baseAlarm.h"
 #include "baseAlarm.cpp"
 

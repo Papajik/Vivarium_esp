@@ -1,3 +1,13 @@
+/**
+* @file ph_probe.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _PH_PROBE_H_
 #define _PH_PROBE_H_
 
@@ -107,9 +117,6 @@ private:
     //Bluetooth
     BLECharacteristic *_characteristicMode;
     PhModuleSettings _settings;
-
-    //WiFi
-    // EmergencyCallback _emergencyCallback;
 };
 
 //Bluetooth

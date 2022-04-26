@@ -13,9 +13,8 @@
 
 #ifndef _STATE_H_
 #define _STATE_H_
-/*! Importation of librairies*/
+/*! Import of librairies*/
 #include <Arduino.h>
-
 #include <map>
 // #include <vector>
 #include "helper.h"

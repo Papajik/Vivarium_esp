@@ -1,3 +1,14 @@
+/**
+* @file heater.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _HEATER_H_
 #define _HEATER_H_
 
@@ -47,6 +58,10 @@ struct HeaterSettings
     double tempGoal; //temp goal
 };
 
+/**
+* @brief Heater module. Used to raise temperature. Has multiple modes and supports payload alarms.
+* 
+*/
 class Heater : public IModule,
                public IFirebaseModule,
                public IBluetooth,

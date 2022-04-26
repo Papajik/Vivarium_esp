@@ -18,7 +18,6 @@
 
 MessagingService::MessagingService(Auth *auth) : _auth(auth)
 {
-    // Legacy FCM //TODO test and remove legacy server key
     Firebase.FCM.setServerKey(FCM_SERVER_KEY);
 }
 

@@ -3,11 +3,22 @@
 
 #include <HardwareSerial.h>
 
+/**
+* @brief Interface of Memory Provider
+Used to save data into NVS memory so it can be retrieved after power outage
+
+* 
+*/
 class MemoryProvider
 {
 public:
     MemoryProvider(){};
     virtual ~MemoryProvider(){};
+    /**
+    * @brief Init memory, sets name of storage
+    * 
+    * @param name 
+    */
     virtual void init(String name = "vivarium") = 0;
 
     // Extern modules settings
@@ -31,6 +42,10 @@ public:
     virtual float loadDouble(String key, double defaultValue) = 0;
 
     virtual void removeKey(String key) = 0;
+    /**
+    * @brief Clear every record inside NVS
+    * 
+    */
     virtual void factoryReset() = 0;
 
     int getWriteCount() { return _writeCount; }

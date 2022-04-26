@@ -138,7 +138,7 @@ bool Feeder::feededRecently()
 
 void Feeder::onConnectionChange()
 {
-    printlnA("Feeder callback");
+
     if (_sourceIsButton)
     {
         firebaseService->uploadState(FIREBASE_FEEDER_CONNECTED_KEY, isConnected());

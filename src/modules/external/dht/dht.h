@@ -1,3 +1,14 @@
+/**
+* @file dht.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _DHT11_H_
 #define _DHT11_H_
 
@@ -24,6 +35,10 @@
 
 class DHT;
 
+/**
+* @brief DHT module - used for Air temperature and humidity
+* 
+*/
 class DhtModule : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:

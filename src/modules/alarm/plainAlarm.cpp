@@ -1,3 +1,13 @@
+/**
+* @file plainAlarm.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #include "plainAlarm.h"
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include "../../memory/memory_provider_internal.h"

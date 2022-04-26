@@ -52,7 +52,6 @@ void LedModule::parseJson(FirebaseJson *data, String path)
     {
         setConnected(jsonData.boolValue, false);
     }
-    //   printTriggers();
 }
 
 String LedModule::getSettingKey() { return SETTINGS_LED_KEY; }
@@ -88,7 +87,6 @@ void LedModule::parseValue(String key, String value)
     {
         saveSettings();
     }
-    // printTriggers();
 }
 
 bool LedModule::updateSensorData(FirebaseJson *json)

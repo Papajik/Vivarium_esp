@@ -56,23 +56,6 @@ private:
     {
         int mode = atoi(pCharacteristic->getValue().c_str());
         m->setMode(Mode(mode));
-
-        // if (mode == Mode::AUTO)
-        // {
-        //     m->setMode(Mode::AUTO);
-        // }
-        // else if (mode == Mode::PID)
-        // {
-        //     m->setMode(Mode::PID);
-        // }
-        // else if (mode == Mode::TERMO)
-        // {
-        //     m->setMode(Mode::TERMO);
-        // }
-        // else
-        // {
-        //     m->setMode(Mode::UNKNWON);
-        // }
     }
 
     void onRead(BLECharacteristic *pCharacteristic)

@@ -47,7 +47,6 @@ bool WaterPump::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
-        printlnA("upading sensor data");
         json->set(KEY_SENSOR_DATA_PUMP_ON, isRunning());
         return true;
     }

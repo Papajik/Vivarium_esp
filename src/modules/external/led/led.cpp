@@ -22,8 +22,8 @@ void ledTriggerCallback()
         uint32_t color;
         if (ledModulePtr->getTriggerColor(id, &color))
         {
-            printA("Color: ");
-            printlnA(String(color));
+            printD("Color: ");
+            printlnD(String(color));
             ledModulePtr->setColor(color);
         }
     }

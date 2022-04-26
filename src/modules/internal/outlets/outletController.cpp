@@ -29,11 +29,6 @@ OutletController::OutletController(MemoryProvider *provider, int outletCount) : 
         _outlets.push_back(false);
     }
 
-    // expander.pinMode(P0, OUTPUT, LOW);
-    // expander.pinMode(P1, OUTPUT, LOW);
-    // expander.pinMode(P2, OUTPUT, HIGH);
-    // expander.pinMode(P3, OUTPUT, HIGH);
-
     if (expander.begin())
     {
         printlnA("Expander OK");
@@ -52,7 +47,7 @@ void OutletController::setOutlet(int outlet, bool on)
         return;
     }
 
-    printlnA("Outlet controll");
+    printlnA("Outlet control ");
     printA("Socket ");
     printA(outlet);
     printA(" is ");

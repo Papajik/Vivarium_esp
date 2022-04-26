@@ -3,7 +3,6 @@
 
 #include <PCF8574.h>
 
-#define EXPANDER_ADDRESS 0x38
 
 extern PCF8574 expander;
 

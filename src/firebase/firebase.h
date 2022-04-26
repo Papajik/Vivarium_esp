@@ -1,3 +1,13 @@
+/**
+* @file firebase.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _FIREBASE_SERVICE_H_
 #define _FIREBASE_SERVICE_H_
 
@@ -20,6 +30,10 @@ class MemoryProvider;
 class Auth;
 class MessagingService;
 
+/**
+* @brief Paths used to access data in RTDB
+* 
+*/
 enum ChildPath
 {
     SETTINGS = 0,
@@ -29,6 +43,11 @@ enum ChildPath
     BLE_NAME = 4
 };
 
+
+/**
+* @brief Firebase Service
+*   Mediator between modules and other firebase services
+*/
 class FirebaseService : public IBluetooth
 {
 public:
@@ -74,8 +93,6 @@ public:
     String getFirmwareName(String);
 
     String getFirmwareDownloadUrl(String);
-
-    // int checkFirebase();
 
     virtual void onBLEDisconnect();
     virtual void onBLEConnect();

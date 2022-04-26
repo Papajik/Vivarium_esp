@@ -1,3 +1,14 @@
+/**
+* @file vivarium.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-09-20
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #include "vivarium.h"
 
 #include <HardwareSerial.h>
@@ -55,7 +66,6 @@ Vivarium::Vivarium() : ClassState("vivarium") {}
 
 void Vivarium::setup(int outletCount, String deviceId)
 {
-
     Serial.begin(115200);
     esp_log_level_set("*", ESP_LOG_VERBOSE);
     printlnA("**** Setup: initializing ...");

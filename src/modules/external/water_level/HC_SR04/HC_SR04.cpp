@@ -13,7 +13,6 @@ HC_SR04::HC_SR04(uint8_t trigger, uint8_t echo, int max_distance)
 
 void HC_SR04::init()
 {
-    // printlnA("HC_SR04 begin");
     pinMode(_triggerPin, OUTPUT);
     digitalWrite(_triggerPin, LOW);
     pinMode(_echoPin, INPUT_PULLUP);
@@ -22,7 +21,6 @@ void HC_SR04::init()
 
 void HC_SR04::startReadings()
 {
-    // printlnA("Start");
     _it = 0;
     _valid_it = 0;
     _state = SensorState::READING;
@@ -31,14 +29,13 @@ void HC_SR04::startReadings()
 
 void HC_SR04::stopReadings()
 {
-    //TODO
+    // Nothing to do here. Everything is reset on startReadings()
 }
 
 void HC_SR04::checkTimeout()
 {
     if (micros() - _iterationStart > _max_distance * CM_ROUNDTRIP)
     {
-        // printlnA("TIMEOUT");
         _readings[_it] = INVALID_VALUE;
         _it++;
         checkFinish();
@@ -60,7 +57,7 @@ void HC_SR04::checkFinish()
 void HC_SR04::finishIteration()
 {
     _readings[_it] = (_end - _start) / CM_ROUNDTRIP;
-    //
+
     if (_readings[_it] > _max_distance)
     {
         _readings[_it] = INVALID_VALUE;

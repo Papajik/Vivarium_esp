@@ -369,13 +369,7 @@ void MemoryProviderInternal::factoryReset()
 
 void MemoryProviderInternal::lockSemaphore(String owner)
 {
-    // nvs_stats_t nvs_stats;
-    // nvs_get_stats(NULL, &nvs_stats);
-    // Serial.printf("Count: NamespaceCount = %d \n", nvs_stats.namespace_count);
-    // Serial.printf("Count: UsedEntries = %d \n", nvs_stats.used_entries);
-    // Serial.printf("Count: FreeEntries = %d \n", nvs_stats.free_entries);
-    // Serial.printf("Count: AllEntries = %d \n", nvs_stats.total_entries);
-    // Serial.println("Lock memory semaphore by " + owner);
+    Serial.println("Trying to lock by " + owner);
     if (_mutexOwner != "")
         Serial.println("Already locked from " + _mutexOwner);
 
@@ -391,5 +385,4 @@ void MemoryProviderInternal::unlockSemaphore()
     _mutexOwner = "";
     end();
     xSemaphoreGive(preferencesMutex);
-    // Serial.println("...unlocked");
 }

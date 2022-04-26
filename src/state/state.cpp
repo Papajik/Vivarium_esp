@@ -24,6 +24,7 @@ int StateStorage::setValue(String key, uint32_t value)
 
 int StateStorage::setValue(String key, float value)
 {
+    // printlnA("setting float value. key = " + key + ", value = " + String(value));
     return setValueWithCallback(key, value, NULL);
 }
 

@@ -6,7 +6,6 @@
 template <uint8_t Size>
 class ShiftRegister74HC595;
 
-//TODO
 
 class LedControl
 {

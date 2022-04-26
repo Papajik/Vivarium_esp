@@ -42,6 +42,11 @@ struct PayloadTrigger : public Trigger
     T payload{};
 };
 
+/**
+* @brief Template class of trigger alarm. Can be used when there is need to change some value at given time
+* 
+* @tparam T 
+*/
 template <typename T>
 class BaseAlarm
 {
@@ -60,13 +65,19 @@ public:
     */
     void removeTrigger(String firebaseKey);
 
-    void lockSemaphore(std::string);                // ok
-    void unlockSemaphore();                         // ok
-    std::map<String, std::shared_ptr<T>> _triggers; // ok
-    TriggerCallback getCallback();                  // ok
+    void lockSemaphore(std::string);
+    void unlockSemaphore();
+    std::map<String, std::shared_ptr<T>> _triggers;
+    TriggerCallback getCallback();
 
-    void loadTriggersFromNVS(); // ok
-    int getAvailableMemoryId(); // ok
+    void loadTriggersFromNVS();
+    /**
+    * @brief Get available memory ID. Returned ID is reserved!
+    * 
+    * @return int 
+    */
+    int getAvailableMemoryId();
+    void freeMemoryId(int id);
 
     /**
     * @brief Parses JSON into Alarm Triggers. 
@@ -74,8 +85,8 @@ public:
     * 
     * 
     */
-    void parseTriggersJson(FirebaseJson *);        // ok
-    void parseTriggerJson(FirebaseJson *, String); // ok
+    void parseTriggersJson(FirebaseJson *);
+    void parseTriggerJson(FirebaseJson *, String);
 
     /**
     * @brief Parses Trigger value from firebase callback.
@@ -84,7 +95,7 @@ public:
     * @param firebaseKey 
     * @param value 
     */
-    void parseTriggerValue(String firebaseKey, String value); // ok
+    void parseTriggerValue(String firebaseKey, String value);
 
     void printTriggers();
 
@@ -104,9 +115,9 @@ public:
     // Alarm implementation
     //
     // ********************
-    virtual void saveTriggerToNVS(std::shared_ptr<T>) = 0; // ok
-    virtual void loadTriggerFromNVS(int index) = 0;        // ok
-    virtual void printTrigger(std::shared_ptr<T>) = 0;     // ok
+    virtual void saveTriggerToNVS(std::shared_ptr<T>) = 0;
+    virtual bool loadTriggerFromNVS(int index) = 0;
+    virtual void printTrigger(std::shared_ptr<T>) = 0;
 
     /**
     * @brief  Creates multiple triggers From JSON object. 
@@ -114,7 +125,7 @@ public:
     * 
     * @param json 
     */
-    virtual void createNewTriggersFromJson(FirebaseJson *json) = 0; // Ok
+    virtual void createNewTriggersFromJson(FirebaseJson *json) = 0;
 
     /**
     * @brief Creates a Trigger From JSON object. 

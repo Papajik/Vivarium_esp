@@ -1,3 +1,14 @@
+/**
+* @file sender.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _F_SENDER_H
 #define _F_SENDER_H
 
@@ -38,6 +49,11 @@ struct Data
     DataType type = DataType::UNKNOWN;
 };
 
+
+/**
+* @brief  Service used to push data into Firebase
+*   Handles both RTDB and FCM
+*/
 class FirebaseSender
 {
 public:

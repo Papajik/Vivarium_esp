@@ -1,8 +1,23 @@
+/**
+* @file payloadAlarm.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _PAYLOAD_ALARM_H
 #define _PAYLOAD_ALARM_H
 
 #include "baseAlarm.h"
 
+/**
+* @brief Alarm with payload. Payload is used when alarm is triggered.
+* 
+* @tparam K 
+*/
 template <typename K>
 class PayloadAlarm : public BaseAlarm<PayloadTrigger<K>>
 {

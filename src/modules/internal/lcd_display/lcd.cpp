@@ -1,5 +1,4 @@
 #include "lcd.h"
-#include "aqua_screens.h"
 #include <stdio.h>
 #include <millisDelay.h>
 #include <LiquidCrystal_I2C.h>
@@ -104,10 +103,6 @@ void LcdDisplay::setRefreshInterval(int interval)
 
 void LcdDisplay::nextScreen()
 {
-    printD("Switching screen:");
-
-    printlnD(_current_screen);
-
     if (_current_screen < _modules.size())
     {
         displayTextFromVector(_modules[_current_screen]->getText());
@@ -155,11 +150,11 @@ void LcdDisplay::displayTextFromVector(std::vector<String> texts)
     if (!texts.empty())
     {
         _lcd->setCursor(0, 0);
-        printlnD(texts[0]);
+        printlnV(texts[0]);
         _lcd->print(texts[0]);
         if (texts.size() > 1)
         {
-            printlnD(texts[1]);
+            printlnV(texts[1]);
             _lcd->setCursor(0, 1);
             _lcd->print(texts[1]);
         }

@@ -1,12 +1,11 @@
-/*!
-* \file c:\Users\Papi\Documents\Arduino\Vivarium_esp\src\wifi\wifiProvider.h 
-* \author Papaj Michal <papaj.mich@gmail.com>
-* \version 0.1
-* \date 02/04/2021
-* \brief 
-* \remarks None
+/**
+* @file wifiProvider.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-09-20
 * 
-* 
+* @copyright Copyright (c) 2021
 * 
 */
 

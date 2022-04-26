@@ -10,9 +10,9 @@
 
 enum SensorState
 {
-    READING,
-    IDLE,
-    FINISHED,
+    READING,  // There is reading in process
+    IDLE,     // Sensor finished and already gave output
+    FINISHED, // Sensor finished but it is waiting for WaterLevel class to get new data
 };
 
 class HC_SR04

@@ -10,9 +10,6 @@
 #include <vector>
 #define MODULE_COUNT 7
 
-// #define MODULE_BUTTON_RELEASED -1
-
-// #define DEBOUNCE_INTERVAL 200
 #define M_BUTTONS_PIN 36
 
 class IModule;
@@ -35,10 +32,25 @@ public:
     void buttonPressed(int);
 
     void onLoop();
-
+    /**
+    * @brief Gets number of connected modules
+    * 
+    * @return int 
+    */
     int moduleCount();
+
+    /**
+    * @brief Determine if module is connected or not
+    * 
+    * @return true 
+    * @return false 
+    */
     bool isModuleConnected(int);
 
+    /**
+    * @brief Calls method beforeShutdown on every module of the device.
+    * 
+    */
     void beforeShutdown();
 
 private:

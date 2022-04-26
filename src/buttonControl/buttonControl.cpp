@@ -14,56 +14,50 @@ ButtonControl *buttonControl;
 
 #define DEBOUNCE_INTERVAL 200
 
-
-    int buttonCount = MODULE_COUNT + 1;
-    float avg = ADC_RESOLUTION / float(buttonCount);
-    int val;
-    int n;
-    int lastButton = BUTTON_RELEASED;
+int buttonCount = MODULE_COUNT + 1;
+float avg = ADC_RESOLUTION / float(buttonCount);
+int val;
+int n;
+int lastButton = BUTTON_RELEASED;
 
 void buttonControlCallback()
-    {
-        val = analogRead(M_BUTTONS_PIN); // ADC1 - channel 6 on GPIO2
-        for (n = 1; n < 16; n++)
-            val += analogRead(M_BUTTONS_PIN);
-        val /= 16;
+{
+    val = analogRead(M_BUTTONS_PIN); // ADC1 - channel 6 on GPIO2
+    for (n = 1; n < 16; n++)
+        val += analogRead(M_BUTTONS_PIN);
+    val /= 16;
 
-        if (val > (buttonCount - 0.5) * avg)
+    if (val > (buttonCount - 0.5) * avg)
+    {
+        if (lastButton == BUTTON_RELEASED)
         {
-            if (lastButton == BUTTON_RELEASED)
-            {
-                buttonControl->buttonPressed(BUTTON_RELEASED);
-            }
-            else
-            {
-                lastButton = BUTTON_RELEASED;
-            }
+            buttonControl->buttonPressed(BUTTON_RELEASED);
         }
         else
         {
-            for (int i = 0; i < buttonCount; i++)
+            lastButton = BUTTON_RELEASED;
+        }
+    }
+    else
+    {
+        for (int i = 0; i < buttonCount; i++)
+        {
+            if (val < round((i + 0.5) * avg))
             {
-
-                if (val < round((i + 0.5) * avg))
+                if (lastButton == i)
                 {
-                    if (lastButton == i)
-                    {
-                        printA("Val: ");
-                        printA(val);
-                        printA("\t =>");
-                        printlnA(i);
-                        buttonControl->buttonPressed(i);
-                    }
-                    else
-                    {
-                        lastButton = i;
-                    }
-
-                    break;
+                    debugD("val: %d\t => %d\n", val, i);
+                    buttonControl->buttonPressed(i);
                 }
+                else
+                {
+                    lastButton = i;
+                }
+                break;
             }
         }
     }
+}
 
 callback ButtonControl::getCallback()
 {

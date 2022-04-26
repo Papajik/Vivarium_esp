@@ -1,3 +1,14 @@
+/**
+* @file feeder.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _FEEDER_H
 #define _FEEDER_H
 
@@ -38,6 +49,10 @@ enum FeederMode
     INVALID = -1
 };
 
+/**
+* @brief Mostly used to feed fish. Has two modes. Supports triggers
+* 
+*/
 struct FeederSettings
 {
     FeederMode mode;

@@ -1,3 +1,14 @@
+/**
+* @file textOutput.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-03
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #include "textOutput.h"
 
 void TextOutput::setText(const std::vector<String> &texts, int delay)

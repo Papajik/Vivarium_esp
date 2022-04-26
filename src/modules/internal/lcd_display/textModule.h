@@ -1,3 +1,13 @@
+/**
+* @file textModule.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-03
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _TEXT_MODULE_H
 #define _TEXT_MODULE_H
 

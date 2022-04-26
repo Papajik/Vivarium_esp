@@ -25,7 +25,6 @@ public:
     MemoryProviderInternal();
     ~MemoryProviderInternal();
     void init(String name);
-    
 
     // Extern modules settings
     void saveStruct(String key, const void *, size_t);

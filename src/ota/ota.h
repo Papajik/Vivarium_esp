@@ -1,3 +1,14 @@
+/**
+* @file ota.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _OTA_SERVICE_H
 #define _OTA_SERVICE_H
 
@@ -12,6 +23,10 @@
 class MemoryProvider;
 class TextOutput;
 
+/**
+* @brief OTA service is used for remote FW updating
+* 
+*/
 class OtaService
 {
 public:

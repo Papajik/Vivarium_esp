@@ -13,7 +13,7 @@ bool Feeder::updateSensorData(FirebaseJson *)
 
 void Feeder::parseJson(FirebaseJson *json, String path)
 {
-    printlnA("Feeder - parseJson");
+    printlnD("Feeder - parseJson");
     printlnV("Path: " + path);
 
     if (path.startsWith(PREFIX_SETTINGS + String(KEY_TRIGGERS)))

@@ -1,19 +1,18 @@
-/*!
-* \file c:\Users\Papi\Documents\Arduino\Vivarium_esp\src\vivarium\vivarium.h
-* \author Papaj Michal <papaj.mich@gmail.com>
-* \version 0.1
-* \date 02/04/2021
-* \brief 
-* \remarks None
+/**
+* @file vivarium.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief Main class of vivarium.
+* @version 1.0
+* @date 2021-09-20
 * 
-* 
+* @copyright Copyright (c) 2021
 * 
 */
 
 #ifndef _VIVARIUM_H_
 #define _VIVARIUM_H_
 
-/*! Importation of librairies*/
+/*! Libraries*/
 #include <Arduino.h>
 
 #include "../state/state_values.h"
@@ -41,14 +40,45 @@ class TextModule;
 class Vivarium : public TaskHealth, public ClassState
 {
 public:
+    /**
+    * @brief Construct a new Vivarium object
+    * 
+    */
     Vivarium();
-    void setup(int, String);
+
+    /**
+    * @brief Setup new vivarium
+    * 
+    * @param outletCount Number of 230V outlets
+    * @param deviceId Device ID. Used for communication with database.
+    */
+    void setup(int outletCount, String deviceId);
+
+    /**
+    * @brief Finalize setup. Should be called after all modules are set
+    * 
+    */
     void finalize();
 
+    /**
+    * @brief Should be called from loop() function
+    * 
+    */
     void onLoop();
 
+    /**
+    * @brief Creates a Module object of given type.
+    * 
+    * @param type Type of the Module
+    * @param position Position on the Button panel
+    * @param outlet Optional - number of outlet used for this module
+    */
     void createModule(ModuleType type, int position, int outlet = -1);
 
+    /**
+    * @brief Tells modules to do last change and restarts ESP
+    * 
+    */
     void restart();
 
     void addBLEModule(IBluetooth *m);

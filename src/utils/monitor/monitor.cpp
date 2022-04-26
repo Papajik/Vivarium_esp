@@ -1,3 +1,14 @@
+/**
+* @file monitor.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-09-20
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #include "monitor.h"
 Monitor monitor;
 #include <HardwareSerial.h>
@@ -5,7 +16,7 @@ Monitor monitor;
 #include "SPIFFS.h"
 #include "../../vivarium/vivarium.h"
 
-#define CALLBACK_DELAY 10000
+#define CALLBACK_DELAY 60*1000*5
 
 char ptrTaskList[600];
 unsigned long lastDelay = 0;
@@ -29,7 +40,6 @@ void Monitor::print()
         Serial.println("****************************************************");
         printMemory();
         lastDelay = millis();
-        printHeapInfo();
     }
 }
 

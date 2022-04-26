@@ -1,3 +1,14 @@
+/**
+* @file fan.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #ifndef _FAN_H_
 #define _FAN_H_
 
@@ -23,6 +34,10 @@ struct FanSettings
     float setMaxAt;
 };
 
+/**
+* @brief Lowers temperature by controling fans. Has linear gain of power depended on setpoint.
+* 
+*/
 class FanController : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
@@ -33,13 +48,6 @@ public:
     float getStartAt();
 
     int getSpeed();
-
-    /// Bluetooth
-    // virtual void setupBLESettings(NimBLEService *settings);
-    // virtual void setupBLEState(NimBLEService *state);
-    // virtual void onBLEDisconnect();
-    // virtual void onBLEConnect();
-    // virtual void getHandlesNum(int *settings, int *state, int *credentials);
 
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);

@@ -1,3 +1,14 @@
+/**
+* @file payloadAlarm.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #include "payloadAlarm.h"
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include <Firebase_ESP_Client.h>
@@ -42,7 +53,7 @@ bool PayloadAlarm<T>::getNextTriggerPayload(T *payload)
 template <typename T>
 void PayloadAlarm<T>::createTrigger(int time, String key, T payload)
 {
-    printlnA("Creating trigger" + key);
+    printlnD("Creating trigger: " + key);
 
     std::shared_ptr<PayloadTrigger<T>> t = std::make_shared<PayloadTrigger<T>>();
     t->payload = payload;
@@ -68,7 +79,7 @@ struct PayloadTriggerMemory
 template <typename T>
 void PayloadAlarm<T>::saveTriggerToNVS(std::shared_ptr<PayloadTrigger<T>> trigger)
 {
-    printlnA("saveTriggerToNVS");
+    printlnD("saveTriggerToNVS");
     if (BaseAlarm<PayloadTrigger<T>>::_provider == nullptr)
         return;
 
@@ -168,23 +179,15 @@ void PayloadAlarm<T>::printTrigger(std::shared_ptr<PayloadTrigger<T>> t)
 {
     if (t != nullptr)
     {
-        printA("ID: ");
-        printA(t->id);
-        printA("(fKey: ");
-        printA(t->firebaseKey);
-        printA(") --> ");
-        printA(t->hour);
-        printA(":");
-        printA(t->minute);
-        printA(" - ");
-        printlnA(t->payload);
+        debugI("ID: %d (fKey: %s) --> %02d:%02d - ", t->id, t->firebaseKey.c_str(), t->hour, t->minute);
+        printlnI(t->payload);
     }
 }
 
 template <typename T>
 void PayloadAlarm<T>::createTriggerFromJson(FirebaseJson *json, String triggerKey)
 {
-    printlnA("Adding new trigger");
+    printlnD("Adding new trigger");
     int time;
     T payload;
     FirebaseJsonData jsonData;
@@ -194,13 +197,13 @@ void PayloadAlarm<T>::createTriggerFromJson(FirebaseJson *json, String triggerKe
     }
     else
     {
-        printlnW("NO time in json");
+        printlnW("NO time in JSON");
         return;
     }
 
     if (!getPayloadFromJson(json, payload))
     {
-        printlnA("No goal in json");
+        printlnW("No goal in JSON");
         return;
     }
 

@@ -1,3 +1,14 @@
+/**
+* @file baseAlarm.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-24
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
+
 #include "baseAlarm.h"
 #include "../../utils/timeHelper.h"
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
@@ -113,7 +124,7 @@ void BaseAlarm<T>::removeTrigger(String firebaseKey)
 
     if (it != _triggers.end())
     {
-        printlnA("Removing trigger");
+        printlnD("Removing trigger");
         if (_provider != nullptr)
             _provider->removeKey(String(MAX_TRIGGERS) + String(it->second->storageId));
         Alarm.free(it->second->id); // clear alarm
@@ -130,9 +141,9 @@ int BaseAlarm<T>::getTriggersCount() { return _triggers.size(); }
 template <typename T>
 void BaseAlarm<T>::lockSemaphore(std::string owner)
 {
-    debugD("Trying to lock semaphore by %s", owner.c_str());
+    debugV("Trying to lock semaphore by %s", owner.c_str());
     xSemaphoreTake(BaseAlarm<T>::triggersMutex, portMAX_DELAY);
-    debugD("Lock semaphore by %s", owner.c_str());
+    debugV("Lock semaphore by %s", owner.c_str());
     _owner = owner;
 }
 
@@ -140,7 +151,7 @@ template <typename T>
 void BaseAlarm<T>::unlockSemaphore()
 {
     xSemaphoreGive(BaseAlarm<T>::triggersMutex);
-    debugD("Unlock semaphore from %s", _owner.c_str());
+    debugV("Unlock semaphore from %s", _owner.c_str());
 }
 
 template <typename T>
@@ -274,13 +285,12 @@ void BaseAlarm<T>::parseTriggerJson(FirebaseJson *json, String path)
     {
         createTriggerFromJson(json, triggerKey);
     }
-    printTriggers();
 }
 
 template <typename T>
 void BaseAlarm<T>::parseTriggerValue(String key, String value)
 {
-    debugA("Parsing value, key = %s, value = %s\n", key.c_str(), value.c_str());
+    debugD("Parsing value, key = %s, value = %s\n", key.c_str(), value.c_str());
 
     int index = key.lastIndexOf("/");
 
@@ -288,13 +298,13 @@ void BaseAlarm<T>::parseTriggerValue(String key, String value)
     String triggerKey = key.substring(0, index);
     triggerKey = triggerKey.substring(triggerKey.lastIndexOf("/") + 1);
 
-    printlnA("jsonKey = " + jsonKey);
-    printlnA("triggerKey = " + triggerKey);
-    printlnA("value = " + value);
+    printlnD("jsonKey = " + jsonKey);
+    printlnD("triggerKey = " + triggerKey);
+    printlnD("value = " + value);
 
     if (value == "null")
     {
-        printlnA("Removing key");
+        printlnD("Removing key");
         removeTrigger(jsonKey);
     }
     else

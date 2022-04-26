@@ -1,3 +1,13 @@
+/**
+* @file module.cpp
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #include "module.h"
 
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
@@ -25,7 +35,7 @@ bool IModule::isConnected()
 
 void IModule::setConnected(bool connected, bool fromButton)
 {
-    debugA("Module %s - set connected %s", _connectionKey.c_str(), connected ? "true" : "false");
+    debugD("Module %s - set connected %s", _connectionKey.c_str(), connected ? "true" : "false");
     _connected = connected;
     _sourceIsButton = fromButton;
 }

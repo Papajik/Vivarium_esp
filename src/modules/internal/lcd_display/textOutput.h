@@ -1,3 +1,13 @@
+/**
+* @file textOutput.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-10-03
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef TEXT_OUTPUT_H
 #define TEXT_OUTPUT_H
 

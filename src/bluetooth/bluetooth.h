@@ -22,50 +22,29 @@
 
 /*!
 * \def DEFAULT_BLE_NAME
-* Description
+* Default name of Bluetooth device
 */
 #define DEFAULT_BLE_NAME "Aquarium service"
-/*!
-* \def BLE_NAME_KEY
-* Description
-*/
+
 #define BLE_NAME_KEY "ble_name"
-
-/*!
-* \def SERVICE_CREDENTIALS_UUID
-* Description
-*/
 #define SERVICE_CREDENTIALS_UUID "E553C32A-64A0-11EB-AE93-0242AC130002"
-/*!
-* \def SERVICE_STATE_UUID
-* Description
-*/
 #define SERVICE_STATE_UUID "24A54BE9-44C0-43AB-BF07-5F4D7AF751D0"
-/*!
-* \def SERVICE_SETTINGS_UUID
-* Description
-*/
 #define SERVICE_SETTINGS_UUID "2B1CBE3F-1A9F-460C-8040-8240590EDB4A"
-
-/*!
-* \def CHARACTERISTIC_BLE_NAME
-* Description
-*/
 #define CHARACTERISTIC_BLE_NAME "56600001-BE5D-4370-877B-C4A2ACE639E8"
 
 /*!
 * \def CREDENTIALS_ID
-* Description
+* ID of Credentials BLE Characteristic
 */
 #define CREDENTIALS_ID 1
 /*!
 * \def STATE_ID
-* Description
+* ID of State BLE Characteristic
 */
 #define STATE_ID 2
 /*!
 * \def SETTINGS_ID
-* Description
+* ID of Settings BLE Characteristic
 */
 #define SETTINGS_ID 3
 

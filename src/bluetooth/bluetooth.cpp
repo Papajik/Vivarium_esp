@@ -80,7 +80,7 @@ class VivariumServerCallbacks : public NimBLEServerCallbacks
         printlnI(pin);
         return false;
     }
-
+    
     uint32_t onPassKeyRequest()
     {
         printlnI("onPassKeyRequest");
@@ -244,7 +244,6 @@ void BLEController::onDeviceConnecting()
     _oldDeviceConnected = _deviceConnected;
 }
 
-//TODO remove wifiProvider dependency
 
 void BLEController::onDeviceDisconnecting()
 {

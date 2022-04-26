@@ -9,8 +9,6 @@
 //Bluetooth
 #include <NimBLEDevice.h>
 
-// TODO Read and write triggers over BLE
-
 #define SETTINGS_HANDLES 12
 #define STATE_HANDLES 3
 

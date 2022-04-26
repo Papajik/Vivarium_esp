@@ -18,10 +18,10 @@ public:
     IFirebaseModule(){};
     virtual ~IFirebaseModule(){};
 
-    virtual void parseJson(FirebaseJson *, String) = 0;
+    virtual void parseJson(FirebaseJson *json, String path) = 0;
     virtual String getSettingKey() = 0;
     virtual void parseValue(String key, String value) = 0;
-    virtual bool updateSensorData(FirebaseJson *) = 0;
+    virtual bool updateSensorData(FirebaseJson *json) = 0;
     void addFirebaseService(FirebaseService *service) { firebaseService = service; };
     void addMessagingService(MessagingService *service) { messagingService = service; };
 

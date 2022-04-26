@@ -62,14 +62,14 @@ bool FanController::updateSensorData(FirebaseJson *json)
 {
     if (isConnected())
     {
-        printlnD("Current speed = ");
-        printlnD(_currentSpeed);
+        printlnV("Current speed = ");
+        printlnV(_currentSpeed);
         float tmp = float(_currentSpeed) / float(FAN_MAX_SPEED) * 100;
         printlnD(tmp);
         int percentage = int(tmp);
 
-        printD("Percentage = ");
-        printlnD(percentage);
+        printV("Percentage = ");
+        printlnV(percentage);
         json->set(KEY_SPEED, percentage);
         return true;
     }

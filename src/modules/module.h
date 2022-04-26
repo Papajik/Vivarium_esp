@@ -1,3 +1,13 @@
+/**
+* @file module.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _MODULE_H_
 #define _MODULE_H_
 

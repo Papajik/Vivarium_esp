@@ -1,3 +1,13 @@
+/**
+* @file outletController.h
+* @author Michal Papaj (papaj.mich@gmail.com)
+* @brief 
+* @version 1.0
+* @date 2021-12-08
+* 
+* @copyright Copyright (c) 2021
+* 
+*/
 #ifndef _OUTLET_CONTROLER_H_
 #define _OUTLET_CONTROLER_H_
 
@@ -5,8 +15,6 @@
 #include "../../../bluetooth/i_bluetooth.h"
 
 #include <vector>
-
-// #define OUTLET_COUNT 2
 
 class MemoryProvider;
 
@@ -44,10 +52,6 @@ private:
     std::vector<bool> _reserved;
     std::vector<bool> _outlets;
     std::vector<bool> _outletChanged;
-
-    // bool _reserved[OUTLET_COUNT] = {false};
-    // bool _outlets[OUTLET_COUNT] = {false};
-    // bool _outletChanged[OUTLET_COUNT] = {false};
 };
 
 extern OutletController *outletController;

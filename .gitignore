@@ -5,3 +5,5 @@ data/*
 documentation/*
 Doxyfile
 src/firebase/service_account.h
+elf/*
+*.zip
