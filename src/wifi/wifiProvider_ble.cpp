@@ -8,6 +8,7 @@
 #include <NimBLEDevice.h>
 #include "../memory/memory_provider.h"
 #include "../firebase/firebase.h"
+#include "../utils/rtc/rtc.h"
 
 #include <WString.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
@@ -47,7 +48,21 @@ void WiFiProvider::setupBLECredentials(NimBLEService *credentials)
 
 void WiFiProvider::onBLEDisconnect()
 {
-        restart();
+    if (wifiProvider->restart())
+    {
+        if (rtc.syncNTP())
+        {
+            rtc.saveCurrentTime();
+        }
+        else
+        {
+            rtc.loadTimeFromRTC();
+        }
+    }
+    else
+    {
+        rtc.loadTimeFromRTC();
+    }
 }
 
 void WiFiProvider::onBLEConnect()

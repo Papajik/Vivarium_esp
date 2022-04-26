@@ -1,6 +1,7 @@
 #include "feeder.h"
 #include "../../../wifi/wifiProvider.h"
 #include "../../../utils/timeHelper.h"
+#include "../../../utils/rtc/rtc.h"
 
 #include <Stepper.h>
 
@@ -56,14 +57,14 @@ void Feeder::saveSettings()
 
 bool Feeder::loadSettings()
 {
-    if (!_memoryProvider->loadStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings)))
+    if (_memoryProvider != nullptr && !_memoryProvider->loadStruct(SETTINGS_FEEDER_KEY, &_settings, sizeof(FeederSettings)))
     {
         _settings = {BOX};
         saveSettings();
     }
 
-    //TODO check if date is available rather than checking wifi connection
-    if (wifiProvider->isConnected())
+    //Check whether Wi-Fi or RTC is running to ensure time is valid
+    if (wifiProvider->isConnected() || rtc.isRunning())
     {
         loadTriggersFromNVS();
         printTriggers();
@@ -130,10 +131,6 @@ void Feeder::feed()
 int Feeder::getLastFeeded()
 {
     return _lastFeededTime;
-}
-bool Feeder::feededRecently()
-{
-    return _feeded;
 }
 
 void Feeder::onConnectionChange()

@@ -7,7 +7,6 @@
 
 #include <HardwareSerial.h>
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
-#include <TimeAlarms.h>
 
 WiFiProvider *wifiProvider;
 
@@ -34,18 +33,10 @@ WiFiProvider::WiFiProvider(MemoryProvider *provider)
     memoryProvider = provider;
 }
 
-void WiFiProvider::setupWiFi()
+bool WiFiProvider::setupWiFi()
 {
     loadFromNVS();
-    if (connect() == WL_CONNECTED)
-    {
-        Serial.print("Connected with IP: ");
-        Serial.println(WiFi.localIP());
-        Serial.println();
-
-        printText({"WiFi", "Connected"});
-        syncTime();
-    }
+    return (connect() == WL_CONNECTED);
 }
 
 bool WiFiProvider::isConnected()
@@ -113,7 +104,7 @@ void WiFiProvider::disconnect()
     WiFi.disconnect();
 }
 
-void WiFiProvider::restart()
+bool WiFiProvider::restart()
 {
     printlnI("Wifi restart");
     if (WiFi.status() == WL_CONNECTED)
@@ -121,27 +112,9 @@ void WiFiProvider::restart()
         disconnect();
     }
     delay(500);
-    setupWiFi();
+    return setupWiFi();
 }
 
-void WiFiProvider::syncTime()
-{
-    printlnA("Sync time with NTP server");
-    configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC, NTP_SERVER_EUROPE, NTP_SERVER, NTP_SERVER_BACKUP);
-    Alarm.configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC);
-
-    tm timeinfo;
-    if (!getLocalTime(&timeinfo))
-    {
-        printlnE("Syncing Failed");
-        return;
-    }
-    else
-    {
-        printA("Time synchronized - ");
-        printlnA(String(timeinfo.tm_hour) + ":" + String(timeinfo.tm_min));
-    }
-}
 
 String WiFiProvider::getPassphrase()
 {

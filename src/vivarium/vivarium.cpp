@@ -38,6 +38,7 @@
 #include "../modules/internal/outlets/outletController.h"
 
 #include <soc/sens_reg.h>
+#include "../utils/rtc/rtc.h"
 #include "../utils/debug/memory.h"
 #include "../utils/monitor/monitor.h"
 #include "../watchdog/watchdog.h"
@@ -112,7 +113,23 @@ void Vivarium::setup(int outletCount, String deviceId)
     bleController->addModule(outletController);
     wifiProvider->addTextOutput(&lcdDisplay);
 
-    wifiProvider->setupWiFi();
+    rtc.begin();
+    // if wifi is set
+    if (wifiProvider->setupWiFi())
+    {
+        if (rtc.syncNTP())
+        {
+            rtc.saveCurrentTime();
+        }
+        else
+        {
+            rtc.loadTimeFromRTC();
+        }
+    }
+    else
+    {
+        rtc.loadTimeFromRTC();
+    }
 
     delay(2000);
     otaService->begin();

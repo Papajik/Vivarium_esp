@@ -91,7 +91,6 @@ public:
     void removeTriggerFromCharacteristic();
 
     int getLastFeeded();
-    bool feededRecently();
     /// LCD
     std::vector<String> getText();
 

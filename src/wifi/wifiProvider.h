@@ -35,31 +35,6 @@
 #define WIFI_DELAY_KEY "wifi_delay"
 
 /*!
-* \def NTP_SERVER
-* Description
-*/
-#define NTP_SERVER "pool.ntp.org"
-/*!
-* \def NTP_SERVER_EUROPE
-* Description
-*/
-#define NTP_SERVER_EUROPE "europe.pool.ntp.org"
-/*!
-* \def NTP_SERVER_BACKUP
-* Description
-*/
-#define NTP_SERVER_BACKUP "time.nist.gov"
-/*!
-* \def GMT_OFFSET_SEC
-* Description
-*/
-#define GMT_OFFSET_SEC 3600 //+1
-/*!
-* \def DST_OFFSET_SEC
-* Description
-*/
-#define DST_OFFSET_SEC 3600 //Daylight offset
-/*!
 * \def CONNECTING_TIMEOUT
 * Description
 */
@@ -82,14 +57,12 @@ class WiFiProvider : public IBluetooth, public TextModule
 {
 public:
     WiFiProvider(MemoryProvider *);
-    void setupWiFi();
+    bool setupWiFi();
     bool isConnected();
     int connect(int timetout = CONNECTING_TIMEOUT);
     void disconnect();
-    void restart();
+    bool restart();
     void onLoop();
-
-    void syncTime();
 
     String getPassphrase();
     void setPassphrase(String passphrase);

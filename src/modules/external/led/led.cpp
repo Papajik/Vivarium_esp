@@ -9,6 +9,7 @@
 #include <Freenove_WS2812_Lib_for_ESP32.h>
 
 #include "../../../utils/timeHelper.h"
+#include "../../../utils/rtc/rtc.h"
 #include <string>
 
 void ledTriggerCallback()
@@ -123,9 +124,7 @@ bool LedModule::loadSettings()
 
     showColor(false, false);
 
-    //TODO check if time is available instead of checking wifi connection
-
-    if (wifiProvider->isConnected())
+    if (wifiProvider->isConnected() || rtc.isRunning())
     {
         loadTriggersFromNVS();
         printTriggers();
