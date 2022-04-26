@@ -78,14 +78,14 @@ private:
 void WaterTempModule::setupBLESettings(NimBLEService *settings)
 {
 
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_TEMP_MAX, new SettingsMaxTemperature(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_TEMP_MIN, new SettingsMinTemperature(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_TEMP_MAX, new SettingsMaxTemperature(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_TEMP_MIN, new SettingsMinTemperature(this));
 }
 
 void WaterTempModule::setupBLEState(NimBLEService *state)
 {
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
-    _currentTempCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_TEMP_CUR, new StateCurrrentTemperatureCallbacks(this));
+    _currentTempCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_TEMP_CUR, new StateCurrrentTemperatureCallbacks(this));
 }
 
 void WaterTempModule::onBLEDisconnect()

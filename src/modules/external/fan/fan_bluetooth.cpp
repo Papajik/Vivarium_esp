@@ -79,13 +79,13 @@ private:
 
 void FanController::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_AT, new SettingsMaxAtCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_START_AT, new SettingsStartAtCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_AT, new SettingsMaxAtCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_START_AT, new SettingsStartAtCallbacks(this));
 }
 
 void FanController::setupBLEState(NimBLEService *state)
 {
-    _currentSpeedCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_SPEED, new StateSpeedCallbacks(this));
+    _currentSpeedCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_SPEED, new StateSpeedCallbacks(this));
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
 }
 

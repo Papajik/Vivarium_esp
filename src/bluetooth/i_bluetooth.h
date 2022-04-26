@@ -68,8 +68,8 @@ public:
 protected:
   bool isBluetoothRunning();
   void setConnectionCallback(NimBLEService *, const char *, IModule *);
-  NimBLECharacteristic *setSettingsCharacteristic(NimBLEService *, const char *, NimBLECharacteristicCallbacks *);
-  NimBLECharacteristic *setStateCharacteristic(NimBLEService *, const char *, NimBLECharacteristicCallbacks *);
+  NimBLECharacteristic *createSettingsCharacteristic(NimBLEService *, const char *, NimBLECharacteristicCallbacks * = nullptr);
+  NimBLECharacteristic *createStateCharacteristic(NimBLEService *, const char *, NimBLECharacteristicCallbacks * = nullptr);
 
   NimBLECharacteristic *_connectedCharacteristic;
 };

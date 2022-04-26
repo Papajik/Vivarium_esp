@@ -10,7 +10,11 @@
 
 bool IBluetooth::isBluetoothRunning()
 {
-    return bleController->isRunning();
+    if (bleController != nullptr)
+    {
+        return bleController->isRunning();
+    }
+    return false;
 }
 
 IsModuleConnectedCallbacks::IsModuleConnectedCallbacks(IModule *m)
@@ -39,11 +43,11 @@ void IsModuleConnectedCallbacks::onWrite(NimBLECharacteristic *pCharacteristic)
 void IBluetooth::setConnectionCallback(NimBLEService *service, const char *uuid, IModule *module)
 {
     _connectedCharacteristic = service->createCharacteristic(uuid, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::READ_AUTHEN |
-                                                                       NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY| NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_AUTHEN | NIMBLE_PROPERTY::WRITE_ENC);
+                                                                       NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_AUTHEN | NIMBLE_PROPERTY::WRITE_ENC);
     _connectedCharacteristic->setCallbacks(new IsModuleConnectedCallbacks(module));
 }
 
-NimBLECharacteristic *IBluetooth::setSettingsCharacteristic(NimBLEService *service, const char *uuid, NimBLECharacteristicCallbacks *callbacks)
+NimBLECharacteristic *IBluetooth::createSettingsCharacteristic(NimBLEService *service, const char *uuid, NimBLECharacteristicCallbacks *callbacks)
 {
     NimBLECharacteristic *characteristic = service->createCharacteristic(uuid,
                                                                          NIMBLE_PROPERTY::READ |
@@ -51,25 +55,22 @@ NimBLECharacteristic *IBluetooth::setSettingsCharacteristic(NimBLEService *servi
                                                                              NIMBLE_PROPERTY::READ_ENC |
                                                                              NIMBLE_PROPERTY::WRITE |
                                                                              NIMBLE_PROPERTY::WRITE_AUTHEN |
-                                                                             NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::NOTIFY| NIMBLE_PROPERTY::INDICATE);
-
-    // setCallbacks can be called with nullptr
-    if (callbacks == nullptr){
-        printA(uuid);
-        printlnA(" - callbacks is null");
-    }
+                                                                             NIMBLE_PROPERTY::WRITE_ENC |
+                                                                             NIMBLE_PROPERTY::NOTIFY |
+                                                                             NIMBLE_PROPERTY::INDICATE);
     characteristic->setCallbacks(callbacks);
 
     return characteristic;
 }
 
-NimBLECharacteristic *IBluetooth::setStateCharacteristic(NimBLEService *service, const char *uuid, NimBLECharacteristicCallbacks *callbacks)
+NimBLECharacteristic *IBluetooth::createStateCharacteristic(NimBLEService *service, const char *uuid, NimBLECharacteristicCallbacks *callbacks)
 {
     NimBLECharacteristic *characteristic = service->createCharacteristic(uuid,
                                                                          NIMBLE_PROPERTY::READ |
                                                                              NIMBLE_PROPERTY::READ_AUTHEN |
                                                                              NIMBLE_PROPERTY::READ_ENC |
-                                                                             NIMBLE_PROPERTY::NOTIFY| NIMBLE_PROPERTY::INDICATE);
+                                                                             NIMBLE_PROPERTY::NOTIFY |
+                                                                             NIMBLE_PROPERTY::INDICATE);
     characteristic->setCallbacks(callbacks);
     return characteristic;
 }

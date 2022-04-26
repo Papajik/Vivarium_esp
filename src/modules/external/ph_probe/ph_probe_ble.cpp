@@ -7,9 +7,6 @@
 //Bluetooth
 #include <NimBLEDevice.h>
 
-//Delays
-#include <millisDelay.h>
-
 //Settings
 
 #define CHARACTERISTIC_UUID_PH_MAX "50A00101-4E12-11EB-AE93-0242AC130002"
@@ -42,17 +39,17 @@ private:
 
 void PhModule::setupBLEState(BLEService *state)
 {
-    characteristicWaterPh = setStateCharacteristic(state, CHARACTERISTIC_UUID_PH_CUR, new StateWaterPhCallbacks(this));
+    characteristicWaterPh = createStateCharacteristic(state, CHARACTERISTIC_UUID_PH_CUR, new StateWaterPhCallbacks(this));
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
 }
 
 void PhModule::setupBLESettings(BLEService *settings)
 {
 
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_PH_MAX, new SettingsWaterMaxPh(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_PH_MIN, new SettingsWaterMinPh(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_CONTINUOUS, new SettingsContinuousCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_CONTINUOUS_DELAY, new SettingsContinuousDelayCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_PH_MAX, new SettingsWaterMaxPh(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_PH_MIN, new SettingsWaterMinPh(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_CONTINUOUS, new SettingsContinuousCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_CONTINUOUS_DELAY, new SettingsContinuousDelayCallbacks(this));
 };
 
 void PhModule::onBLEDisconnect()

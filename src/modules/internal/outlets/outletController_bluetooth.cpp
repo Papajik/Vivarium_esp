@@ -12,8 +12,6 @@
 //State
 #define CHARACTERISTIC_UUID_PREFIX "E7D0110"
 #define CHARACTERISTIC_UUID_SUFFIX "-5513-48D9-8558-8B657B49B801"
-// #define CHARACTERISTIC_UUID_OUTLET_1_ON "E7D01100-5513-48D9-8558-8B657B49B801"
-// #define CHARACTERISTIC_UUID_OUTLET_2_ON "E7D01200-5513-48D9-8558-8B657B49B801"
 
 class OutletOnCallbacks : public BLECharacteristicCallbacks
 {
@@ -49,14 +47,9 @@ void OutletController::setupBLEState(NimBLEService *state)
         if (!_reserved[i])
         {
             String s = String(CHARACTERISTIC_UUID_PREFIX) + String(i) + String(CHARACTERISTIC_UUID_SUFFIX);
-            setStateCharacteristic(state, s.c_str(), new OutletOnCallbacks(this, i));
+            createStateCharacteristic(state, s.c_str(), new OutletOnCallbacks(this, i));
         }
     }
-
-    // if (!_reserved[0])
-    //     setStateCharacteristic(state, CHARACTERISTIC_UUID_OUTLET_1_ON, new OutletOnCallbacks(this, 1));
-    // if (!_reserved[1])
-    //     setStateCharacteristic(state, CHARACTERISTIC_UUID_OUTLET_2_ON, new OutletOnCallbacks(this, 2));
 }
 
 void OutletController::onBLEDisconnect()

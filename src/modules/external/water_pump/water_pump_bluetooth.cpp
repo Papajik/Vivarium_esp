@@ -57,12 +57,12 @@ private:
 
 void WaterPump::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LEVEL_GOAL, new SettingsGoalCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LEVEL_GOAL, new SettingsGoalCallbacks(this));
 }
 
 void WaterPump::setupBLEState(NimBLEService *state)
 {
-    _pumpRunningCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_PUMP_ON, new StateIsOnCallbacks(this));
+    _pumpRunningCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_PUMP_ON, new StateIsOnCallbacks(this));
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
 }
 

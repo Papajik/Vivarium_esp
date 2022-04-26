@@ -83,14 +83,14 @@ private:
 
 void Heater::setupBLESettings(NimBLEService *settings)
 {
-    _currentGoalCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_GOAL, new SettingsGoalCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MODE, new SettingsModeCallbacks(this));
+    _currentGoalCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_GOAL, new SettingsGoalCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MODE, new SettingsModeCallbacks(this));
 }
 
 void Heater::setupBLEState(NimBLEService *state)
 {
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
-    _currentPowerCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_POWER, new StateCurrentPowerCallbacks(this));
+    _currentPowerCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_POWER, new StateCurrentPowerCallbacks(this));
 }
 
 void Heater::onBLEDisconnect() {}

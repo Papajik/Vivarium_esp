@@ -139,17 +139,17 @@ private:
 
 void DhtModule::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_T, new SettingsMaxTemp(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_T, new SettingsMinTemp(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_H, new SettingsMaxHum(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_H, new SettingsMinHum(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_T, new SettingsMaxTemp(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_T, new SettingsMinTemp(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_H, new SettingsMaxHum(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_H, new SettingsMinHum(this));
 }
 
 void DhtModule::setupBLEState(NimBLEService *state)
 {
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
-    _tempCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_TEMP, new StateCurrentTemp(this));
-    _humidityCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_HUMIDITY, new StateCurrentHum(this));
+    _tempCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_TEMP, new StateCurrentTemp(this));
+    _humidityCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_HUMIDITY, new StateCurrentHum(this));
 }
 
 void DhtModule::onBLEDisconnect() {}

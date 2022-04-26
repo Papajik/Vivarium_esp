@@ -58,12 +58,12 @@ private:
 /// Bluetooth
 void Humidifier::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_HUM_GOAL, new SettingsHumidityGoalCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_HUM_GOAL, new SettingsHumidityGoalCallbacks(this));
 }
 
 void Humidifier::setupBLEState(NimBLEService *state)
 {
-    _humidifierOnCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_HUM_ON, new SettingsHumidifierOnCallbacks(this));
+    _humidifierOnCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_HUM_ON, new SettingsHumidifierOnCallbacks(this));
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
 }
 

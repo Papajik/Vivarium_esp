@@ -77,16 +77,16 @@ private:
 
 void LedModule::setupBLESettings(NimBLEService *settings)
 {
-    _idCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_ID, nullptr);
-    _timeCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_TIME, nullptr);
-    _colorCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_COLOR, nullptr);
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_COMMAND, new SettingsLedTriggerCommandCallbacks(this));
+    _idCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_ID);
+    _timeCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_TIME);
+    _colorCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_COLOR);
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_LED_COMMAND, new SettingsLedTriggerCommandCallbacks(this));
 }
 
 void LedModule::setupBLEState(NimBLEService *state)
 {
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
-    _currentColorCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_COLOR, new SettingsColorCallbacks(this));
+    _currentColorCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_COLOR, new SettingsColorCallbacks(this));
 }
 
 void LedModule::onBLEDisconnect() {}

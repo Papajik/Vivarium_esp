@@ -97,13 +97,13 @@ private:
 
 void WaterLevel::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_LEVEL, new SettingsMaxLevelCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_LEVEL, new SettingsMinLevelCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_SENSOR_HEIGHT, new SettingsSensorHeightCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MAX_LEVEL, new SettingsMaxLevelCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_MIN_LEVEL, new SettingsMinLevelCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_SENSOR_HEIGHT, new SettingsSensorHeightCallbacks(this));
 }
 void WaterLevel::setupBLEState(NimBLEService *state)
 {
-    _waterLevelCharacteristic = setStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_LEVEL, new StateCurrentLevelCallbacks(this));
+    _waterLevelCharacteristic = createStateCharacteristic(state, CHARACTERISTIC_UUID_CURRENT_LEVEL, new StateCurrentLevelCallbacks(this));
     setConnectionCallback(state, CHARACTERISTIC_UUID_MODULE_CONNECTED, this);
 }
 

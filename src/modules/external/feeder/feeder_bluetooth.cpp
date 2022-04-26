@@ -103,10 +103,10 @@ private:
 
 void Feeder::setupBLESettings(NimBLEService *settings)
 {
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_MODE, new SettingsModeCallbacks(this));
-    setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_COMMAND, new SettingsFeedTriggerCommandCallbacks(this));
-    _timeCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_TIME, nullptr);
-    _idCharacteristic = setSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_ID, nullptr);
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_MODE, new SettingsModeCallbacks(this));
+    createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_COMMAND, new SettingsFeedTriggerCommandCallbacks(this));
+    _timeCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_TIME);
+    _idCharacteristic = createSettingsCharacteristic(settings, CHARACTERISTIC_UUID_FEEDER_ID);
 }
 
 void Feeder::setupBLEState(NimBLEService *state)
