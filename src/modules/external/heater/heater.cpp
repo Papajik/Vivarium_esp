@@ -1,20 +1,25 @@
 #include "heater.h"
+#include <Arduino.h>
 #include "../../../state/state_values.h"
-#include <RBDdimmer.h> //
-#include <AutoPID.h>   //https://r-downing.github.io/AutoPID/
+#include "pid/pid.h"
+#include <RBDdimmer.h> 
 #include "millisDelay.h"
 #include "state_values.h"
+#include "../../../wifi/wifiProvider.h"
 #include "../../../utils/rtc/rtc.h"
 #define CONNECTED_KEY "heater/c"
 #define FIREBASE_CD_POWER "/sensorData/heater/power"
 #define FIREBASE_CD_TEMP_GOAL "/sensorData/heater/goal"
-#define INTEGRAL_KEY "heat_t"
+
+#define HEATER_THERMO_CYCLE 15 * 1000 // 30 second (cca 1/4 of dead time cycle - 2-3 minutes)
 
 #define HEATER_OUTPUT_MIN 0
 #define HEATER_OUTPUT_MAX 100
 
 #define HEATER_STEP_TIME 5000
 #define HEATER_BANG_BANG 1
+
+#define HEATER_SAMPLE_TIME_US 1000000 * 5 // 5 seconds
 
 #define HEATER_FAILSAFE_DELAY 10000
 
@@ -44,6 +49,8 @@ String modeToString(Mode m)
         return "AUTO";
     case THERMO:
         return "THERMO";
+    case DIRECT:
+        return "DIRECT";
     default:
         return "UNKNOWN";
     }
@@ -57,12 +64,13 @@ void Heater::setFutureGoal(double goal)
 Heater::Heater(int position, MemoryProvider *provider, int pwm, int sync)
     : IModule(CONNECTED_KEY, position, provider),
       PayloadAlarm<double>(&heaterCallback, provider, "heat.")
+
 {
     printlnA("Heater created");
-    _settings = {AUTO, GOAL_INVALID};
-    _pid = new AutoPID(&_currentTemperature, &_settings.tempGoal, &_currentPower, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, HEATER_KP, HEATER_KI, HEATER_KD);
-    _pid->setBangBang(HEATER_BANG_BANG);
-    _pid->setTimeStep(HEATER_STEP_TIME);
+    _settings = {AUTO, GOAL_INVALID, 0};
+    _thermoDelay = new millisDelay();
+    _pid = new HeaterPID(provider);
+    _pid->initPID(&_currentTemperature, &_currentPower, &_settings.tempGoal, HEATER_OUTPUT_MIN, HEATER_OUTPUT_MAX, 0.5); // bang-bang 0.5 °C
     _dimmer = new dimmerLamp(pwm, sync);
     _dimmer->begin(NORMAL_MODE, OFF);
     loadSettings();
@@ -70,8 +78,10 @@ Heater::Heater(int position, MemoryProvider *provider, int pwm, int sync)
 
 void Heater::beforeShutdown()
 {
-    // printlnA("Heater - shutting down saving integral");
-    // _memoryProvider->saveDouble(INTEGRAL_KEY, _pid->getIntegral());
+    if (getMode() == Mode::PID)
+    {
+        _pid->saveOutputSum();
+    }
 }
 
 void Heater::checkFutureGoal()
@@ -106,22 +116,49 @@ void Heater::onLoop()
     if (_settingsChanged)
         saveSettings();
 
+    /// PID values change
+    if (_pid->isKiChanged())
+        firebaseService->uploadState(KEY_HEATER_KI, _pid->getKi());
+    if (_pid->isKpChanged())
+        firebaseService->uploadState(KEY_HEATER_KP, _pid->getKp());
+    if (_pid->isKdChanged())
+        firebaseService->uploadState(KEY_HEATER_KD, _pid->getKd());
+    if (_pid->isPonChanged())
+        firebaseService->uploadState(KEY_HEATER_PON, _pid->getPOn());
+    _pid->clearChanges();
+
     checkConnectionChange();
 
     if (isConnected())
     {
+        if (_settings.mode == Mode::DIRECT) // Direct output is set explicitely by user and there is no temperature input needed
+        {
+            _currentPower = _settings.directPower;
+            updatePower();
+            return;
+        }
+
         //Failsafe
         if (!checkTemperatureConnected())
             return;
 
-        if (_settings.mode == PID)
+        //Temperature loaded
+        if (loadTemp())
         {
-            runPID();
-        }
+            // PID
+            if (_settings.mode == Mode::PID)
+            {
 
-        if (_settings.mode == THERMO)
-        {
-            runThermo();
+                _pid->runPid();
+                updatePower();
+            }
+
+            // Thermo
+            if (_settings.mode == Mode::THERMO)
+            {
+                runThermo();
+                updatePower();
+            }
         }
     }
 }
@@ -133,9 +170,17 @@ bool Heater::loadTemp()
     {
         if (tmp != HEATER_TEMP_INVALID)
         {
-
             _lastValidTemp = millis();
-            _currentTemperature = tmp;
+            if (_pid->isAutoTuneRunning()) // only if pid exists and tune is running
+            {
+                // User running (rolling) average to get smooth output
+                _currentTemperature = pidAverage(tmp);
+            }
+            else
+            {
+                _currentTemperature = tmp;
+            }
+
             return true;
         }
         else
@@ -153,9 +198,16 @@ bool Heater::loadTemp()
 
 void Heater::runThermo()
 {
-    if (loadTemp())
+    // Check if cycle is running, if not, start cycle
+    if (!_thermoDelay->isRunning())
     {
-        if (_currentTemperature >= _settings.tempGoal)
+        _thermoDelay->start(HEATER_THERMO_CYCLE);
+        printlnA("Thermo is not running, starting now");
+    }
+
+    if (_thermoDelay->justFinished())
+    {
+        printlnA("Thermo finished") if (_currentTemperature >= _settings.tempGoal)
         {
             _currentPower = 0;
         }
@@ -163,7 +215,7 @@ void Heater::runThermo()
         {
             _currentPower = 100;
         }
-        updatePower();
+        _thermoDelay->restart();
     }
 }
 
@@ -186,14 +238,6 @@ void Heater::stop()
     updatePower();
 }
 
-void Heater::runPID()
-{
-    if (loadTemp())
-    {
-        _pid->run();
-        updatePower();
-    }
-}
 void Heater::updatePower()
 {
     _dimmer->setPower(_currentPower);
@@ -228,20 +272,15 @@ bool Heater::loadSettings()
     if (loaded)
     {
         setGoal(_settings.tempGoal, true);
+        setMode(_settings.mode);
     }
-
-    /// Check if integral is saved and set it to pid regulator if so
-    double integral = _memoryProvider->loadDouble(INTEGRAL_KEY, -1);
-
-    if (integral != -1)
+    _pid->loadValues();
+    //Check whether Wi-Fi or RTC is running to ensure time is valid
+    if (wifiProvider->isConnected() || rtc.isRunning())
     {
-        printlnA("Loaded integral = " + String(integral));
-        _pid->setIntegral(integral);
-        _memoryProvider->removeKey(INTEGRAL_KEY);
+        loadTriggersFromNVS();
+        printTriggers();
     }
-
-    loadTriggersFromNVS();
-    printTriggers();
 
     return loaded;
 }
@@ -283,7 +322,28 @@ void Heater::setMode(Mode m)
         stateStorage.setValue(HEATER_MODE, (uint32_t)m);
         _settings.mode = m;
         _settingsChanged = true;
-        _pid->reset();
+
+        // setup pid
+        if (m == Mode::PID)
+        {
+            _pid->start();
+        }
+        else
+        {
+            _pid->stop();
+        }
+
+        // setup thermo
+        if (m == Mode::THERMO)
+        {
+            printlnA("Starting Thermo cycle");
+            _thermoDelay->start(HEATER_THERMO_CYCLE); // Set dead time cycle
+        }
+        else
+        {
+            printlnA("Stoping Thermo cycle");
+            _thermoDelay->stop(); // stop cycle
+        }
     }
 }
 
@@ -295,11 +355,9 @@ void Heater::setGoal(double g, bool forced)
         printlnA("Goal changed");
         debugA("New goal = %.2f", g);
         printlnA();
-        //TODO check this one
         _settings.tempGoal = g;
         _settingsChanged = true;
         stateStorage.setValue(TEMP_GOAL, (float)g);
-        _pid->reset();
         if (firebaseService != nullptr)
             firebaseService->uploadCustomData("devices/", FIREBASE_CD_TEMP_GOAL, g);
     }
@@ -313,6 +371,14 @@ double Heater::getCurrentPower()
 double Heater::getGoal()
 {
     return _settings.tempGoal;
+}
+
+void Heater::printPidSettings()
+{
+    debugA("PID mode = %d", _pid->getMode());
+    debugA("Kp = %.2f", _pid->getKp());
+    debugA("Ki = %.2f", _pid->getKi());
+    debugA("Kd = %.2f", _pid->getKd());
 }
 
 bool Heater::failSafeCheck()

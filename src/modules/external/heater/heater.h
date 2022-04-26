@@ -18,36 +18,32 @@
 #include "../../../modules/internal/lcd_display/textModule.h"
 #include "../../../modules/alarm/payloadAlarm.h"
 
+#include "pid/pid.h"
+
 #define SETTINGS_HEATER_KEY "heater"
 #define FIREBASE_HEATER_CONNECTED_KEY "/heater/connected"
 #define KEY_HEATER_GOAL "/heater/goal"
+
+// Upload state
+#define KEY_HEATER_KI "/heater/Ki"
+#define KEY_HEATER_KP "/heater/Kp"
+#define KEY_HEATER_KD "/heater/Kd"
+#define KEY_HEATER_PON "/heater/pOn"
 
 #define HEATER_PIN 2
 #define HEATER_SYNC_PIN 15
 #define GOAL_INVALID -1
 
-// #define HEATER_KP 38.81978
-// #define HEATER_KI 0.467478
-// #define HEATER_KD 80.59064
-
-///Works relatively fine
-// #define HEATER_KP 38.81978
-// #define HEATER_KI 0.23
-// #define HEATER_KD 80.59064
-
-#define HEATER_KP 80
-#define HEATER_KI 0.2
-#define HEATER_KD 80
-
-class AutoPID;
 class dimmerLamp;
+class millisDelay;
 
 enum Mode
 {
-    PID = 0,
-    AUTO = 1,
-    THERMO = 2,
-    UNKNWON = -1
+    PID = 0,    // QuickPID
+    AUTO = 1,   // External heater - just let 100 % of power into socket
+    THERMO = 2, // ON-OFF
+    DIRECT = 3, // Setup power output directly - can have various uses
+    UNKNWON = -1 
 };
 
 String modeToString(Mode m);
@@ -55,7 +51,8 @@ String modeToString(Mode m);
 struct HeaterSettings
 {
     Mode mode;
-    double tempGoal; //temp goal
+    float tempGoal;
+    float directPower;
 };
 
 /**
@@ -88,7 +85,7 @@ public:
     virtual void getHandlesCount(int *settings, int *state, int *credentials);
 
     void setMode(Mode);
-    Mode getMode();
+    Mode getMode() { return _settings.mode; };
 
     void runPID();
 
@@ -106,6 +103,8 @@ public:
 
     void triggerCallback();
 
+    void printPidSettings();
+
 private:
     bool checkTemperatureConnected();
     void checkFutureGoal();
@@ -113,16 +112,21 @@ private:
     void stop();
 
     double _oldPower = -1;
-    double _futureGoal = -1;
+    float _currentTemperature = 0;
+    float _currentPower = 0;
+    float _futureGoal = -1;
+
+    millisDelay *_thermoDelay;
+
+    HeaterPID *_pid;
+
     NimBLECharacteristic *_currentGoalCharacteristic;
     NimBLECharacteristic *_currentPowerCharacteristic;
     bool _settingsChanged = false;
     dimmerLamp *_dimmer = nullptr;
-    AutoPID *_pid = nullptr;
+
     HeaterSettings _settings;
-    double _currentTemperature = 0;
-    // double _tempGoal;
-    double _currentPower = 0;
+
     unsigned long _lastValidTemp = 0;
 
     bool failSafeCheck();
