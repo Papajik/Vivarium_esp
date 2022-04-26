@@ -1,0 +1,1 @@
+#define VIVARIUM_FIRMWARE_VERSION "32_3_a"

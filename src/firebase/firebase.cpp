@@ -28,7 +28,7 @@
 #define USER_EMAIL "device@fw.com"
 #define USER_PASSWORD "AZE}(vYJxe}Z'3rU"
 
-#define DEFAULT_UPLOAD_DELAY 60000                 //1 min
+#define DEFAULT_UPLOAD_DELAY 30000                 //30 second
 #define REFRESH_FCM_TOKENS_INTERVAL 60 * 60 * 1000 // every 1 hour refresh FCM tokens
 #define FBDO_CLEAR_DELAY 170 * 1000
 #define FIREBASE_READY_DELAY 60000
@@ -70,7 +70,6 @@ bool _initializeFB(bool serviceAccount = true)
 
     firebaseConfig.database_url = DATABASE_URL;
     firebaseConfig.max_token_generation_retry = 5;
-    // firebaseConfig.cert.data = cert;
 
     Serial.println("Firebase begin");
     Firebase.begin(&firebaseConfig, &firebaseAuth);
@@ -349,7 +348,7 @@ void FirebaseService::valueCallback(String path, String value, String type)
     {
         String s = module->getSettingKey();
 
-        printV("Trying module");
+        printV("Trying module ");
         printlnV(s);
 
         if (s == settingsKey)
@@ -508,7 +507,7 @@ void FirebaseService::uploadCustomData(std::string prefix, std::string suffix, s
 {
     if (_running && Firebase.ready())
     {
-        printlnA(std::string("Async uploadCustomData: " + prefix + " - " + suffix).c_str());
+        debugA("Async uploadCustomData P: %s, s: %s, v: %s", prefix.c_str(), suffix.c_str(), str.c_str());
         checkSSLConnected();
         std::shared_ptr<Data> data = std::make_shared<Data>();
         data->path = prefix + std::string(_auth->getDeviceId().c_str()) + suffix;
@@ -522,7 +521,8 @@ void FirebaseService::uploadCustomData(std::string prefix, std::string suffix, f
 {
     if (_running && Firebase.ready())
     {
-        printlnA(std::string("Async uploadCustomData: " + prefix + " - " + suffix).c_str());
+        debugA("Async uploadCustomData P: %s, s: %s, v: %f", prefix.c_str(), suffix.c_str(), fl);
+        // printlnA(std::string("Async uploadCustomData: " + prefix + " - " + suffix).c_str());
         checkSSLConnected();
         std::shared_ptr<Data> data = std::make_shared<Data>();
         data->path = prefix + std::string(_auth->getDeviceId().c_str()) + suffix;

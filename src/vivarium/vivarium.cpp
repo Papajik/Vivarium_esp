@@ -215,13 +215,12 @@ void Vivarium::onLoop()
         mainLoop();
     }
     else
-        {
+    {
         otaLoop();
-        }
-
+    }
     debugHandle();
     Debugger::debugDelay();
-    }
+}
 
 void Vivarium::restart()
 {
@@ -230,11 +229,11 @@ void Vivarium::restart()
 }
 
 void Vivarium::otaLoop()
+{
+    otaResponse = otaService->onLoop();
+    switch (otaResponse)
     {
-        otaResponse = otaService->onLoop();
-        switch (otaResponse)
-        {
-        case OTA_COMPLETED:
+    case OTA_COMPLETED:
         restart();
         break;
     case OTA_FAIL:
@@ -244,15 +243,15 @@ void Vivarium::otaLoop()
         }
         printlnA("OTA failed, ESP restart");
         restart();
-            break;
-        case OTA_CANCEL:
-            printlnA("OTA cancelled, finalizing");
-            finalize();
-            break;
-        default:
-            break;
-        }
+        break;
+    case OTA_CANCEL:
+        printlnA("OTA cancelled, finalizing");
+        finalize();
+        break;
+    default:
+        break;
     }
+}
 
 void Vivarium::mainLoop()
 {
