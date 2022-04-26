@@ -1,3 +1,4 @@
+#line 2 "test_feeder.h"
 #include "../../src/modules/external/feeder/feeder.h"
 
 #include <Firebase_ESP_Client.h>
@@ -11,7 +12,7 @@ class TestFeederOnce : public TestOnce
 protected:
     void setup() override
     {
-        feederPtr = new Feeder(1);
+        feederPtr = new Feeder(1, nullptr);
     }
 
     void teardown() override
@@ -24,8 +25,6 @@ public:
 
 testF(TestFeederOnce, noTrigger)
 {
-    Serial.println("noTrigger");
-    uint32_t color;
     int time;
     assertFalse(feederPtr->getNextTriggerTime(&time));
     assertTrue(heap_caps_check_integrity_all(true));
@@ -33,7 +32,6 @@ testF(TestFeederOnce, noTrigger)
 
 testF(TestFeederOnce, triggersCount)
 {
-    Serial.println("triggersCount");
     FirebaseJson *json = new FirebaseJson();
     json->add("time", 256);
     assertEqual(0, feederPtr->getTriggersCount());
@@ -43,9 +41,9 @@ testF(TestFeederOnce, triggersCount)
     assertEqual(2, feederPtr->getTriggersCount());
     feederPtr->parseValue(PREFIX_SETTINGS + String("/feeder/triggers/256"), "null");
     feederPtr->printTriggers();
-    // assertEqual(1, feederPtr->getTriggersCount());
-    // feederPtr->parseValue(PREFIX_SETTINGS + String("/feeder/triggers/123"), "null");
-    // assertEqual(0, feederPtr->getTriggersCount());
+    assertEqual(1, feederPtr->getTriggersCount());
+    feederPtr->parseValue(PREFIX_SETTINGS + String("/feeder/triggers/123"), "null");
+    assertEqual(0, feederPtr->getTriggersCount());
 
     delete json;
     assertTrue(heap_caps_check_integrity_all(true));
@@ -53,7 +51,6 @@ testF(TestFeederOnce, triggersCount)
 
 testF(TestFeederOnce, parseTrigger_afterCurrentTime)
 {
-    Serial.println("parseTrigger_afterCurrentTime");
     ESP32Time rtc;
     rtc.setTime(0, 0, 1, 1, 1, 2021);
 
@@ -74,7 +71,6 @@ testF(TestFeederOnce, parseTrigger_afterCurrentTime)
 
 testF(TestFeederOnce, parseTrigger_beforeCurrentTime)
 {
-    Serial.println("parseTrigger_beforeCurrentTime");
     ESP32Time rtc;
     rtc.setTime(0, 0, 1, 1, 1, 2021);
     FirebaseJson *json = new FirebaseJson();
@@ -94,7 +90,6 @@ testF(TestFeederOnce, parseTrigger_beforeCurrentTime)
 
 testF(TestFeederOnce, _parseTwoTriggers_timeBetween)
 {
-    Serial.println("_parseTwoTriggers_timeBetween");
     ESP32Time rtc;
     rtc.setTime(0, 1, 1, 1, 1, 2021);
 
@@ -124,7 +119,7 @@ testF(TestFeederOnce, _parseTwoTriggers_timeBetween)
 
 testF(TestFeederOnce, notTriggered)
 {
-    Serial.println("notTriggered");
+    feederPtr->setConnected(true, false);
     ESP32Time rtc;
     rtc.setTime(0, 0, 1, 1, 1, 2021);
 

@@ -1,3 +1,4 @@
+#line 2 "test_module.h"
 #include <AUnitVerbose.h>
 
 #include "../src/modules/module.h"
@@ -9,12 +10,12 @@ using namespace aunit;
 class MockModule : public IModule
 {
 public:
-    MockModule(String connectionKey, int position) : IModule(connectionKey, position)
+    MockModule(String connectionKey, int position, MemoryProvider *m) : IModule(connectionKey, position, m)
     {
     }
 
-    ~MockModule(){
-
+    ~MockModule()
+    {
     }
 
     virtual void onConnectionChange()
@@ -37,8 +38,9 @@ class MockMemory : public MemoryProvider
 public:
     MockMemory() : MemoryProvider(){};
     virtual ~MockMemory(){};
-    virtual void begin(String name = "vivarium"){};
+    virtual void begin(){};
     virtual void end(){};
+    virtual void init(String name = "vivarium"){};
 
     // Extern modules settings
     virtual void saveStruct(String key, const void *, size_t){};
@@ -120,7 +122,7 @@ public:
 
 test(moduleInit)
 {
-    IModule *module = new MockModule("", 0);
+    IModule *module = new MockModule("key", 0, nullptr);
     assertFalse(module->isConnected());
     delete module;
 }
@@ -128,11 +130,11 @@ test(moduleInit)
 // Default connection is false
 test(moduleConnectionDefaultConnectionFromMemory)
 {
-    IModule *module = new MockModule("key", 0);
     MockMemory *provider = new MockMemory();
+    IModule *module = new MockModule("key", 0, provider);
+
     provider->connected = true;
     provider->wantedKey = "differentKey";
-    module->setMemoryProvider(provider);
     assertFalse(module->isConnected());
     delete module;
     delete provider;
@@ -140,11 +142,10 @@ test(moduleConnectionDefaultConnectionFromMemory)
 
 test(moduleConnectionTrueConnectionFromMemory)
 {
-    IModule *module = new MockModule("key", 0);
     MockMemory *provider = new MockMemory();
     provider->connected = true;
     provider->wantedKey = "key";
-    module->setMemoryProvider(provider);
+    IModule *module = new MockModule("key", 0, provider);
     assertTrue(module->isConnected());
     delete module;
     delete provider;
@@ -152,7 +153,7 @@ test(moduleConnectionTrueConnectionFromMemory)
 
 test(moduleCheckConnectionChange)
 {
-    MockModule *module = new MockModule("key", 0);
+    MockModule *module = new MockModule("key", 0, nullptr);
     IModule *m = module;
     m->setConnected(true, true);
     assertFalse(module->onConnectionChangeCalled);
@@ -162,14 +163,16 @@ test(moduleCheckConnectionChange)
 
 test(moduleConnectionChangeWithMemory)
 {
-    IModule *module = new MockModule("memoryKey", 0);
+
     MockMemory *provider = new MockMemory();
     provider->savedValue = false;
-    module->setMemoryProvider(provider);
+    IModule *module = new MockModule("memoryKey", 0, provider);
     module->setConnected(true, false);
+    module->checkConnectionChange();
     assertEqual("memoryKey", provider->usedKeyToSave);
     assertEqual(true, provider->savedValue);
     module->setConnected(false, false);
+    module->checkConnectionChange();
     assertEqual(false, provider->savedValue);
     delete module;
     delete provider;
@@ -177,16 +180,18 @@ test(moduleConnectionChangeWithMemory)
 
 test(moduleConnectionWithLed)
 {
-    IModule *module = new MockModule("memoryKey", 3);
+    IModule *module = new MockModule("memoryKey", 3, nullptr);
     LedMock *led = new LedMock();
 
     module->setLedControl(led);
     module->setConnected(true, false);
+    module->checkConnectionChange();
 
     assertEqual(led->usedPin, 3);
     assertEqual(led->savedStatus, 0);
 
     module->setConnected(false, false);
+    module->checkConnectionChange();
     assertEqual(led->savedStatus, 1);
 
     delete module;

@@ -1,3 +1,4 @@
+#line 2 "test_led.h"
 #include "../../src/modules/external/led/led.h"
 
 #include <Firebase_ESP_Client.h>
@@ -11,7 +12,7 @@ class TestLedOnce : public TestOnce
 protected:
     void setup() override
     {
-        ledModulePtr = new LedModule(1);
+        ledModulePtr = new LedModule(1, nullptr);
     }
 
     void teardown() override
@@ -37,7 +38,7 @@ testF(TestLedOnce, noTrigger)
 {
     uint32_t color;
     int time;
-    assertFalse(ledModulePtr->getNextTriggerColor(&color));
+    assertFalse(ledModulePtr->getNextTriggerPayload(&color));
     assertFalse(ledModulePtr->getNextTriggerTime(&time));
 }
 
@@ -76,7 +77,7 @@ testF(TestLedOnce, parseTrigger_afterCurrentTime)
 
     uint32_t color = 0;
     int time = 0;
-    assertTrue(ledModulePtr->getNextTriggerColor(&color));
+    assertTrue(ledModulePtr->getNextTriggerPayload(&color));
     assertTrue(ledModulePtr->getNextTriggerTime(&time));
     assertEqual(time, wantedTime);
     assertEqual(color, wantedColor);
@@ -99,7 +100,7 @@ testF(TestLedOnce, parseTrigger_beforeCurrentTime)
 
     uint32_t color = 0;
     int time = 0;
-    assertTrue(ledModulePtr->getNextTriggerColor(&color));
+    assertTrue(ledModulePtr->getNextTriggerPayload(&color));
     assertTrue(ledModulePtr->getNextTriggerTime(&time));
     assertEqual(time, wantedTime);
     assertEqual(color, wantedColor);
@@ -133,7 +134,7 @@ testF(TestLedOnce, _parseTwoTriggers_timeBetween)
 
     uint32_t color = 0;
     int time = 0;
-    assertTrue(ledModulePtr->getNextTriggerColor(&color));
+    assertTrue(ledModulePtr->getNextTriggerPayload(&color));
     assertTrue(ledModulePtr->getNextTriggerTime(&time));
     assertEqual(time, afterTime);
     assertEqual(color, afterColor);

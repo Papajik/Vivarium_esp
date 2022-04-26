@@ -22,7 +22,7 @@ public:
 class MockModuleMC : public IModule
 {
 public:
-    MockModuleMC(String connectionKey, int position) : IModule(connectionKey, position)
+    MockModuleMC(String connectionKey, int position) : IModule(connectionKey, position, nullptr)
     {
     }
 
@@ -30,8 +30,15 @@ public:
 
     virtual void onLoop() {}
 
+    virtual void beforeShutdown()
+    {
+        beforeShutdownCalled = true;
+    }
+
     virtual void saveSettings() {}
     virtual bool loadSettings() { return true; }
+
+    bool beforeShutdownCalled = false;
 
 private:
 };
@@ -90,5 +97,14 @@ testF(ModuleControlOnce, buttonPressed)
     assertTrue(moduleControl.isModuleConnected(0));
     moduleControl.buttonPressed(0);
     assertFalse(moduleControl.isModuleConnected(0));
+    delete module;
+}
+
+testF(ModuleControlOnce, beforeS)
+{
+    MockModuleMC *module = new MockModuleMC("", 0);
+    moduleControl.addModule(module);
+    moduleControl.beforeShutdown();
+    assertTrue(module->beforeShutdownCalled);
     delete module;
 }

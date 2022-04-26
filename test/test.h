@@ -2,6 +2,8 @@
 
 #include <AUnitVerbose.h>
 
+using namespace aunit;
+
 //----------------------------------------------------------------------------
 // Module Control
 //----------------------------------------------------------------------------
@@ -9,28 +11,10 @@
 #include "test_moduleControl.h"
 
 //----------------------------------------------------------------------------
-// Button Control
-//----------------------------------------------------------------------------
-
-#include "test_buttonControl.h"
-
-//----------------------------------------------------------------------------
 // Memory
 //----------------------------------------------------------------------------
 
 #include "test_memory.h"
-
-//----------------------------------------------------------------------------
-// OTA
-//----------------------------------------------------------------------------
-
-#include "test_ota.h"
-
-//----------------------------------------------------------------------------
-// State
-//----------------------------------------------------------------------------
-
-#include "test_state.h"
 
 //----------------------------------------------------------------------------
 // Module
@@ -44,10 +28,29 @@
 
 #include "modules/test_feeder.h"
 #include "modules/test_led.h"
+#include "modules/test_water_pump.h"
 
-// //----------------------------------------------------------------------------
-// // LED Module
-// //----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+// Alarm
+//----------------------------------------------------------------------------
+
+#include "alarm/base_alarm.h"
+#include "alarm/plain_alarm.h"
+#include "alarm/payload_alarm.h"
+
+void setup()
+{
+    delay(1000);          // wait for stability on some boards to prevent garbage Serial
+    Serial.begin(115200); // ESP8266 default of 74880 not supported on Linux
+    Serial.println(F("\n\nTesting of vivarium control unit\n"));
+    TestRunner::setTimeout(30);
+    // TestRunner::setVerbosity(Verbosity::kAll);
+}
+
+void loop()
+{
+    aunit::TestRunner::run();
+}
 
 // #include "../src/modules/external/led/led.h"
 // #include "driver/rmt.h"
@@ -102,17 +105,3 @@
 // test(LED_Parse_Trigger_value)
 // {
 // }
-
-void setup()
-{
-    delay(1000);          // wait for stability on some boards to prevent garbage Serial
-    Serial.begin(115200); // ESP8266 default of 74880 not supported on Linux
-    Serial.println(F("\n\nTesting of vivarium control unit\n"));
-    TestRunner::setTimeout(30);
-    // TestRunner::setVerbosity(Verbosity::kAll);
-}
-
-void loop()
-{
-    aunit::TestRunner::run();
-}

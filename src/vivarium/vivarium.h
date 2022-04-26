@@ -81,13 +81,13 @@ public:
     */
     void restart();
 
+    MemoryProvider *memoryProvider;
+
+private:
     void addBLEModule(IBluetooth *m);
     void addFirebaseModule(IFirebaseModule *m);
     void addTextModule(TextModule *m);
 
-    MemoryProvider *memoryProvider;
-
-private:
     void addModule(IModule *m);
     void mainLoop();
     void otaLoop();
