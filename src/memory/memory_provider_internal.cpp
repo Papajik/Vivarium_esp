@@ -19,9 +19,7 @@ MemoryProviderInternal::~MemoryProviderInternal()
 
 void MemoryProviderInternal::begin()
 {
-    // lockSemaphore("begin");
     _preferences->begin(name.c_str(), false);
-    // unlockSemaphore();
 }
 
 void MemoryProviderInternal::init(String n = "vivarium")
@@ -60,9 +58,7 @@ void MemoryProviderInternal::init(String n = "vivarium")
 
 void MemoryProviderInternal::end()
 {
-    // lockSemaphore("end");
     _preferences->end();
-    // unlockSemaphore();
 }
 
 bool MemoryProviderInternal::loadStruct(String key, void *value, size_t len)
@@ -105,6 +101,7 @@ void MemoryProviderInternal::saveStruct(String key, const void *value, size_t le
     unlockSemaphore();
     debugA("Saved %d bytes", bytes);
     _incrementWrites();
+    _incrementBytes(bytes);
 }
 
 void MemoryProviderInternal::_incrementWrites()
@@ -123,7 +120,7 @@ void MemoryProviderInternal::_incrementBytes(int bytes)
 {
     _bytesWritten += bytes;
     printD("New number of bytes = ");
-    printD(_bytesWritten);
+    printlnD(_bytesWritten);
     lockSemaphore("incrementBytes");
     _preferences->putUInt(NUMBER_OF_BYTES_KEY, _bytesWritten);
     unlockSemaphore();
@@ -137,24 +134,24 @@ void MemoryProviderInternal::saveString(String key, String value)
     if (!_preferences->isKey(key.c_str()))
     {
         size_t bytes = _preferences->putString(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else if (_preferences->getString(key.c_str(), String("")) != value)
     {
         size_t bytes = _preferences->putString(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        unlockSemaphore();
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else
     {
+        unlockSemaphore();
         printlnD(" - string is already stored");
     }
-    unlockSemaphore();
 }
 
 String MemoryProviderInternal::loadString(String key, String defaultValue)
@@ -183,17 +180,24 @@ void MemoryProviderInternal::saveBool(String key, bool value)
     lockSemaphore("saveBool_" + key);
     if (!_preferences->isKey(key.c_str()))
     {
-        _preferences->putBool(key.c_str(), value);
+        size_t bytes = _preferences->putBool(key.c_str(), value);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else if (_preferences->getBool(key.c_str()) != value)
     {
         size_t bytes = _preferences->putBool(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
-    unlockSemaphore();
+    else
+    {
+        unlockSemaphore();
+    }
 }
 bool MemoryProviderInternal::loadBool(String key, bool defaultValue)
 {
@@ -213,30 +217,29 @@ bool MemoryProviderInternal::loadBool(String key, bool defaultValue)
 
 void MemoryProviderInternal::saveInt(String key, uint32_t value)
 {
-    printD("MP: Saving int ");
-    printD(value);
+    debugD("MP: Saving int: %d\n", value);
     lockSemaphore("saveInt_" + key);
     if (!_preferences->isKey(key.c_str()))
     {
         size_t bytes = _preferences->putUInt(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else if (_preferences->getUInt(key.c_str(), value) != value)
     {
         size_t bytes = _preferences->putUInt(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else
     {
+        unlockSemaphore();
         printlnD(" - int already stored");
     }
-    unlockSemaphore();
 }
 uint32_t MemoryProviderInternal::loadInt(String key, uint32_t defaultValue)
 {
@@ -262,24 +265,24 @@ void MemoryProviderInternal::saveFloat(String key, float value)
     if (!_preferences->isKey(key.c_str()))
     {
         size_t bytes = _preferences->putFloat(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else if (_preferences->getFloat(key.c_str(), value) != value)
     {
         size_t bytes = _preferences->putFloat(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else
     {
+        unlockSemaphore();
         printlnD(" - float already stored");
     }
-    unlockSemaphore();
 }
 
 float MemoryProviderInternal::loadFloat(String key, float defaultValue)
@@ -306,24 +309,24 @@ void MemoryProviderInternal::saveDouble(String key, double value)
     if (!_preferences->isKey(key.c_str()))
     {
         size_t bytes = _preferences->putDouble(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else if (_preferences->getDouble(key.c_str(), value) != value)
     {
         size_t bytes = _preferences->putDouble(key.c_str(), value);
-        printD(" (");
-        printD(bytes);
-        printD(" bytes) under key ");
-        printlnD(key);
+        unlockSemaphore();
+        debugD("(%d bytes) under key %s\n", bytes, key.c_str());
+        _incrementWrites();
+        _incrementBytes(bytes);
     }
     else
     {
+        unlockSemaphore();
         printlnD(" - float already stored");
     }
-    unlockSemaphore();
 }
 
 float MemoryProviderInternal::loadDouble(String key, double defaultValue)
