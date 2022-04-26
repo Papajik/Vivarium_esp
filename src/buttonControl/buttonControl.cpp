@@ -27,6 +27,10 @@ void buttonControlCallback()
         val += analogRead(M_BUTTONS_PIN);
     val /= 16;
 
+    // abort if  buttons are disconnected - noise filter
+    if (val < 10)
+        return;
+
     if (val > (buttonCount - 0.5) * avg)
     {
         if (lastButton == BUTTON_RELEASED)
