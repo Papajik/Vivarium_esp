@@ -147,15 +147,8 @@ bool WaterTempModule::loadSettings()
     return _memoryProvider->loadStruct(SETTINGS_WATER_TEMP_KEY, &_settings, sizeof(WaterTempSettings));
 }
 
-void WaterTempModule::readTemperature()
+void WaterTempModule::writeTemp(float temp)
 {
-    printlnV("\n");
-    printlnV("READ TEMPERATURE");
-    setStep(4);
-    _dallas->requestTemperatures();
-    setStep(5);
-    float temp = _dallas->getTempCByIndex(0);
-    setStep(6);
     /// Skip first x invalid temperatures
     if (temp == WATER_TEMP_INVALID_VALUE && _invalidReadingInRow < WATER_TEMP_MAX_INVALID_READINGS_IN_ROW)
     {
@@ -184,8 +177,19 @@ void WaterTempModule::readTemperature()
         }
         checkBoundaries();
     }
-
     printlnV("Current temp = " + String(_currentTemp));
+}
+
+void WaterTempModule::readTemperature()
+{
+    printlnV("\n");
+    printlnV("READ TEMPERATURE");
+    setStep(4);
+    _dallas->requestTemperatures();
+    setStep(5);
+    float temp = _dallas->getTempCByIndex(0);
+    setStep(6);
+    writeTemp(temp);
 }
 
 void WaterTempModule::checkBoundaries()

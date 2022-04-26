@@ -46,6 +46,8 @@ public:
     void setMinTemperature(float);
     void setMaxTemperature(float);
 
+    void writeTemp(float);
+
     float getMinTemperature();
     float getMaxTemperature();
 
