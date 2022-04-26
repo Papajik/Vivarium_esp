@@ -75,6 +75,7 @@ void Vivarium::setup(int outletCount, String deviceId)
     lcdDisplay.setText({"Smart Vivarium", "Setup"});
 
     Debugger::setupDebug();
+    Debugger::addVivarium(this);
     initAnalog();
 
     ledControl = new LedControl();
@@ -89,6 +90,7 @@ void Vivarium::setup(int outletCount, String deviceId)
     auth = new Auth(memoryProvider);
     auth->loadFromNVS();
     auth->setDeviceId(deviceId);
+    Debugger::addAuth(auth);
 
     otaService = new OtaService(memoryProvider, &lcdDisplay);
 
@@ -218,6 +220,7 @@ void Vivarium::onLoop()
         }
 
     debugHandle();
+    Debugger::debugDelay();
     }
 
 void Vivarium::restart()
@@ -417,6 +420,7 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
         addFirebaseModule(wt);
         addBLEModule(wt);
         addTextModule(wt);
+        Debugger::addWaterTemp(wt);
     }
     break;
 
