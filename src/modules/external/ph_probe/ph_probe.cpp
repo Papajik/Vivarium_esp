@@ -65,7 +65,7 @@ float PhModule::_readPh()
         phAvgValue += _phReadBuffer[i];
     }
 
-    phAvgValue /= PH_READING_COUNT + (2 * PH_VALUES_CUT);
+    phAvgValue /= PH_READING_COUNT - (2 * PH_VALUES_CUT);
 
     printA("pH Value = ");
     printlnA(phAvgValue);
@@ -78,7 +78,6 @@ float PhModule::_readPh()
         phValue = PH_INVALID_VALUE;
     }
 
-    _setPhValue(phValue);
     return phValue;
 }
 
@@ -105,7 +104,7 @@ void PhModule::checkContinuousScan()
     {
         if (_delay->justFinished())
         {
-            _readPh();
+            _setPhValue(_readPh());
             _delay->restart();
         }
     }
@@ -123,7 +122,7 @@ void PhModule::startScan()
         }
         _delay->start(_settings.continuous_delay);
     }
-    _readPh();
+    _setPhValue(_readPh());
     if (!_settings.continuous)
     {
         printText({"pH Probe", "pH: " + String(_lastPhValue)}, 5000);
@@ -208,8 +207,8 @@ void PhModule::onLoop()
         printlnA("PH proble - on loop - settings changed");
         saveSettings();
     }
-    //Check connection
 
+    // Check connection
     // update connection on change
     checkConnectionChange();
 
