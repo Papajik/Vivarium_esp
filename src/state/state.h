@@ -16,8 +16,7 @@
 /*! Import of librairies*/
 #include <Arduino.h>
 #include <map>
-// #include <vector>
-#include "helper.h"
+
 
 class ChangeCallback;
 
@@ -174,7 +173,13 @@ public:
   @param type Type of stored item
   @return 1 on success delete. 0 if key is not found. -1 on unsupported item_type
   */
-  int removeUint32t(String, item_type);
+  int removeItem(String, item_type);
+
+  /**
+  * @brief Removes all stored data;
+  * 
+  */
+  void clear();
 
   /*
   */

@@ -205,7 +205,7 @@ int StateStorage::setValueWithCallback(String key, bool value, ChangeCallback *c
     }
 }
 
-int StateStorage::removeUint32t(String key, item_type type)
+int StateStorage::removeItem(String key, item_type type)
 {
     switch (type)
     {
@@ -321,10 +321,9 @@ void StateStorage::printState()
 {
 }
 
-// void StateStorage::getStateJson(JsonVariant variant)
-// {
-//     printlnD("Getting state json");
-//     getStateJsonFromMap(&float_items, variant);
-//     getStateJsonFromMap(&bool_items, variant);
-//     getStateJsonFromMap(&uint32t_items, variant);
-// }
+void StateStorage::clear()
+{
+    bool_items.clear();
+    float_items.clear();
+    uint32t_items.clear();
+}
