@@ -26,12 +26,11 @@
 
 #define HUMIDIFIER_INVALID_GOAL -1
 
-#define HUMIDIFIER_FAILSAFE_DELAY 10000 // 10 seconds
 
 class Humidifier : public IModule, public IFirebaseModule, public IBluetooth, public TextModule
 {
 public:
-    Humidifier(int,MemoryProvider *, int);
+    Humidifier(int, MemoryProvider *, int);
     /// Firebase
     virtual void parseJson(FirebaseJson *, String);
     virtual String getSettingKey();
@@ -55,8 +54,6 @@ public:
     std::vector<String> getText();
 
 private:
-    unsigned long _lastValidTemp = 0;
-
     void setOn(bool);
 
     bool _isOn = false;
@@ -68,7 +65,6 @@ private:
     NimBLECharacteristic *_humidifierOnCharacteristic;
 
     void checkHumidity();
-    void failSafeCheck();
 
     /// Module
     virtual void onLoop();
@@ -76,5 +72,7 @@ private:
     virtual bool loadSettings();
     virtual void onConnectionChange();
 };
+
+extern Humidifier *humidifierPtr;
 
 #endif

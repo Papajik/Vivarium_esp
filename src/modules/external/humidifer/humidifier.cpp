@@ -8,6 +8,8 @@
 
 #define FCM_KEY "Humidifier"
 
+Humidifier *humidifierPtr = nullptr;
+
 Humidifier::Humidifier(int outlet, MemoryProvider *m, int position) : IModule(CONNECTED_KEY, position, m), _outlet(outlet)
 {
     loadSettings();
@@ -16,6 +18,8 @@ Humidifier::Humidifier(int outlet, MemoryProvider *m, int position) : IModule(CO
         outletController->reserveOutlet(outlet);
     }
 }
+
+
 
 /// Module
 void Humidifier::onLoop()
@@ -116,19 +120,6 @@ void Humidifier::setGoalHum(float h)
 float Humidifier::getGoalHum()
 {
     return _humGoal;
-}
-
-void Humidifier::failSafeCheck()
-{
-
-    if (millis() > _lastValidTemp + HUMIDIFIER_FAILSAFE_DELAY)
-    {
-        printlnA("Humidifier disconnected");
-        printlnE("Humidifier failsafe");
-        setConnected(false, true);
-        if (messagingService != nullptr)
-            messagingService->sendFCM(FCM_KEY, "Temperature was invalid for too long - turning humidifier off", FCM_TYPE::CROSS_LIMIT, FCM_KEY);
-    }
 }
 
 void Humidifier::setOn(bool b)

@@ -369,11 +369,11 @@ void Vivarium::createModule(ModuleType type, int position, int outlet)
         if (outlet != -1)
         {
 
-            Humidifier *hum = new Humidifier(outlet, memoryProvider, position);
-            addModule(hum);
-            addFirebaseModule(hum);
-            addBLEModule(hum);
-            addTextModule(hum);
+            humidifierPtr = new Humidifier(outlet, memoryProvider, position);
+            addModule(humidifierPtr);
+            addFirebaseModule(humidifierPtr);
+            addBLEModule(humidifierPtr);
+            addTextModule(humidifierPtr);
         }
 
         break;
