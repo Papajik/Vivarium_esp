@@ -40,9 +40,9 @@ public:
 
     void resetTimer();
     virtual void onTextUnlocked();
+    virtual void displayText(const std::vector<String> &);
 
 private:
-    virtual void displayText(const std::vector<String> &);
     void refreshScreen();
     void nextScreen();
     void showDefaultScreen();

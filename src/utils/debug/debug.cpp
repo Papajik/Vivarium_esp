@@ -2,6 +2,7 @@
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include "../../memory/memory_provider.h"
 #include "memory.h"
+#include "../../modules/internal/lcd_display/lcd.h"
 #include "../../modules/external/led/led.h"
 #include "../../modules/external/heater/heater.h"
 #include "../../modules/external/feeder/feeder.h"
@@ -13,11 +14,16 @@
 #include "../../vivarium/vivarium.h"
 #include <TimeAlarms.h>
 #include <time.h>
+#include "mockTextModules.h"
 
 MemoryProvider *provider;
 Auth *auth;
 WaterTempModule *wt;
 Vivarium *v;
+
+int mock_screen = 0;
+std::vector<TextModule *> _modules;
+int mock_count = 9;
 
 int dDelay = 0;
 
@@ -151,8 +157,31 @@ void printFirmwareVersion()
     printlnA("ID: " + auth->getDeviceId());
 }
 
+void switchMockDisplay()
+{
+    
+        while (mock_screen != _modules.size())
+        {
+            lcdDisplay.displayText(_modules.at(mock_screen++)->getText());
+            Serial.println("Printing text");
+            Alarm.delay(3000);
+            debugHandle();
+        }
+}
+
 void Debugger::setupDebug()
 {
+    _modules.push_back(new DhtMock());
+    _modules.push_back(new FanMock());
+    _modules.push_back(new FeederMock());
+    _modules.push_back(new HeaterMock());
+    _modules.push_back(new HumidifierMock());
+    _modules.push_back(new LedMock());
+    _modules.push_back(new PhProbeMock());
+    _modules.push_back(new WaterLevelMock());
+    _modules.push_back(new WaterPumpMock());
+    _modules.push_back(new WaterTemperatureMock());
+
     if (debugAddFunctionVoid("Restart", &restart) >= 0)
     {
         debugSetLastFunctionDescription("Restart ESP");
@@ -201,5 +230,10 @@ void Debugger::setupDebug()
     if (debugAddFunctionVoid("Print FW Version", &printFirmwareVersion) >= 0)
     {
         debugSetLastFunctionDescription("Print FW version");
+    }
+
+    if (debugAddFunctionVoid("Switch mock display", &switchMockDisplay) >= 0)
+    {
+        debugSetLastFunctionDescription("Swtich Mock display..");
     }
 }
