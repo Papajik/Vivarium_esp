@@ -12,7 +12,7 @@
 
 #define GMT_OFFSET_SEC 3600 //+1
 // #define DST_OFFSET_SEC 3600 //Daylight offset
-#define DST_OFFSET_SEC 0 //Daylight offset
+#define DST_OFFSET_SEC 3600 //Daylight offset
 
 RTC_DS1307 rtc_ds1307;
 
