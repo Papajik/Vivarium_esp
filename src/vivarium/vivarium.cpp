@@ -99,8 +99,11 @@ void Vivarium::setup(int outletCount, String deviceId)
     messagingService = new MessagingService(auth);
 
     firebaseService = new FirebaseService(auth, memoryProvider, messagingService);
+    addFirebaseModule(wifiProvider);
+    Debugger::addFirebase(firebaseService);
 
     moduleControl = new ModuleControl();
+    Debugger::addModuleControl(moduleControl);
 
     buttonControl = new ButtonControl(firebaseService, moduleControl);
 
@@ -303,7 +306,7 @@ void Vivarium::checkWiFiConenction()
 
         printlnA("Wifi connect retry ");
         _lastWifiRetry = millis();
-        if (wifiProvider->connect(3000) == WL_CONNECTED)
+        if (wifiProvider->setupWiFi(false))
         {
             bleController->stop();
             firebaseService->setupFirebase();

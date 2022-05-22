@@ -1,7 +1,10 @@
 #include "debug.h"
 #include <SerialDebug.h> //https://github.com/JoaoLopesF/SerialDebug
 #include "../../memory/memory_provider.h"
+#include "../../wifi/wifiProvider.h"
+#include "../../bluetooth/bluetooth.h"
 #include "memory.h"
+#include "../../moduleControl/moduleControl.h"
 #include "../../modules/internal/lcd_display/lcd.h"
 #include "../../modules/external/led/led.h"
 #include "../../modules/external/heater/heater.h"
@@ -17,6 +20,8 @@
 #include "mockTextModules.h"
 
 MemoryProvider *provider;
+ModuleControl *mControl;
+FirebaseService *firebase;
 Auth *auth;
 WaterTempModule *wt;
 Vivarium *v;
@@ -26,6 +31,16 @@ std::vector<TextModule *> _modules;
 int mock_count = 9;
 
 int dDelay = 0;
+
+void Debugger::addFirebase(FirebaseService *f)
+{
+    firebase = f;
+}
+
+void Debugger::addModuleControl(ModuleControl *mc)
+{
+    mControl = mc;
+}
 
 void Debugger::addAuth(Auth *a)
 {
@@ -80,6 +95,7 @@ void Debugger::addProvider(MemoryProvider *p)
 {
     provider = p;
 }
+
 struct Test
 {
     uint32_t t;
@@ -159,14 +175,65 @@ void printFirmwareVersion()
 
 void switchMockDisplay()
 {
-    
-        while (mock_screen != _modules.size())
+
+    while (mock_screen != _modules.size())
+    {
+        lcdDisplay.displayText(_modules.at(mock_screen++)->getText());
+        Serial.println("Printing text");
+        Alarm.delay(3000);
+        debugHandle();
+    }
+}
+
+void printCredentials()
+{
+    wifiProvider->printCredentials();
+}
+
+void setWiFiPass(String pass)
+{
+    wifiProvider->setPassphrase(pass);
+}
+
+void setWiFiSsid(String ssid)
+{
+    wifiProvider->setSsid(ssid);
+}
+
+void setUserId(String userId)
+{
+    auth->setUserId(userId);
+}
+
+void switchBluetoth(int bluetooth)
+{
+    if (bluetooth == 1)
+    {
+        Serial.println("Bluetooth OFF");
+        if (!mControl->isModuleConnected(BLUETOOTH_BUTTON))
         {
-            lcdDisplay.displayText(_modules.at(mock_screen++)->getText());
-            Serial.println("Printing text");
-            Alarm.delay(3000);
-            debugHandle();
+            mControl->buttonPressed(BLUETOOTH_BUTTON);
         }
+        Serial.println("Bluetooth ON");
+        bleController->setStopInFuture();
+        firebase->setStartInFuture();
+    }
+    else
+    {
+        Serial.println("Bluetooth OFF");
+        if (mControl->isModuleConnected(BLUETOOTH_BUTTON))
+        {
+            mControl->buttonPressed(BLUETOOTH_BUTTON);
+        }
+
+        firebase->setStopInFuture();
+        bleController->setStartInFuture();
+    }
+}
+
+void removeCredentials(int id)
+{
+    provider->removeKey("wifi." + String(id));
 }
 
 void Debugger::setupDebug()
@@ -236,4 +303,15 @@ void Debugger::setupDebug()
     {
         debugSetLastFunctionDescription("Swtich Mock display..");
     }
+
+    if (debugAddFunctionVoid("Print WiFI credentials", &printCredentials) >= 0)
+    {
+        debugSetLastFunctionDescription("Print WiFI credentials..");
+    }
+
+    debugAddFunctionStr("Setup WiFi pass", &setWiFiPass);
+    debugAddFunctionStr("Setup WiFi ssid", &setWiFiSsid);
+    debugAddFunctionStr("Setup User ID", &setUserId);
+    debugAddFunctionInt("Switch bluetooth, 1 = ON", &switchBluetoth);
+    debugAddFunctionInt("Remove credentials (id)", &removeCredentials);
 }

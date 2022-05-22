@@ -107,6 +107,7 @@ void Auth::setUserId(String id)
 
     _userId = id;
     _uidChanged = true;
+    _saveToNVS();
     updateClaimCharacteristic();
 }
 

@@ -33,10 +33,40 @@ WiFiProvider::WiFiProvider(MemoryProvider *provider)
     memoryProvider = provider;
 }
 
-bool WiFiProvider::setupWiFi()
+bool WiFiProvider::setupWiFi(bool loadNVS)
 {
-    loadFromNVS();
-    return (connect() == WL_CONNECTED);
+    if (loadNVS)
+        loadFromNVS();
+
+    // First try credentials used to register this device
+    if (connect() != WL_CONNECTED)
+    {
+        // Try additionalCredentials later
+        return retryCredentials();
+    }
+    else
+    {
+        return WL_CONNECTED;
+    }
+}
+
+int WiFiProvider::retryCredentials()
+{
+
+    if (_credentials.size() == 0)
+    {
+        printText({"WiFi", "No SSID"}, 3000);
+        return WL_NO_SSID_AVAIL;
+    }
+
+    for (auto &&it : _credentials)
+    {
+        if (connect(it.second, 5000) == WL_CONNECTED)
+        {
+            return WL_CONNECTED;
+        }
+    }
+    return WL_CONNECT_FAILED;
 }
 
 bool WiFiProvider::isConnected()
@@ -44,9 +74,37 @@ bool WiFiProvider::isConnected()
     return WiFi.status() == WL_CONNECTED;
 }
 
+int WiFiProvider::connect(std::shared_ptr<WifiCredentials> credentials, int timeout)
+{
+    printText({"WiFi " + String(credentials->storageId), "Connecting "});
+    printlnA("WiFi - connecting to backup credentials " + String(credentials->ssid));
+    if (credentials->ssid[0] != '\0')
+    {
+        _connectedNetwork = String(credentials->ssid);
+        unsigned long start = millis();
+        WiFi.begin(credentials->ssid, credentials->pass);
+        bool c = true;
+        while (WiFi.status() != WL_CONNECTED)
+        {
+            printText({"WiFi " + String(credentials->storageId), c ? "Connecting." : "Connecting.."}, 1000);
+            c = !c;
+
+            printA("Status = " + WiFi.status());
+
+            delay(500);
+            if (millis() - start > timeout)
+            {
+                return WL_CONNECT_FAILED;
+            }
+        }
+    }
+    _connectedNetwork = "";
+    return WL_NO_SSID_AVAIL;
+}
+
 int WiFiProvider::connect(int timeout)
 {
-    printlnA("Wifi connect");
+    printlnA("Wifi connect - Main SSID");
     printText({"WiFi", "Connecting"});
     int status = WL_IDLE_STATUS;
     char passphrase[PASS_LENGTH];
@@ -62,15 +120,7 @@ int WiFiProvider::connect(int timeout)
         bool c = true;
         while (connecting)
         {
-            if (c)
-            {
-                printText({"WiFi", "Connecting."}, 3000);
-            }
-            else
-            {
-                printText({"WiFi", "Connecting.."}, 3000);
-            }
-
+            printText({"WiFi", c ? "Connecting." : "Connecting.."}, 3000);
             c = !c;
 
             status = WiFi.status();
@@ -94,6 +144,7 @@ int WiFiProvider::connect(int timeout)
     {
         printlnA("No ssid set");
         printText({"WiFi", "No SSID"}, 3000);
+        status = WL_NO_SSID_AVAIL;
     }
     return status;
 }
@@ -114,7 +165,6 @@ bool WiFiProvider::restart()
     delay(500);
     return setupWiFi();
 }
-
 
 String WiFiProvider::getPassphrase()
 {
@@ -140,14 +190,11 @@ void WiFiProvider::setSsid(String ssid)
 
 void WiFiProvider::loadFromNVS()
 {
+    loadAllCredentialsFromNVS();
+    printCredentials();
     // Use current value as default
     _pass = memoryProvider->loadString(WIFI_PASSWORD_KEY, _pass);
     _ssid = memoryProvider->loadString(WIFI_SSID_KEY, _ssid);
-
-    printA("SSID = ");
-    printlnA(_ssid.c_str());
-    printA("PASS = ");
-    printlnA(_pass.c_str());
 }
 
 void WiFiProvider::onLoop()
@@ -168,10 +215,101 @@ void WiFiProvider::saveToNVS()
 
 bool WiFiProvider::hasCredentials()
 {
-    return _ssid != "";
+    return _ssid != "" || _credentials.size() != 0;
 }
 
 std::vector<String> WiFiProvider::getText()
 {
     return {};
+}
+
+void WiFiProvider::printCredentials()
+{
+
+    printlnA("**** WiFiCredentials **** ");
+    printlnA("Credentials count: " + String(_credentials.size()));
+    for (auto &&t : _credentials)
+    {
+        printA(t.first);
+        printA(" >>>> ");
+        printCredentials(t.second);
+    }
+    printlnA("***** **** **** *****");
+}
+
+void WiFiProvider::printCredentials(std::shared_ptr<WifiCredentials> credentials)
+{
+    debugA("ID: %d (fKey: %s) --> SSID: %s  pass: %s", credentials->storageId, credentials->firebaseKey, credentials->ssid, credentials->pass);
+}
+
+void WiFiProvider::saveCredentialsToNVS(std::shared_ptr<WifiCredentials> credentials)
+{
+    printlnD("saveTriggerToNVS");
+    if (memoryProvider == nullptr)
+        return;
+
+    if (credentials->storageId == INVALID_MEMORY_ID)
+    {
+        credentials->storageId = getAvailableMemoryId();
+        if (credentials->storageId == INVALID_MEMORY_ID)
+        {
+            printlnE("Maximum of credentials reached");
+            return;
+        }
+    }
+
+    debugA("Size of trigger =  %d", (int)sizeof(WifiCredentials));
+    // WifiCredentials t = *credentials;
+    memoryProvider->saveStruct(String(WIFI_MEMORY_PREFIX) + String(credentials->storageId), &*credentials, sizeof(WifiCredentials));
+}
+
+void WiFiProvider::loadAllCredentialsFromNVS()
+{
+    printlnA("Load credentials from NVS");
+    if (memoryProvider != nullptr)
+    {
+        for (int i = 0; i < MAX_CREDENTIALS; i++)
+        {
+            if (loadCredentialsFromNVS(i))
+            {
+                availableIds[i] = false;
+            }
+            else
+            {
+                availableIds[i] = true;
+            }
+        }
+    }
+    else
+    {
+        printlnE("NO memory provider set. Couln't load from NVS");
+    }
+}
+
+bool WiFiProvider::loadCredentialsFromNVS(int id)
+{
+    if (memoryProvider == nullptr)
+        return false;
+
+    // auto t = std::make_shared<WifiCredentials>();
+    WifiCredentials t;
+    if (memoryProvider->loadStruct(WIFI_MEMORY_PREFIX + String(id), &t, sizeof(WifiCredentials)))
+    {
+        _credentials.insert({t.firebaseKey, std::make_shared<WifiCredentials>(t)});
+        return true;
+    }
+    return false;
+}
+
+int WiFiProvider::getAvailableMemoryId()
+{
+    for (int i = 0; i < MAX_CREDENTIALS; i++)
+    {
+        if (availableIds[i])
+        {
+            availableIds[i] = false;
+            return i;
+        }
+    }
+    return INVALID_MEMORY_ID;
 }
